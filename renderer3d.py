@@ -409,12 +409,35 @@ class Renderer3D:
         - VISIBLE tiles: Full brightness, no fog
         - EXPLORED tiles: Darkened (0.3x brightness), no fog
         - UNEXPLORED tiles: Hidden tiles, visible fog plane
+
+        PERFORMANCE: Distance culling - only render tiles within render distance
         """
         if not self.game.visibility_map or not self.game.dungeon:
             return
 
+        if not self.game.player:
+            return
+
+        # Calculate render distance (vision radius + margin)
+        render_distance = c.PLAYER_VISION_RADIUS + c.RENDER_DISTANCE_MARGIN
+
         # Only update tiles that changed visibility state (optimization)
         for (x, y), entities in self.dungeon_entities.items():
+            # PERFORMANCE: Distance culling - disable tiles beyond render distance
+            dx = abs(x - self.game.player.x)
+            dy = abs(y - self.game.player.y)
+
+            if dx > render_distance or dy > render_distance:
+                # Beyond render distance - disable all entities and fog
+                for entity in entities:
+                    entity.visible = False
+
+                # Hide fog for distant tiles
+                if (x, y) in self.fog_entities:
+                    self.fog_entities[(x, y)].visible = False
+
+                continue  # Skip visibility processing for distant tiles
+
             # Get current visibility state
             vis_state = self.game.visibility_map.get_state(x, y)
 
@@ -444,13 +467,41 @@ class Renderer3D:
 
             # Fog plane handling
             if vis_state == c.VISIBILITY_UNEXPLORED:
-                # Create or show fog plane for unexplored tiles
-                if (x, y) not in self.fog_entities:
-                    # Create new fog plane
-                    self.fog_entities[(x, y)] = self.create_fog_plane(x, y)
+                # PERFORMANCE: FOG_EDGE_ONLY - only show fog at boundary of explored area
+                should_show_fog = True
+
+                if c.FOG_EDGE_ONLY:
+                    # Check if this unexplored tile is adjacent to any explored/visible tile
+                    # (Only create fog at the "edge" of explored area, not deep in unexplored territory)
+                    adjacent_tiles = [
+                        (x - 1, y),  # West
+                        (x + 1, y),  # East
+                        (x, y - 1),  # North
+                        (x, y + 1),  # South
+                    ]
+
+                    # Check if any adjacent tile is explored or visible
+                    has_explored_neighbor = False
+                    for ax, ay in adjacent_tiles:
+                        neighbor_state = self.game.visibility_map.get_state(ax, ay)
+                        if neighbor_state in [c.VISIBILITY_EXPLORED, c.VISIBILITY_VISIBLE]:
+                            has_explored_neighbor = True
+                            break
+
+                    should_show_fog = has_explored_neighbor
+
+                # Create or show fog plane only if at edge
+                if should_show_fog:
+                    if (x, y) not in self.fog_entities:
+                        # Create new fog plane
+                        self.fog_entities[(x, y)] = self.create_fog_plane(x, y)
+                    else:
+                        # Show existing fog plane
+                        self.fog_entities[(x, y)].visible = True
                 else:
-                    # Show existing fog plane
-                    self.fog_entities[(x, y)].visible = True
+                    # Not at edge - hide fog
+                    if (x, y) in self.fog_entities:
+                        self.fog_entities[(x, y)].visible = False
 
             else:
                 # Hide fog plane for explored/visible tiles
@@ -581,17 +632,18 @@ class Renderer3D:
         # Update tile visibility (fog of war)
         self.update_tile_visibility()
 
-        # Update fog-of-war animation (UV scrolling)
-        self.fog_animation_time += dt * 0.08  # Slow scroll speed
-        for fog_entity in self.fog_entities.values():
-            if fog_entity.visible:
-                # Scroll UV coordinates to create swirling motion
-                # Use sine/cosine for circular motion effect
-                offset_x = self.fog_animation_time * 0.3
-                offset_y = self.fog_animation_time * 0.2
+        # Update fog-of-war animation (UV scrolling) - PERFORMANCE: Disable if not needed
+        if c.ENABLE_FOG_ANIMATION:
+            self.fog_animation_time += dt * 0.08  # Slow scroll speed
+            for fog_entity in self.fog_entities.values():
+                if fog_entity.visible:
+                    # Scroll UV coordinates to create swirling motion
+                    # Use sine/cosine for circular motion effect
+                    offset_x = self.fog_animation_time * 0.3
+                    offset_y = self.fog_animation_time * 0.2
 
-                # Set texture offset (Ursina uses texture_offset for UV scrolling)
-                fog_entity.texture_offset = (offset_x, offset_y)
+                    # Set texture offset (Ursina uses texture_offset for UV scrolling)
+                    fog_entity.texture_offset = (offset_x, offset_y)
 
         # Update enemy animations
         for enemy_id, enemy_data in self.enemy_entities.items():

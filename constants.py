@@ -431,6 +431,11 @@ MAX_PARTICLES = 100  # Maximum active particles (performance limit)
 UI_UPDATE_THROTTLE = 0.05  # Minimum seconds between UI updates (20 FPS update rate)
 ENABLE_AMBIENT_PARTICLES_3D = False  # Disable fog/cloud particles in 3D mode (can't see outside dungeon in first-person)
 
+# Distance culling and fog optimization (HIGH IMPACT performance settings)
+RENDER_DISTANCE_MARGIN = 3       # Tiles beyond vision radius to render (vision=10, margin=3, total=13 tiles)
+ENABLE_FOG_ANIMATION = True      # UV scrolling animation on fog planes (swirling fog effect)
+FOG_EDGE_ONLY = False            # Show fog on all unexplored tiles (True = only edges, less fog but better performance)
+
 # Minimap settings
 MINIMAP_ENABLED = True  # Enable/disable minimap
 MINIMAP_MODE = "full"  # "full" (entire dungeon) or "radar" (nearby area only)

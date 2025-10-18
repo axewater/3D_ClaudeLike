@@ -786,25 +786,28 @@ class DragonCreature:
 
         # Position eyes on the front of the head sphere using proper spherical coordinates
         # Dragon faces in -Z direction (forward)
+        # Adjust eye elevation based on mouth size to prevent overlap
+        # Larger mouths push eyes higher on the head
+        eye_elevation_adjustment = self.mouth_size * 0.3  # 0-0.15 for mouth_size 0-0.5
 
         for i in range(self.num_eyes):
             if self.num_eyes == 1:
-                # Single eye: center of head front
-                # Spherical coords: theta=0 (front), phi=0 (equator)
+                # Single eye: center of head front, elevated above mouth
+                # Spherical coords: theta=0 (front), phi adjusted for mouth
                 theta = 0  # Azimuthal angle (around Y axis)
-                phi = math.pi / 2  # Polar angle from +Y axis (90° = equator)
+                phi = math.pi / 2 - eye_elevation_adjustment  # Elevated based on mouth size
             elif self.num_eyes == 2:
                 # Two eyes: symmetrical left/right on front of head
-                # Position at ±30° from center, slightly above equator
+                # Position at ±30° from center, elevated above mouth
                 theta = (math.pi / 6) if i == 0 else (-math.pi / 6)  # ±30° left/right
-                phi = math.pi * 0.45  # Slightly above equator (0.45 * 180 = 81°)
+                phi = math.pi * 0.45 - eye_elevation_adjustment  # Elevated based on mouth size
             else:
                 # Multiple eyes: distribute in a ring on front hemisphere
-                # Ring around the front of the head
+                # Ring around the front of the head, elevated above mouth
                 ring_angle = (i / self.num_eyes) * math.pi * 2  # 0 to 360°
                 # Position eyes in a cone pointing forward
                 theta = math.sin(ring_angle) * (math.pi / 4)  # ±45° max
-                phi = math.pi / 2 - math.cos(ring_angle) * (math.pi / 6)  # Vary elevation
+                phi = math.pi / 2 - math.cos(ring_angle) * (math.pi / 6) - eye_elevation_adjustment
 
             # Convert spherical to Cartesian coordinates on unit sphere
             # Standard spherical coordinates: x = sin(phi)*cos(theta), y = cos(phi), z = sin(phi)*sin(theta)
