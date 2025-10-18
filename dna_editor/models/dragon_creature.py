@@ -329,7 +329,7 @@ class DragonHorn:
 class DragonSpike:
     """Sharp spike extending upward from dragon's back (one per body segment)."""
 
-    def __init__(self, anchor_point, segment_size, spike_color, parent, toon_shader=None):
+    def __init__(self, anchor_point, segment_size, spike_color, parent, toon_shader=None, segment_index=0, total_segments=1):
         """
         Create a dragon spine spike.
 
@@ -339,6 +339,8 @@ class DragonSpike:
             spike_color: RGB tuple (0-1) for spike
             parent: Parent entity
             toon_shader: Optional toon shader
+            segment_index: Index of this segment along body (0=head, higher=tail)
+            total_segments: Total number of body segments (for tail tapering)
         """
         self.anchor_point = anchor_point
         self.segment_size = segment_size
@@ -347,74 +349,50 @@ class DragonSpike:
         # Golden ratio for sizing
         PHI = 1.618033988749895
 
-        # Spike dimensions (proportional to segment size)
-        spike_base_thickness = segment_size / (PHI ** 2)  # Smaller than horns for delicate look
-        spike_length = segment_size * PHI  # Length proportional to segment
+        # Calculate tail taper: spikes get smaller toward the tail
+        # segment_index 1 (first body segment) = 1.0, last segment = 0.3
+        if total_segments > 1:
+            tail_taper = 1.0 - (segment_index / total_segments) * 0.7
+        else:
+            tail_taper = 1.0
 
-        # Target point (spike points straight upward)
-        target_point = anchor_point + Vec3(0, spike_length, 0)
+        # Spike dimensions (proportional to segment size, with tail taper)
+        spike_base_thickness = (segment_size / (PHI ** 3)) * tail_taper  # Smaller base
+        spike_length = (segment_size * 0.8) * tail_taper  # Shorter spikes
 
-        # Generate spike curve (minimal curve for sharp spikes)
-        num_segments = 2  # Simple 2-segment spike (base + tip)
-        curve_points = bezier_curve(
-            anchor=anchor_point,
-            target=target_point,
-            num_points=num_segments,
-            control_strength=0.15  # Very rigid for sharp spikes
-        )
+        # Create a single tapered pyramid/cone spike
+        # Use a stretched cube that tapers from base to tip
+        spike_params = {
+            'model': 'cube',
+            'color': color.rgb(*spike_color),
+            'position': anchor_point + Vec3(0, spike_length / 2, 0),
+            'scale': (spike_base_thickness, spike_length, spike_base_thickness),
+            'parent': parent
+        }
 
-        # Create sphere chain with golden ratio tapering
-        self.spheres = []
-        self.tubes = []
-        self.base_positions = []  # Store for animation
+        if toon_shader is not None:
+            spike_params['shader'] = toon_shader
 
-        for i, point in enumerate(curve_points):
-            # Calculate size with golden ratio taper (thick base → sharp tip)
-            t = i / max(num_segments - 1, 1)
-            # Golden taper: 1.0 at base → 1/PHI at tip
-            taper_factor = 1.0 - (t * (1.0 - 1.0 / PHI))
-            sphere_size = spike_base_thickness * taper_factor
+        self.spike = Entity(**spike_params)
 
-            # Create sphere
-            sphere_params = {
-                'model': 'sphere',
-                'color': color.rgb(*spike_color),
-                'position': point,
-                'scale': sphere_size,
-                'parent': parent
-            }
+        # Apply tapering by scaling the top vertices smaller (simulated with nested cube)
+        # Create a smaller cube at the tip to create taper effect
+        tip_size = spike_base_thickness * 0.2  # Sharp tip
+        tip_params = {
+            'model': 'cube',
+            'color': color.rgb(*spike_color),
+            'position': anchor_point + Vec3(0, spike_length * 0.95, 0),
+            'scale': (tip_size, spike_length * 0.1, tip_size),
+            'parent': parent
+        }
 
-            if toon_shader is not None:
-                sphere_params['shader'] = toon_shader
+        if toon_shader is not None:
+            tip_params['shader'] = toon_shader
 
-            sphere = Entity(**sphere_params)
-            self.spheres.append(sphere)
-            self.base_positions.append(Vec3(point))
+        self.tip = Entity(**tip_params)
 
-            # Create connector tube to previous sphere
-            if i > 0:
-                prev_sphere = self.spheres[i - 1]
-                midpoint = (sphere.position + prev_sphere.position) / 2
-                length = (sphere.position - prev_sphere.position).length()
-
-                # Tube radius (average of both sphere sizes)
-                avg_size = (sphere_size + prev_sphere.scale[0]) / 2
-                tube_radius = avg_size * 0.75  # Thick tubes for solid spikes
-
-                tube_params = {
-                    'model': 'cube',
-                    'color': color.rgb(*spike_color),
-                    'position': midpoint,
-                    'scale': (tube_radius, length / 2, tube_radius),
-                    'parent': parent
-                }
-
-                if toon_shader is not None:
-                    tube_params['shader'] = toon_shader
-
-                tube = Entity(**tube_params)
-                tube.look_at(prev_sphere, axis=Vec3.up)
-                self.tubes.append(tube)
+        # Store base position for animation
+        self.base_position = Vec3(anchor_point)
 
     def update_animation(self, time, segment_position):
         """
@@ -425,33 +403,19 @@ class DragonSpike:
             segment_position: Current position of parent segment (to track)
         """
         # Calculate segment offset from initial anchor point
-        segment_offset = segment_position - self.anchor_point
+        segment_offset = segment_position - self.base_position
 
         # Spikes move rigidly with segment (no independent motion)
-        for i, sphere in enumerate(self.spheres):
-            # Base position follows segment movement exactly
-            sphere.position = self.base_positions[i] + segment_offset
+        self.spike.position = self.spike.position + segment_offset
+        self.tip.position = self.tip.position + segment_offset
 
-            # Update connector tubes
-            if i > 0:
-                tube = self.tubes[i - 1]
-                prev_sphere = self.spheres[i - 1]
-
-                # Recalculate tube position and orientation
-                midpoint = (sphere.position + prev_sphere.position) / 2
-                tube.position = midpoint
-
-                length = (sphere.position - prev_sphere.position).length()
-                tube.scale_y = length / 2
-
-                tube.look_at(prev_sphere, axis=Vec3.up)
+        # Update base position to new location
+        self.base_position = segment_position
 
     def destroy(self):
         """Cleanup spike entities."""
-        for sphere in self.spheres:
-            destroy(sphere)
-        for tube in self.tubes:
-            destroy(tube)
+        destroy(self.spike)
+        destroy(self.tip)
 
 
 class DragonWhisker:
@@ -1070,6 +1034,8 @@ class DragonCreature:
         if len(self.segments) <= 1:  # Need at least 2 segments (head + 1 body)
             return
 
+        total_segments = len(self.segments)
+
         # Create one spike per body segment (skip head segment at i=0)
         for i in range(1, len(self.segments)):
             segment = self.segments[i]
@@ -1081,13 +1047,15 @@ class DragonCreature:
             anchor_offset = Vec3(0, segment_size / 2, 0)
             anchor_point = segment_position + anchor_offset
 
-            # Create spike
+            # Create spike with tail tapering
             spike = DragonSpike(
                 anchor_point=anchor_point,
                 segment_size=segment_size,
                 spike_color=self.spine_spike_color,
                 parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                segment_index=i,
+                total_segments=total_segments
             )
 
             self.spikes.append(spike)
