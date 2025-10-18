@@ -1,8 +1,8 @@
 # Claude-Like Roguelike 🎮
 
-A Python roguelike game with both 2D (PyQt6) and 3D (Ursina Engine) rendering modes.
+A Python 3D first-person roguelike dungeon crawler built with Ursina Engine.
 
-**NEW**: 3D first-person mode is now fully playable!
+**100% procedurally generated** - graphics, audio, and voice taunts!
 
 ## Quick Start
 
@@ -10,11 +10,11 @@ A Python roguelike game with both 2D (PyQt6) and 3D (Ursina Engine) rendering mo
 # Install dependencies
 pip install -r requirements.txt
 
-# Run in 3D mode (first-person, recommended)
-python3 main.py --mode 3d
+# Run the game
+python3 main.py
 
-# Run in 2D mode (classic version)
-python3 main.py --mode 2d
+# Skip intro animation for faster startup
+python3 main.py --skip-intro
 ```
 
 ## Project Structure
@@ -22,99 +22,104 @@ python3 main.py --mode 2d
 ### Core Game Files
 - **`game.py`** - Main game logic (turn-based, combat, dungeon management)
 - **`entities.py`** - Player, Enemy, Item classes
-- **`dungeon.py`** - Procedural dungeon generation
+- **`dungeon.py`** - Procedural dungeon generation (BSP algorithm)
 - **`abilities.py`** - Class abilities and cooldown system
 - **`combat.py`** - Damage calculations
 - **`constants.py`** - All configuration and game constants
 
-### 2D Rendering (Complete)
-- **`ui/`** - PyQt6 UI (screens, widgets, menus)
-- **`graphics/`** - 2D geometric shape rendering
-- **`animations.py`** - 2D particle effects
-
-### 3D Rendering (In Development)
-- **`main_3d.py`** - 3D mode entry point
-- **`renderer3d.py`** - Ursina 3D rendering manager
-- **`graphics3d/`** - 3D models (procedurally generated)
-- **`animations3d.py`** - 3D particle effects
+### 3D Rendering & UI
+- **`main.py`** - Entry point (shows title screen, launches Ursina)
+- **`main_3d.py`** - Ursina game loop and input handling
+- **`renderer3d.py`** - 3D scene management and entity rendering
+- **`ui3d_manager.py`** - HUD overlay (stats, abilities, combat log, minimap)
+- **`graphics3d/`** - 3D models (procedurally generated, no .obj files)
+- **`animations3d.py`** - 3D particle effects with physics
+- **`ui/screens/`** - Menu screens (title, class selection, pause, victory, game over)
 
 ### Support Systems
-- **`audio.py`** - Procedural sound synthesis (no audio files needed!)
+- **`audio.py`** - Procedural sound synthesis (no audio files needed!) + voice taunts
 - **`fov.py`** / **`visibility.py`** - Field of view and fog of war
+- **`shaders/`** - Custom GLSL shaders (barrel distortion, corner shadows)
 
 ## Documentation
 
 - **`README.md`** - Complete feature documentation and file reference
-- **`MIGRATION.md`** - 3D migration project plan and roadmap
-- **`docs_archive_2025-10-12/`** - Archived phase summaries and old docs
+- **`CLAUDE.md`** - This file (quick developer onboarding)
 
 ## Current Status
 
-**2D Mode**: ✅ Complete - Fully playable with all features
-**3D Mode**: ✅ 80% Complete - Fully playable first-person mode!
+**✅ COMPLETE** - Fully playable 3D first-person roguelike!
 
-### What Works in 3D (Phase 1-6.5 Complete)
-- ✅ Dungeon rendering (walls, floors, stairs)
-- ✅ **First-person camera** with smooth rotation (arrow keys)
+### Features Implemented
+- ✅ Dungeon rendering (walls, floors, stairs) with biome variations
+- ✅ **First-person camera** with smooth rotation (arrow keys, 90° snaps)
 - ✅ **Directional WASD movement** (camera-relative)
+- ✅ **Camera pitch tilt** (auto-focus on enemies ahead)
 - ✅ Combat system (bump-to-attack)
-- ✅ Enemy AI and 3D models with health bars
-- ✅ Item models with animations
-- ✅ Particle effects (explosions, trails, text)
-- ✅ Level progression
-- ✅ **Full UI overlay** (stats, abilities, combat log)
+- ✅ Enemy AI and 3D models with health bars and alert particles
+- ✅ Item models with rarity-based visuals
+- ✅ Particle effects (explosions, trails, text, blood splatters)
+- ✅ Level progression (25 levels, 5 biomes)
+- ✅ **Full UI overlay** (stats, abilities, combat log, minimap)
 - ✅ **Ability targeting system** (1/2/3 keys + mouse)
 - ✅ **Performance optimizations** (particle limits, conditional UI updates)
-- ✅ FOV/Fog of War in 3D 
-- ✅ Class selection screen 
-
-### What's Missing in 3D (Optional Polish)
-
-- ❌ Title/Victory/Menu screens (Phase 7)
-- ❌ 3D positional audio (Phase 8 - optional)
-
-See `MIGRATION.md` for the complete development roadmap.
+- ✅ **FOV/Fog of War** in 3D with visibility tracking
+- ✅ **Class selection screen** with rotating 3D models
+- ✅ **Title screen** (PyQt6 OpenGL flying letters)
+- ✅ **Menu screens** (main menu, pause, victory, game over)
+- ✅ **Audio system** (procedural SFX, music, voice taunts)
 
 ## Architecture Notes
 
-### Dual Rendering
-The game supports both 2D and 3D rendering:
-- **Game logic** (`game.py`) is renderer-agnostic
-- **2D mode** uses PyQt6 widgets
-- **3D mode** uses Ursina Entity system
-- Mode selection via `--mode` flag in `main.py`
+### 3D First-Person Design
+The game uses a clean MVC-style architecture:
+- **Game logic** (`game.py`) - Renderer-agnostic, handles turns and state
+- **3D Renderer** (`renderer3d.py`) - Ursina Entity system, scene management
+- **UI Overlay** (`ui3d_manager.py`) - HUD elements (stats, abilities, combat log)
+- **Controller** (`main_3d.py`) - Input handling, camera control
 
-### Particle System Bridging
-The `AnimationManager3DProxy` in `main_3d.py` converts 2D particle calls to 3D:
-- Converts PyQt6 `QColor` to RGB tuples
-- Translates pixel coords to 3D world space
-- Allows `game.py` to remain unchanged
+### Animation System
+The `AnimationManager3DProxy` in `main_3d.py` bridges neutral interface to 3D:
+- Converts RGB tuples to Ursina colors
+- Translates grid coords to 3D world space
+- Allows `game.py` to remain rendering-agnostic
 
 ### No External Assets
-- **Graphics**: All 3D models procedurally generated (no .obj files)
-- **Audio**: All sounds procedurally synthesized (no .wav files)
+- **Graphics**: All 3D models procedurally generated (no .obj/.fbx files)
+- **Audio**: All sounds procedurally synthesized (no .wav/.mp3 files)
+- **Voices**: Text-to-speech using pyttsx3 (no voice recordings)
 - **Textures**: Ursina primitive shapes with color/materials
 
 ## Development Workflow
 
-1. **2D is the reference** - All features work in 2D
-2. **3D mirrors 2D** - Porting features from 2D to 3D
-3. **Game logic unchanged** - Only rendering layer modified
-4. **Test both modes** - Ensure 2D doesn't break
+1. **Game logic first** - All features implemented in `game.py`
+2. **3D rendering** - Visualized in `renderer3d.py` and `graphics3d/`
+3. **Audio integration** - Triggered from `game.py` and `abilities.py`
+4. **Test on Windows** - User tests on their machine (headless server for dev)
 
 ## Key Technologies
 
 - **Python 3.8+**
-- **PyQt6** - 2D UI and rendering
 - **Ursina Engine** - 3D rendering (built on Panda3D)
+- **PyQt6** - Title screen with OpenGL (flying letters effect)
 - **pygame** - Audio playback
 - **numpy** - Sound wave synthesis
+- **pyttsx3** - Text-to-speech for voice taunts
+
+## Controls
+
+- **WASD** - Move (camera-relative direction)
+- **Arrow Keys** - Rotate camera 90° / Move forward-backward
+- **1/2/3** - Use abilities (click to target)
+- **Mouse** - Aim targeting reticle
+- **ESC** - Cancel targeting / Pause menu
+- **F1** - Debug: Reveal full map
 
 ---
 
 **For detailed feature documentation:** See `README.md`
-**For migration progress:** See `MIGRATION.md`
 
-Notes:
-- You are working in a Linux shell on a headless server. You must ask the user to perform any testing (its done on windows)
-- If you need to load libraries or test other stuff from the command line, activate the "venv_linux"
+## Development Notes
+- You are working in a Linux shell on a headless server
+- User performs all testing on Windows
+- Activate `venv_linux` if you need to test library imports
