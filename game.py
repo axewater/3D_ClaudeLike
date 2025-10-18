@@ -6,7 +6,8 @@ from typing import List, Optional, Tuple
 import constants as c
 from entities import Player, Enemy, Item
 from dungeon import Dungeon
-from animations import AnimationManager
+from animation_interface import AnimationManagerInterface
+from particle_types import Particle
 from abilities import CLASS_ABILITIES
 from audio import get_audio_manager
 from fov import calculate_fov
@@ -26,7 +27,8 @@ class Game:
         self.victory = False
         self.messages: List[Tuple[str, str]] = []  # (message, type)
         self.max_messages = 15
-        self.anim_manager = AnimationManager()
+        # Animation manager will be injected by main_3d.py
+        self.anim_manager: Optional[AnimationManagerInterface] = None
         self.audio_manager = get_audio_manager()
         self.selected_class = c.CLASS_WARRIOR  # Default class
         self.ambient_timer = 0.0  # Timer for spawning ambient particles
@@ -392,17 +394,15 @@ class Game:
         self.audio_manager.play_hit_sound(is_crit, position=(enemy.x, enemy.y),
                                          player_position=(self.player.x, self.player.y))
 
-        # Create animations
-        from PyQt6.QtGui import QColor
-
+        # Create animations (using RGB tuples instead of QColor)
         # Directional impact particles (spray away from player)
         # Backstab uses purple, crit uses gold, normal uses red
         if was_backstab:
-            impact_color = QColor(180, 100, 255)  # Purple for backstab
+            impact_color = (180/255, 100/255, 255/255)  # Purple for backstab
         elif is_crit:
-            impact_color = QColor(255, 200, 50)  # Gold for crit
+            impact_color = (255/255, 200/255, 50/255)  # Gold for crit
         else:
-            impact_color = QColor(255, 80, 80)  # Red for normal
+            impact_color = (255/255, 80/255, 80/255)  # Red for normal
 
         self.anim_manager.add_directional_impact(
             enemy.x, enemy.y,
@@ -411,9 +411,9 @@ class Game:
         )
 
         self.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage),
-                                           QColor(255, 100, 100) if not is_crit else QColor(255, 220, 50),
+                                           (1.0, 100/255, 100/255) if not is_crit else (1.0, 220/255, 50/255),
                                            is_crit=is_crit)
-        self.anim_manager.add_flash_effect(enemy.x, enemy.y, QColor(255, 200, 200))
+        self.anim_manager.add_flash_effect(enemy.x, enemy.y, (1.0, 200/255, 200/255))
 
         if enemy_died:
             # Enhanced death effect with enemy-specific particles
@@ -482,17 +482,15 @@ class Game:
                                                  player_position=(self.player.x, self.player.y))
 
                 # Create animations
-                from PyQt6.QtGui import QColor
-
                 # Directional impact particles (spray away from enemy)
                 self.anim_manager.add_directional_impact(
                     self.player.x, self.player.y,
                     enemy.x, enemy.y,
-                    QColor(255, 50, 50), count=10
+                    (1.0, 50/255, 50/255), count=10
                 )
 
-                self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), QColor(255, 50, 50))
-                self.anim_manager.add_flash_effect(self.player.x, self.player.y, QColor(255, 100, 100))
+                self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), (1.0, 50/255, 50/255))
+                self.anim_manager.add_flash_effect(self.player.x, self.player.y, (1.0, 100/255, 100/255))
 
                 if player_died:
                     self.anim_manager.add_screen_shake(8.0, 0.3)
@@ -527,7 +525,6 @@ class Game:
                 # Determine message type based on item
                 if item.item_type == c.ITEM_HEALTH_POTION:
                     msg_type = "potion"
-                    from PyQt6.QtGui import QColor
                     self.anim_manager.add_heal_sparkles(self.player.x, self.player.y)
                     # Play potion sound
                     self.audio_manager.play_potion()
@@ -540,9 +537,8 @@ class Game:
                     # Play coin sound (could add special treasure sound later)
                     self.audio_manager.play_coin()
                     # Add particle burst for treasure
-                    from PyQt6.QtGui import QColor
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        QColor(255, 215, 0), count=12, particle_type="star")
+                                                        (1.0, 215/255, 0.0), count=12, particle_type="star")
                 else:
                     # Use rarity-based event type for loot
                     if item.rarity in [c.RARITY_LEGENDARY, c.RARITY_EPIC]:
@@ -552,9 +548,8 @@ class Game:
                     else:
                         msg_type = "loot"
 
-                    from PyQt6.QtGui import QColor
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        QColor(255, 215, 0), count=6, particle_type="star")
+                                                        (1.0, 215/255, 0.0), count=6, particle_type="star")
                     # Play item pickup sound based on rarity
                     self.audio_manager.play_item_pickup(item.rarity)
                     # Play equip sound
@@ -826,31 +821,29 @@ class Game:
         if not self.player:
             return
 
-        from PyQt6.QtGui import QColor
-
-        # Get class-specific particle style
+        # Get class-specific particle style (using RGB tuples)
         if self.player.class_type == c.CLASS_WARRIOR:
             # Heavy dust cloud
-            color = QColor(150, 140, 120, 180)
+            color = (150/255, 140/255, 120/255)
             count = 6
             size_range = (2, 5)
         elif self.player.class_type == c.CLASS_MAGE:
             # Magical sparkles
-            color = QColor(150, 150, 255, 160)
+            color = (150/255, 150/255, 1.0)
             count = 4
             size_range = (1, 3)
         elif self.player.class_type == c.CLASS_ROGUE:
             # Minimal, stealthy
-            color = QColor(100, 100, 120, 100)
+            color = (100/255, 100/255, 120/255)
             count = 2
             size_range = (1, 2)
         elif self.player.class_type == c.CLASS_RANGER:
             # Small leaves/dust
-            color = QColor(120, 180, 100, 140)
+            color = (120/255, 180/255, 100/255)
             count = 4
             size_range = (1, 3)
         else:
-            color = QColor(150, 150, 150, 150)
+            color = (150/255, 150/255, 150/255)
             count = 3
             size_range = (2, 4)
 
@@ -860,8 +853,6 @@ class Game:
         # Convert to pixel coordinates
         center_x = display_x * c.TILE_SIZE + c.TILE_SIZE / 2
         center_y = (display_y + 0.3) * c.TILE_SIZE + c.TILE_SIZE / 2  # Offset to feet
-
-        from animations import Particle
         for _ in range(count):
             # Spread particles horizontally
             offset_x = random.uniform(-c.TILE_SIZE / 4, c.TILE_SIZE / 4)

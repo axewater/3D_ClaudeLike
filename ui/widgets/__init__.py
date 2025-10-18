@@ -1,14 +1,8 @@
 """
-UI Widgets module
+UI Widgets module - 3D versions only
 """
-from ui.widgets.ability_button import AbilityButton
-from ui.widgets.progress_bar import ProgressBar
-from ui.widgets.game_widget import GameWidget
-from ui.widgets.stats_panel import StatsPanel
+from ui.widgets.dungeon_button_3d import DungeonButton
 
 __all__ = [
-    'AbilityButton',
-    'ProgressBar',
-    'GameWidget',
-    'StatsPanel',
+    'DungeonButton',
 ]
