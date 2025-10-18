@@ -1,0 +1,21 @@
+venv/
+venv_linux/
+venv_windows/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+
+# Documentation archives
+docs_archive_*/
+
+# 3D assets and cache (if any are added later)
+*.bam
+*.egg
+*.pz
+*.pstats
+*.blend1
+*.obj
+*.fbx
+*.blend
+ursina_cache/

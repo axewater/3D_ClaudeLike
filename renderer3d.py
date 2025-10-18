@@ -1,0 +1,658 @@
+"""
+3D Rendering Manager using Ursina Engine
+
+This module handles all 3D rendering for the game, converting the 2D game state
+into a 3D visualization while keeping all game logic unchanged.
+"""
+
+from typing import Dict, List, Optional, Tuple
+from ursina import Entity, camera, Vec3, color as ursina_color, DirectionalLight, AmbientLight, PointLight, scene
+import random
+import constants as c
+from game import Game
+from graphics3d.tiles import create_floor_mesh, create_wall_mesh, create_stairs_mesh, create_ceiling_mesh
+from graphics3d.utils import world_to_3d_position, qcolor_to_ursina_color
+from graphics3d.enemies import create_enemy_model_3d, update_enemy_animation, create_health_bar_billboard, update_health_bar
+from graphics3d.items import create_item_model_3d, update_item_animation
+from animations3d import AnimationManager3D
+from textures import get_fog_of_war_texture
+import time
+
+
+class Renderer3D:
+    """
+    3D rendering manager using Ursina Engine
+    Interfaces with the Game class to render dungeon, entities, and effects
+    """
+
+    def __init__(self, game: Game):
+        """
+        Initialize the 3D renderer
+
+        Args:
+            game: Game instance to render
+        """
+        self.game = game
+
+        # Entity tracking dictionaries
+        self.dungeon_entities: Dict[Tuple[int, int], List[Entity]] = {}  # (x, y) -> [entities at that position]
+        self.tile_visibility_cache: Dict[Tuple[int, int], str] = {}  # (x, y) -> last visibility state
+        self.fog_entities: Dict[Tuple[int, int], Entity] = {}  # (x, y) -> fog plane entity
+        self.player_entity: Optional[Entity] = None
+        self.enemy_entities: Dict[int, Entity] = {}  # enemy id -> Entity
+        self.item_entities: Dict[int, Entity] = {}   # item id -> Entity
+
+        # Lighting
+        self.ambient_light: Optional[AmbientLight] = None
+        self.sun_light: Optional[DirectionalLight] = None
+        self.player_light: Optional[PointLight] = None
+
+        # Camera state
+        self.camera_yaw = 0.0  # Camera yaw (set by GameController)
+        self.camera_pitch = c.DEFAULT_CAMERA_PITCH  # Camera pitch (vertical tilt)
+        self.camera_initialized = False  # Track if camera has been positioned initially
+        self.base_camera_pos = Vec3(0, 0, 0)  # Store base camera position for shake
+
+        # 3D Animation Manager
+        self.animation_manager = AnimationManager3D()
+
+        # Fog of War
+        self.fog_texture = None  # Lazy-loaded fog texture
+        self.fog_animation_time = 0.0  # Track time for UV animation
+
+        # Setup
+        self.setup_camera()
+        self.setup_lighting()
+
+    def setup_camera(self):
+        """Configure first-person camera"""
+        if c.USE_FIRST_PERSON:
+            camera.position = (0, c.EYE_HEIGHT, 0)
+            camera.rotation_x = 0  # Look horizontally
+            camera.fov = c.CAMERA_FOV_FPS
+            camera.clip_plane_near = 0.05  # Reduce near clipping to prevent wall/floor disappearing
+            print(f"✓ First-person camera configured: eye_height={c.EYE_HEIGHT}, fov={c.CAMERA_FOV_FPS}°, near_clip=0.05")
+
+            # Apply barrel distortion shader if enabled
+            if c.BARREL_DISTORTION_STRENGTH > 0.0:
+                from shaders import create_barrel_distortion_shader
+                barrel_shader = create_barrel_distortion_shader(strength=c.BARREL_DISTORTION_STRENGTH)
+                camera.shader = barrel_shader
+                print(f"✓ Barrel distortion shader applied (strength={c.BARREL_DISTORTION_STRENGTH})")
+        else:
+            # Third-person (legacy)
+            camera.position = (0, c.CAMERA_HEIGHT, -c.CAMERA_DISTANCE)
+            camera.rotation_x = c.CAMERA_ANGLE
+            camera.fov = c.FOV
+            print(f"✓ Third-person camera configured: pos={camera.position}, angle={c.CAMERA_ANGLE}°, fov={c.FOV}°")
+
+    def setup_lighting(self):
+        """Set up basic 3D lighting with fog of war ambiance"""
+        # Ambient light (general illumination) - IMPROVED for better visibility
+        self.ambient_light = AmbientLight(color=(0.4, 0.4, 0.45, 1))
+
+        # Directional light (sun/moon) - IMPROVED for better depth perception
+        self.sun_light = DirectionalLight(
+            position=(10, 20, 10),
+            rotation=(45, 45, 0),
+            color=(0.6, 0.6, 0.65, 1)  # Brighter blue-gray light
+        )
+
+        # Point light following player (torch effect) - BRIGHTER for better illumination
+        self.player_light = PointLight(
+            color=(1.5, 1.2, 0.8, 1),  # Brighter, warmer torch light
+            position=(0, 2, 0)
+        )
+
+        # Atmospheric fog for depth and mystery - REDUCED for better visibility
+        scene.fog_color = ursina_color.rgb(0.1, 0.1, 0.15)  # Dark blue-gray
+        scene.fog_density = (8, 20)  # Start at 8 units, full fog at 20 units
+
+        print("✓ Lighting configured with improved visibility (ambient: 0.4, directional: 0.6)")
+        print("✓ Atmospheric fog enabled (density: 8-20 units, reduced from 5-15)")
+
+    def render_dungeon(self):
+        """
+        Render the entire dungeon from game.dungeon
+
+        Clears old dungeon meshes and creates new ones based on current level.
+        """
+        # Clear old dungeon entities
+        for pos, entities in self.dungeon_entities.items():
+            for entity in entities:
+                entity.disable()  # Disable instead of destroy for better performance
+        self.dungeon_entities.clear()
+        self.tile_visibility_cache.clear()
+
+        if not self.game.dungeon:
+            return
+
+        # Get biome colors
+        biome = self.game.dungeon.biome
+        biome_colors = c.BIOME_COLORS.get(biome, c.BIOME_COLORS[c.BIOME_DUNGEON])
+        floor_color = biome_colors["floor"]
+        wall_color = biome_colors["wall"]
+        stairs_color = biome_colors["stairs"]
+
+        # Render tiles
+        for y in range(self.game.dungeon.height):
+            for x in range(self.game.dungeon.width):
+                tile = self.game.dungeon.get_tile(x, y)
+                tile_entities = []
+
+                if tile == c.TILE_FLOOR:
+                    # Render floor
+                    entity = create_floor_mesh(x, y, floor_color)
+                    tile_entities.append(entity)
+
+                    # Render ceiling above floor
+                    ceiling_entity = create_ceiling_mesh(x, y)
+                    tile_entities.append(ceiling_entity)
+
+                elif tile == c.TILE_WALL:
+                    entity = create_wall_mesh(x, y, wall_color)
+                    tile_entities.append(entity)
+
+                elif tile == c.TILE_STAIRS:
+                    # Render floor first
+                    floor_entity = create_floor_mesh(x, y, floor_color)
+                    tile_entities.append(floor_entity)
+
+                    # Then stairs on top
+                    stairs_entity = create_stairs_mesh(x, y, stairs_color)
+                    tile_entities.append(stairs_entity)
+
+                    # Render ceiling above stairs
+                    ceiling_entity = create_ceiling_mesh(x, y)
+                    tile_entities.append(ceiling_entity)
+
+                # Store entities by position for fog of war updates
+                if tile_entities:
+                    self.dungeon_entities[(x, y)] = tile_entities
+
+        print(f"✓ Rendered dungeon: {len(self.dungeon_entities)} tiles")
+        print(f"  - Dungeon size: {self.game.dungeon.width}x{self.game.dungeon.height}")
+        if self.game.player:
+            print(f"  - Player position: ({self.game.player.x}, {self.game.player.y})")
+        print(f"  - Biome: {self.game.dungeon.biome}")
+
+    def render_player(self):
+        """
+        Render or update the player entity
+        """
+        if not self.game.player:
+            return
+
+        # Player position
+        pos = world_to_3d_position(
+            self.game.player.x,
+            self.game.player.y,
+            c.PLAYER_HEIGHT / 2
+        )
+
+        # Get class color
+        class_colors = {
+            c.CLASS_WARRIOR: (100, 200, 255),   # Blue
+            c.CLASS_MAGE: (150, 100, 255),      # Purple
+            c.CLASS_ROGUE: (80, 80, 80),        # Gray
+            c.CLASS_RANGER: (100, 220, 80),     # Green
+        }
+
+        color_rgb = class_colors.get(self.game.player.class_type, (100, 200, 255))
+        player_color = ursina_color.rgb(color_rgb[0] / 255, color_rgb[1] / 255, color_rgb[2] / 255)
+
+        # Create or update player entity
+        if self.player_entity is None:
+            if c.USE_FIRST_PERSON:
+                # First-person: Create invisible player cube (or skip entirely)
+                self.player_entity = Entity(
+                    model='cube',
+                    color=player_color,
+                    scale=(c.ENTITY_SCALE, c.PLAYER_HEIGHT, c.ENTITY_SCALE),
+                    position=pos,
+                    visible=False  # Hide player in first-person
+                )
+                print(f"✓ Created player entity (INVISIBLE - first-person mode)")
+            else:
+                # Third-person: Visible player cube
+                self.player_entity = Entity(
+                    model='cube',
+                    color=player_color,
+                    scale=(c.ENTITY_SCALE, c.PLAYER_HEIGHT, c.ENTITY_SCALE),
+                    position=pos,
+                    texture='white_cube'
+                )
+                print(f"✓ Created player cube at 3D position {pos}")
+                print(f"  - Grid position: ({self.game.player.x}, {self.game.player.y})")
+                print(f"  - Class: {self.game.player.class_type}")
+                print(f"  - Color: {player_color}")
+
+            # Position camera immediately after creating player
+            self.update_camera()
+            print(f"✓ Camera positioned at {camera.position}")
+        else:
+            # Update position
+            self.player_entity.position = pos
+
+        # Update player light position
+        if self.player_light:
+            self.player_light.position = (pos[0], pos[1] + 2, pos[2])
+
+    def render_enemies(self):
+        """
+        Render or update all enemy entities with health bars
+        Only renders enemies in visible tiles (FOV system)
+        """
+        if not self.game.enemies:
+            return
+
+        # Track which enemies currently exist AND are visible
+        current_enemy_ids = set()
+
+        for enemy in self.game.enemies:
+            enemy_id = id(enemy)
+
+            # FOG OF WAR: Only render enemies in visible tiles
+            if self.game.visibility_map and not self.game.visibility_map.is_visible(enemy.x, enemy.y):
+                # Enemy not visible - hide if it exists, skip creation if it doesn't
+                if enemy_id in self.enemy_entities:
+                    self.enemy_entities[enemy_id]['model'].visible = False
+                    self.enemy_entities[enemy_id]['health_bar'].visible = False
+                continue
+
+            # Enemy is visible
+            current_enemy_ids.add(enemy_id)
+
+            # Calculate 3D position
+            pos = world_to_3d_position(enemy.x, enemy.y, 0.5)
+
+            # Create enemy model if it doesn't exist
+            if enemy_id not in self.enemy_entities:
+                enemy_model = create_enemy_model_3d(enemy.enemy_type, Vec3(*pos))
+
+                # Create health bar billboard
+                hp_pct = enemy.hp / enemy.max_hp
+                health_bar = create_health_bar_billboard(hp_pct)
+                health_bar.parent = enemy_model  # Attach to enemy
+
+                # Store references
+                self.enemy_entities[enemy_id] = {
+                    'model': enemy_model,
+                    'health_bar': health_bar,
+                    'enemy_type': enemy.enemy_type
+                }
+
+                print(f"✓ Created 3D {enemy.enemy_type} at ({enemy.x}, {enemy.y})")
+            else:
+                # Update existing enemy position
+                enemy_data = self.enemy_entities[enemy_id]
+                enemy_data['model'].position = pos
+                enemy_data['model'].visible = True  # Make visible if was hidden
+                enemy_data['health_bar'].visible = True
+
+                # Update health bar
+                hp_pct = enemy.hp / enemy.max_hp
+                update_health_bar(enemy_data['health_bar'], hp_pct)
+
+        # Remove entities for enemies that no longer exist (died)
+        dead_enemy_ids = set(self.enemy_entities.keys()) - current_enemy_ids
+        for enemy_id in dead_enemy_ids:
+            enemy_data = self.enemy_entities[enemy_id]
+            enemy_data['model'].disable()  # Disable the model
+            enemy_data['health_bar'].disable()  # Disable health bar
+            del self.enemy_entities[enemy_id]
+            print(f"✓ Removed dead enemy (ID: {enemy_id})")
+
+    def render_items(self):
+        """
+        Render or update all item entities with floating/rotation animations
+        Only renders items in visible tiles (FOV system)
+        """
+        if not self.game.items:
+            return
+
+        # Track which items currently exist AND are visible
+        current_item_ids = set()
+
+        for item in self.game.items:
+            item_id = id(item)
+
+            # FOG OF WAR: Only render items in visible tiles
+            if self.game.visibility_map and not self.game.visibility_map.is_visible(item.x, item.y):
+                # Item not visible - hide if it exists, skip creation if it doesn't
+                if item_id in self.item_entities:
+                    self.item_entities[item_id].visible = False
+                continue
+
+            # Item is visible
+            current_item_ids.add(item_id)
+
+            # Calculate 3D position (items float above ground)
+            pos = world_to_3d_position(item.x, item.y, 0.5)
+
+            # Create item model if it doesn't exist
+            if item_id not in self.item_entities:
+                item_model = create_item_model_3d(item.item_type, item.rarity, Vec3(*pos))
+
+                # Store reference
+                self.item_entities[item_id] = item_model
+
+                print(f"✓ Created 3D {item.rarity} {item.item_type} at ({item.x}, {item.y})")
+            else:
+                # Update existing item position (base position, animation handles float)
+                item_entity = self.item_entities[item_id]
+                # Only update X and Z, Y is controlled by float animation
+                # pos is a tuple (x, y, z), not a Vec3
+                item_entity.x = pos[0]
+                item_entity.z = pos[2]
+                item_entity.visible = True  # Make visible if was hidden
+
+        # Remove entities for items that no longer exist (picked up)
+        picked_up_item_ids = set(self.item_entities.keys()) - current_item_ids
+        for item_id in picked_up_item_ids:
+            item_entity = self.item_entities[item_id]
+            item_entity.disable()  # Disable the model
+            del self.item_entities[item_id]
+            print(f"✓ Removed picked up item (ID: {item_id})")
+
+    def render_entities(self):
+        """
+        Render or update all game entities (player, enemies, items)
+        """
+        self.render_player()
+        self.render_enemies()
+        self.render_items()
+
+    def create_fog_plane(self, x: int, y: int) -> Entity:
+        """
+        Create a fog-of-war wall entity for an unexplored tile.
+
+        Fog cubes are oversized (1.15-1.25x) to create natural bleeding
+        into adjacent tiles, combined with the radial alpha gradient texture.
+
+        Args:
+            x, y: Grid coordinates
+
+        Returns:
+            Entity representing fog wall
+        """
+        # Lazy-load fog texture on first use
+        if self.fog_texture is None:
+            print("Generating fog-of-war texture (512x512 with radial alpha gradient)...")
+            self.fog_texture = get_fog_of_war_texture(size=512)
+            print("✓ Fog texture generated")
+
+        # Position fog wall at center height (like walls)
+        pos = world_to_3d_position(x, y, c.WALL_HEIGHT / 2)
+
+        # Random scale variation for natural fog variation (1.15-1.25x)
+        # This makes fog extend 15-25% beyond its grid square (7.5-12.5% per side)
+        random_scale = random.uniform(1.15, 1.25)
+
+        # Create semi-transparent vertical fog wall (oversized cube)
+        fog_wall = Entity(
+            model='cube',
+            texture=self.fog_texture,
+            position=pos,
+            scale=(random_scale, c.WALL_HEIGHT, random_scale),  # Oversized for fog bleeding
+            color=ursina_color.white,
+            alpha=0.85,  # Semi-transparent for mystery effect
+            collider=None  # No collision
+        )
+
+        return fog_wall
+
+    def update_tile_visibility(self):
+        """
+        Update tile appearance based on fog of war visibility state
+
+        - VISIBLE tiles: Full brightness, no fog
+        - EXPLORED tiles: Darkened (0.3x brightness), no fog
+        - UNEXPLORED tiles: Hidden tiles, visible fog plane
+        """
+        if not self.game.visibility_map or not self.game.dungeon:
+            return
+
+        # Only update tiles that changed visibility state (optimization)
+        for (x, y), entities in self.dungeon_entities.items():
+            # Get current visibility state
+            vis_state = self.game.visibility_map.get_state(x, y)
+
+            # Check if state changed (optimization - skip if no change)
+            cached_state = self.tile_visibility_cache.get((x, y))
+            if cached_state == vis_state:
+                continue  # No change, skip update
+
+            # Update cache
+            self.tile_visibility_cache[(x, y)] = vis_state
+
+            # Apply visibility changes to all entities at this position
+            for entity in entities:
+                if vis_state == c.VISIBILITY_VISIBLE:
+                    # Visible: Full brightness
+                    entity.visible = True
+                    entity.color = ursina_color.white  # Reset to full brightness
+
+                elif vis_state == c.VISIBILITY_EXPLORED:
+                    # Explored: Darkened
+                    entity.visible = True
+                    entity.color = ursina_color.rgb(0.3, 0.3, 0.35)  # Dark blue-gray tint
+
+                elif vis_state == c.VISIBILITY_UNEXPLORED:
+                    # Unexplored: Hidden
+                    entity.visible = False
+
+            # Fog plane handling
+            if vis_state == c.VISIBILITY_UNEXPLORED:
+                # Create or show fog plane for unexplored tiles
+                if (x, y) not in self.fog_entities:
+                    # Create new fog plane
+                    self.fog_entities[(x, y)] = self.create_fog_plane(x, y)
+                else:
+                    # Show existing fog plane
+                    self.fog_entities[(x, y)].visible = True
+
+            else:
+                # Hide fog plane for explored/visible tiles
+                if (x, y) in self.fog_entities:
+                    self.fog_entities[(x, y)].visible = False
+
+    def find_enemy_in_front(self, camera_yaw: float) -> Optional[Tuple[float, float, float]]:
+        """
+        Check if there's an enemy in the tile directly in front of the player
+
+        Args:
+            camera_yaw: Current camera yaw angle in degrees
+
+        Returns:
+            Tuple of (x, y, z) 3D position of enemy in front, or None
+        """
+        if not self.game.player or not self.game.enemies:
+            return None
+
+        # Get player position
+        player_x = self.game.player.x
+        player_y = self.game.player.y
+
+        # Calculate the tile directly in front based on camera yaw
+        # Round yaw to nearest 90° for grid-aligned directions
+        yaw = round(camera_yaw / 90) * 90 % 360
+
+        # Map yaw to grid offsets (same as movement system)
+        direction_map = {
+            0: (0, 1),     # South (+Y grid)
+            90: (1, 0),    # East (+X grid)
+            180: (0, -1),  # North (-Y grid)
+            270: (-1, 0),  # West (-X grid)
+        }
+
+        offset_x, offset_y = direction_map.get(yaw, (0, 1))
+        target_x = player_x + offset_x
+        target_y = player_y + offset_y
+
+        # Check if any enemy is at that position
+        for enemy in self.game.enemies:
+            if enemy.x == target_x and enemy.y == target_y:
+                # Check if enemy is visible (fog of war)
+                if self.game.visibility_map and not self.game.visibility_map.is_visible(enemy.x, enemy.y):
+                    continue
+
+                # Enemy found! Return its 3D position
+                from graphics3d.utils import world_to_3d_position
+                return world_to_3d_position(enemy.x, enemy.y, 0.5)
+
+        return None
+
+    def update_camera(self):
+        """
+        Update camera position and rotation
+        - First-person: Camera at player position, rotate based on yaw
+        - Third-person: Camera follows behind player
+        """
+        if not self.game.player:
+            return
+
+        player_x = float(self.game.player.x)
+        player_y = float(self.game.player.y)
+
+        if c.USE_FIRST_PERSON:
+            # First-person: Camera AT player position
+            cam_x = player_x
+            cam_y = c.EYE_HEIGHT
+            cam_z = player_y
+
+            # On first call, jump directly to position
+            if not self.camera_initialized:
+                self.base_camera_pos = Vec3(cam_x, cam_y, cam_z)
+                camera.position = self.base_camera_pos
+                camera.rotation_y = self.camera_yaw
+                self.camera_initialized = True
+                print(f"✓ First-person camera initialized at {camera.position}")
+            else:
+                # Update position (instant snap in first-person for precise control)
+                self.base_camera_pos = Vec3(cam_x, cam_y, cam_z)
+
+            # Apply screen shake offset
+            shake_offset = self.animation_manager.get_screen_shake_offset()
+            camera.position = self.base_camera_pos + shake_offset
+
+            # Set rotation based on yaw and pitch
+            camera.rotation = (self.camera_pitch, self.camera_yaw, 0)
+
+        else:
+            # Third-person: Camera follows behind player
+            cam_x = player_x
+            cam_y = c.CAMERA_HEIGHT
+            cam_z = player_y - c.CAMERA_DISTANCE
+
+            # On first call, jump directly to position
+            if not self.camera_initialized:
+                self.base_camera_pos = Vec3(cam_x, cam_y, cam_z)
+                camera.position = self.base_camera_pos
+                self.camera_initialized = True
+                print(f"✓ Third-person camera initialized at {camera.position}")
+            else:
+                # Smooth interpolation for third-person
+                smooth_factor = 0.3
+                self.base_camera_pos = Vec3(
+                    self.base_camera_pos.x + (cam_x - self.base_camera_pos.x) * smooth_factor,
+                    self.base_camera_pos.y + (cam_y - self.base_camera_pos.y) * smooth_factor,
+                    self.base_camera_pos.z + (cam_z - self.base_camera_pos.z) * smooth_factor
+                )
+
+            # Apply screen shake offset
+            shake_offset = self.animation_manager.get_screen_shake_offset()
+            camera.position = self.base_camera_pos + shake_offset
+
+            # Look at player
+            look_at_pos = Vec3(player_x, c.PLAYER_HEIGHT / 2, player_y) + shake_offset
+            camera.look_at(look_at_pos)
+
+    def update(self, dt: float):
+        """
+        Update renderer state (called every frame)
+
+        Args:
+            dt: Delta time since last frame
+        """
+        # Update entity positions
+        self.render_entities()
+
+        # Update tile visibility (fog of war)
+        self.update_tile_visibility()
+
+        # Update fog-of-war animation (UV scrolling)
+        self.fog_animation_time += dt * 0.08  # Slow scroll speed
+        for fog_entity in self.fog_entities.values():
+            if fog_entity.visible:
+                # Scroll UV coordinates to create swirling motion
+                # Use sine/cosine for circular motion effect
+                offset_x = self.fog_animation_time * 0.3
+                offset_y = self.fog_animation_time * 0.2
+
+                # Set texture offset (Ursina uses texture_offset for UV scrolling)
+                fog_entity.texture_offset = (offset_x, offset_y)
+
+        # Update enemy animations
+        for enemy_id, enemy_data in self.enemy_entities.items():
+            update_enemy_animation(
+                enemy_data['model'],
+                enemy_data['enemy_type'],
+                dt
+            )
+
+        # Update item animations (floating and rotation)
+        for item_id, item_entity in self.item_entities.items():
+            update_item_animation(item_entity, dt)
+
+        # Update 3D particle animations
+        self.animation_manager.update(dt)
+
+        # Update camera (includes screen shake)
+        self.update_camera()
+
+    def cleanup(self):
+        """
+        Clean up all 3D entities and resources
+        """
+        # Destroy dungeon
+        for pos, entities in self.dungeon_entities.items():
+            for entity in entities:
+                entity.disable()
+        self.dungeon_entities.clear()
+        self.tile_visibility_cache.clear()
+
+        # Destroy fog entities
+        for fog_entity in self.fog_entities.values():
+            fog_entity.disable()
+        self.fog_entities.clear()
+
+        # Destroy player
+        if self.player_entity:
+            self.player_entity.disable()
+            self.player_entity = None
+
+        # Destroy enemies
+        for enemy_id, enemy_data in self.enemy_entities.items():
+            enemy_data['model'].disable()
+            enemy_data['health_bar'].disable()
+        self.enemy_entities.clear()
+
+        # Destroy items
+        for item_id, item_entity in self.item_entities.items():
+            item_entity.disable()
+        self.item_entities.clear()
+
+        # Destroy lights
+        if self.ambient_light:
+            self.ambient_light.disable()
+        if self.sun_light:
+            self.sun_light.disable()
+        if self.player_light:
+            self.player_light.disable()
+
+        # Clean up animations
+        if self.animation_manager:
+            self.animation_manager.clear_all()
+
+        print("3D renderer cleaned up")
