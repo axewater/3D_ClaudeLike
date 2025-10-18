@@ -693,6 +693,9 @@ class DragonCreature:
 
         previous_segment = None
 
+        # Golden ratio for natural tapering
+        PHI = 1.618033988749895
+
         for i in range(self.num_segments):
             # Calculate position along chain
             # Head (i=0) at front, tail (i=max) at front
@@ -702,18 +705,30 @@ class DragonCreature:
 
             position = Vec3(x_offset, y_offset, z_offset)
 
-            # Calculate size with tapering
-            # Head is largest, tail tapers down
+            # Calculate size with golden ratio tapering
+            # Head is largest, body tapers using golden ratio
             if i == 0:
                 # Head segment
                 segment_size = self.segment_thickness * self.head_scale
             else:
-                # Body segments: taper from head to tail
-                # t ranges from 0 (just after head) to 1 (tail tip)
-                t = i / max(self.num_segments - 1, 1)
-                # Apply exponential taper for smooth reduction
-                taper_multiplier = 1.0 - (self.taper_factor * (t ** 0.7))
-                segment_size = self.segment_thickness * taper_multiplier
+                # Body segments: golden ratio tapering from head to tail
+                # Each segment is smaller than the previous by a factor approaching 1/PHI
+                # taper_factor controls how aggressively we apply the golden taper
+
+                # Start from head size and apply golden ratio reduction
+                # Use blend between full taper (PHI reduction) and no taper (constant size)
+                # taper_factor=0 → no tapering (constant size)
+                # taper_factor=1 → full golden ratio tapering
+
+                # Calculate the "ideal" size if we were purely using golden ratio
+                # Starting from head size: head_size / (PHI ^ i)
+                head_size = self.segment_thickness * self.head_scale
+                golden_size = head_size / (PHI ** i)
+
+                # Blend between head size (no taper) and golden size (full taper)
+                segment_size = head_size * (1.0 - self.taper_factor) + golden_size * self.taper_factor
+
+                # Apply minimum size constraint
                 segment_size = max(segment_size, 0.1)  # Minimum size
 
             # Color: head uses head_color, body uses body_color with gradient
