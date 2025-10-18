@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from ..core.constants import PRESETS
-from .panels import TentaclePanel, BlobPanel, PolypPanel, StarfishPanel, DragonPanel
+from .panels import TentaclePanel, BlobPanel, PolypPanel, StarfishPanel, DragonPanel, MedusaPanel
 
 
 class ModernControlPanel(QWidget):
@@ -36,6 +36,7 @@ class ModernControlPanel(QWidget):
         self.blob_panel = BlobPanel()
         self.polyp_panel = PolypPanel()
         self.starfish_panel = StarfishPanel()
+        self.medusa_panel = MedusaPanel()
         self.dragon_panel = DragonPanel()
 
         # Connect panel signals to forward them
@@ -43,6 +44,7 @@ class ModernControlPanel(QWidget):
         self.blob_panel.creature_changed.connect(self.creature_changed.emit)
         self.polyp_panel.creature_changed.connect(self.creature_changed.emit)
         self.starfish_panel.creature_changed.connect(self.creature_changed.emit)
+        self.medusa_panel.creature_changed.connect(self.creature_changed.emit)
         self.dragon_panel.creature_changed.connect(self.creature_changed.emit)
 
         # Shared animation parameters (for tentacle creature)
@@ -135,12 +137,14 @@ class ModernControlPanel(QWidget):
         design_layout.addWidget(self.blob_panel)
         design_layout.addWidget(self.polyp_panel)
         design_layout.addWidget(self.starfish_panel)
+        design_layout.addWidget(self.medusa_panel)
         design_layout.addWidget(self.dragon_panel)
 
         # Hide all except tentacle initially
         self.blob_panel.setVisible(False)
         self.polyp_panel.setVisible(False)
         self.starfish_panel.setVisible(False)
+        self.medusa_panel.setVisible(False)
         self.dragon_panel.setVisible(False)
 
         design_layout.addStretch()
@@ -409,6 +413,7 @@ class ModernControlPanel(QWidget):
             self.blob_panel.setVisible(self._creature_type == "blob")
             self.polyp_panel.setVisible(self._creature_type == "polyp")
             self.starfish_panel.setVisible(self._creature_type == "starfish")
+            self.medusa_panel.setVisible(self._creature_type == "medusa")
             self.dragon_panel.setVisible(self._creature_type == "dragon")
 
             self.creature_type_changed.emit(self._creature_type)
@@ -466,6 +471,8 @@ class ModernControlPanel(QWidget):
             state.update(self.polyp_panel.get_state())
         elif self._creature_type == 'starfish':
             state.update(self.starfish_panel.get_state())
+        elif self._creature_type == 'medusa':
+            state.update(self.medusa_panel.get_state())
         elif self._creature_type == 'dragon':
             state.update(self.dragon_panel.get_state())
 
@@ -509,6 +516,8 @@ class ModernControlPanel(QWidget):
             self.polyp_panel.set_state(state)
         elif self._creature_type == 'starfish':
             self.starfish_panel.set_state(state)
+        elif self._creature_type == 'medusa':
+            self.medusa_panel.set_state(state)
         elif self._creature_type == 'dragon':
             self.dragon_panel.set_state(state)
 

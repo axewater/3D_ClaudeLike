@@ -582,6 +582,25 @@ class EditorWindow(QMainWindow):
                 'anim_speed': state.get('starfish_anim_speed', 1.5),
                 'pulse_amount': state.get('starfish_pulse_amount', 0.06)
             })
+        elif creature_type == 'medusa':
+            dna_config.update({
+                'num_tentacles': state.get('num_tentacles', 8),
+                'segments_per_tentacle': state.get('segments_per_tentacle', 16),
+                'algorithm': state.get('algorithm', 'fourier'),
+                'algorithm_params': state.get('algorithm_params', {}),
+                'thickness_base': state.get('thickness_base', 0.25),
+                'taper_factor': state.get('taper_factor', 0.6),
+                'body_scale': state.get('body_scale', 1.0),
+                'tentacle_color': state.get('tentacle_color', (0.4, 0.2, 0.6)),
+                'hue_shift': state.get('hue_shift', 0.08),
+                'anim_speed': state.get('anim_speed', 1.5),
+                'wave_amplitude': state.get('wave_amplitude', 0.08),
+                'pulse_speed': state.get('pulse_speed', 1.2),
+                'pulse_amount': state.get('pulse_amount', 0.06),
+                'eye_size': state.get('eye_size', 0.18),
+                'eyeball_color': state.get('eyeball_color', (1.0, 0.95, 0.85)),
+                'pupil_color': state.get('pupil_color', (0.1, 0.0, 0.2))
+            })
         elif creature_type == 'dragon':
             dna_config.update({
                 'num_segments': state.get('dragon_segments', 15),
