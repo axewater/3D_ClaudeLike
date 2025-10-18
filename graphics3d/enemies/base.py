@@ -6,7 +6,7 @@ Shared functions for all enemy models.
 
 from ursina import Entity, Vec3, Text, color as ursina_color
 import constants as c
-from graphics3d.utils import qcolor_to_ursina_color, world_to_3d_position
+from graphics3d.utils import world_to_3d_position
 
 
 def create_enemy_model_3d(enemy_type: str, position: Vec3) -> Entity:
@@ -28,18 +28,18 @@ def create_enemy_model_3d(enemy_type: str, position: Vec3) -> Entity:
     from graphics3d.enemies.demon import create_demon_3d
     from graphics3d.enemies.dragon import create_dragon_3d
 
-    # Get enemy color from constants
-    enemy_colors = {
-        c.ENEMY_GOBLIN: c.COLOR_ENEMY_GOBLIN,
-        c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME,
-        c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON,
-        c.ENEMY_ORC: c.COLOR_ENEMY_ORC,
-        c.ENEMY_DEMON: c.COLOR_ENEMY_DEMON,
-        c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON,
+    # Get enemy color from constants (RGB tuples)
+    enemy_colors_rgb = {
+        c.ENEMY_GOBLIN: c.COLOR_ENEMY_GOBLIN_RGB,
+        c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
+        c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
+        c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
+        c.ENEMY_DEMON: c.COLOR_ENEMY_DEMON_RGB,
+        c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
     }
 
-    qcolor = enemy_colors.get(enemy_type, c.COLOR_ENEMY_GOBLIN)
-    enemy_color = qcolor_to_ursina_color(qcolor)
+    rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_GOBLIN_RGB)
+    enemy_color = ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])
 
     # Create model based on type
     if enemy_type == c.ENEMY_GOBLIN:

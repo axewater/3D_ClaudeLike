@@ -398,11 +398,11 @@ class Game:
         # Directional impact particles (spray away from player)
         # Backstab uses purple, crit uses gold, normal uses red
         if was_backstab:
-            impact_color = (180/255, 100/255, 255/255)  # Purple for backstab
+            impact_color = c.COLOR_BACKSTAB_RGB  # Purple for backstab
         elif is_crit:
-            impact_color = (255/255, 200/255, 50/255)  # Gold for crit
+            impact_color = c.COLOR_CRITICAL_HIT_RGB  # Gold for crit
         else:
-            impact_color = (255/255, 80/255, 80/255)  # Red for normal
+            impact_color = c.COLOR_NORMAL_HIT_RGB  # Red for normal
 
         self.anim_manager.add_directional_impact(
             enemy.x, enemy.y,
@@ -411,9 +411,9 @@ class Game:
         )
 
         self.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage),
-                                           (1.0, 100/255, 100/255) if not is_crit else (1.0, 220/255, 50/255),
+                                           c.COLOR_DAMAGE_TAKEN_RGB if not is_crit else c.COLOR_DAMAGE_CRIT_RGB,
                                            is_crit=is_crit)
-        self.anim_manager.add_flash_effect(enemy.x, enemy.y, (1.0, 200/255, 200/255))
+        self.anim_manager.add_flash_effect(enemy.x, enemy.y, c.COLOR_FLASH_RGB)
 
         if enemy_died:
             # Enhanced death effect with enemy-specific particles
@@ -486,11 +486,11 @@ class Game:
                 self.anim_manager.add_directional_impact(
                     self.player.x, self.player.y,
                     enemy.x, enemy.y,
-                    (1.0, 50/255, 50/255), count=10
+                    c.COLOR_DEATH_RGB, count=10
                 )
 
-                self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), (1.0, 50/255, 50/255))
-                self.anim_manager.add_flash_effect(self.player.x, self.player.y, (1.0, 100/255, 100/255))
+                self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), c.COLOR_DEATH_RGB)
+                self.anim_manager.add_flash_effect(self.player.x, self.player.y, c.COLOR_DAMAGE_TAKEN_RGB)
 
                 if player_died:
                     self.anim_manager.add_screen_shake(8.0, 0.3)
@@ -538,7 +538,7 @@ class Game:
                     self.audio_manager.play_coin()
                     # Add particle burst for treasure
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        (1.0, 215/255, 0.0), count=12, particle_type="star")
+                                                        c.COLOR_GOLD_SPARKLE_RGB, count=12, particle_type="star")
                 else:
                     # Use rarity-based event type for loot
                     if item.rarity in [c.RARITY_LEGENDARY, c.RARITY_EPIC]:
@@ -549,7 +549,7 @@ class Game:
                         msg_type = "loot"
 
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        (1.0, 215/255, 0.0), count=6, particle_type="star")
+                                                        c.COLOR_GOLD_SPARKLE_RGB, count=6, particle_type="star")
                     # Play item pickup sound based on rarity
                     self.audio_manager.play_item_pickup(item.rarity)
                     # Play equip sound
@@ -824,26 +824,26 @@ class Game:
         # Get class-specific particle style (using RGB tuples)
         if self.player.class_type == c.CLASS_WARRIOR:
             # Heavy dust cloud
-            color = (150/255, 140/255, 120/255)
+            color = c.COLOR_BIOME_DUNGEON_RGB
             count = 6
             size_range = (2, 5)
         elif self.player.class_type == c.CLASS_MAGE:
             # Magical sparkles
-            color = (150/255, 150/255, 1.0)
+            color = c.COLOR_BIOME_CATACOMBS_RGB
             count = 4
             size_range = (1, 3)
         elif self.player.class_type == c.CLASS_ROGUE:
             # Minimal, stealthy
-            color = (100/255, 100/255, 120/255)
+            color = c.COLOR_BIOME_CAVES_RGB
             count = 2
             size_range = (1, 2)
         elif self.player.class_type == c.CLASS_RANGER:
             # Small leaves/dust
-            color = (120/255, 180/255, 100/255)
+            color = c.COLOR_BIOME_HELL_RGB
             count = 4
             size_range = (1, 3)
         else:
-            color = (150/255, 150/255, 150/255)
+            color = c.COLOR_BIOME_ABYSS_RGB
             count = 3
             size_range = (2, 4)
 

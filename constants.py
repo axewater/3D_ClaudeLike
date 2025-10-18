@@ -1,6 +1,9 @@
 """
 Game constants and configuration for Claude-Like
 """
+# PyQt6 QColor kept for:
+# 1. 2D rendering mode (legacy)
+# 2. 3D intro screen (title_screen_3d.py - OpenGL flying letters)
 from PyQt6.QtGui import QColor
 
 # ========================================
@@ -253,6 +256,122 @@ COLOR_RARITY_UNCOMMON = QColor(100, 200, 100)  # Green
 COLOR_RARITY_RARE = QColor(100, 150, 255)  # Blue
 COLOR_RARITY_EPIC = QColor(200, 100, 255)  # Purple
 COLOR_RARITY_LEGENDARY = QColor(255, 180, 0)  # Gold
+
+# ========================================
+# RGB COLOR CONSTANTS (for 3D Ursina rendering)
+# Pre-calculated (0-1 float) to avoid runtime /255 divisions
+# ========================================
+
+# Entity colors (RGB tuples)
+COLOR_PLAYER_RGB = (0.392, 0.784, 1.0)  # (100, 200, 255)
+COLOR_ENEMY_GOBLIN_RGB = (0.392, 0.863, 0.314)  # (100, 220, 80)
+COLOR_ENEMY_SLIME_RGB = (0.314, 0.784, 0.706)  # (80, 200, 180)
+COLOR_ENEMY_SKELETON_RGB = (0.863, 0.863, 0.863)  # (220, 220, 220)
+COLOR_ENEMY_ORC_RGB = (0.392, 0.549, 0.275)  # (100, 140, 70)
+COLOR_ENEMY_DEMON_RGB = (0.549, 0.196, 0.471)  # (140, 50, 120)
+COLOR_ENEMY_DRAGON_RGB = (1.0, 0.314, 0.235)  # (255, 80, 60)
+COLOR_ITEM_POTION_RGB = (1.0, 0.196, 0.784)  # (255, 50, 200)
+COLOR_ITEM_WEAPON_RGB = (1.0, 0.843, 0.0)  # (255, 215, 0)
+COLOR_ITEM_ARMOR_RGB = (0.588, 0.706, 1.0)  # (150, 180, 255)
+COLOR_STAIRS_RGB = (0.588, 0.392, 1.0)  # (150, 100, 255)
+
+# Floor/Wall colors (RGB tuples) - Dungeon biome
+COLOR_FLOOR_RGB = (0.176, 0.176, 0.188)  # (45, 45, 48)
+COLOR_WALL_RGB = (0.118, 0.118, 0.137)  # (30, 30, 35)
+
+# Combat effect colors
+COLOR_BACKSTAB_RGB = (0.706, 0.392, 1.0)  # (180, 100, 255) - Purple
+COLOR_CRITICAL_HIT_RGB = (1.0, 0.784, 0.196)  # (255, 200, 50) - Gold
+COLOR_NORMAL_HIT_RGB = (1.0, 0.314, 0.314)  # (255, 80, 80) - Red
+COLOR_DAMAGE_TAKEN_RGB = (1.0, 0.392, 0.392)  # (255, 100, 100) - Light red
+COLOR_DAMAGE_CRIT_RGB = (1.0, 0.863, 0.196)  # (255, 220, 50) - Bright gold
+COLOR_FLASH_RGB = (1.0, 0.784, 0.784)  # (255, 200, 200) - Pink flash
+COLOR_DEATH_RGB = (1.0, 0.196, 0.196)  # (255, 50, 50) - Bright red
+
+# Item pickup colors
+COLOR_GOLD_SPARKLE_RGB = (1.0, 0.843, 0.0)  # (255, 215, 0) - Gold sparkle
+
+# Biome ambient colors
+COLOR_BIOME_DUNGEON_RGB = (0.588, 0.549, 0.471)  # (150, 140, 120) - Gray stone
+COLOR_BIOME_CATACOMBS_RGB = (0.588, 0.588, 1.0)  # (150, 150, 255) - Blue glow
+COLOR_BIOME_CAVES_RGB = (0.392, 0.392, 0.471)  # (100, 100, 120) - Dark teal
+COLOR_BIOME_HELL_RGB = (0.471, 0.706, 0.392)  # (120, 180, 100) - Red/orange
+COLOR_BIOME_ABYSS_RGB = (0.588, 0.588, 0.588)  # (150, 150, 150) - Void gray
+
+# Ability effect colors - Fireball
+COLOR_FIREBALL_TRAIL_RGB = (1.0, 0.588, 0.0)  # (255, 150, 0) - Orange trail
+COLOR_FIREBALL_TEXT_RGB = (1.0, 0.588, 0.196)  # (255, 150, 50) - Orange text
+COLOR_FIREBALL_BURST_RGB = (1.0, 0.392, 0.0)  # (255, 100, 0) - Red burst
+COLOR_FIREBALL_EXPLOSION_RGB = (1.0, 0.471, 0.0)  # (255, 120, 0) - Orange explosion
+
+# Ability effect colors - Dash
+COLOR_DASH_TRAIL_RGB = (0.588, 0.588, 1.0)  # (150, 150, 255) - Blue trail
+COLOR_DASH_BURST_RGB = (0.588, 0.588, 1.0)  # (150, 150, 255) - Blue burst
+
+# Ability effect colors - Healing
+COLOR_HEALING_TEXT_RGB = (0.392, 1.0, 0.392)  # (100, 255, 100) - Green
+
+# Ability effect colors - Frost Nova
+COLOR_FROST_TRAIL_RGB = (0.588, 0.784, 1.0)  # (150, 200, 255) - Ice blue trail
+COLOR_FROST_BURST_RGB = (0.588, 0.863, 1.0)  # (150, 220, 255) - Ice burst
+COLOR_FROST_FLASH_RGB = (0.784, 0.902, 1.0)  # (200, 230, 255) - Pale ice flash
+
+# Ability effect colors - Whirlwind
+COLOR_WHIRLWIND_TRAIL_RGB = (1.0, 0.588, 0.588)  # (255, 150, 150) - Light red trail
+COLOR_WHIRLWIND_BURST_RGB = (1.0, 0.471, 0.471)  # (255, 120, 120) - Red burst
+COLOR_WHIRLWIND_TEXT_RGB = (1.0, 0.392, 0.392)  # (255, 100, 100) - Red text
+
+# Ability effect colors - Shadow Strike
+COLOR_SHADOW_SMOKE_RGB = (0.314, 0.078, 0.392)  # (80, 20, 100) - Dark purple smoke
+COLOR_SHADOW_TEXT_RGB = (0.784, 0.392, 1.0)  # (200, 100, 255) - Purple text
+COLOR_SHADOW_BURST_RGB = (0.471, 0.157, 0.706)  # (120, 40, 180) - Purple burst
+COLOR_SHADOW_EXPLOSION_RGB = (0.588, 0.196, 0.784)  # (150, 50, 200) - Purple explosion
+
+# Biome color schemes (RGB tuples)
+BIOME_COLORS_RGB = {
+    BIOME_DUNGEON: {
+        "floor": (0.176, 0.176, 0.188),  # (45, 45, 48)
+        "wall": (0.118, 0.118, 0.137),  # (30, 30, 35)
+        "stairs": (0.588, 0.392, 1.0),  # (150, 100, 255)
+    },
+    BIOME_CATACOMBS: {
+        "floor": (0.235, 0.216, 0.196),  # (60, 55, 50)
+        "wall": (0.353, 0.333, 0.314),  # (90, 85, 80)
+        "stairs": (0.784, 0.706, 0.471),  # (200, 180, 120)
+    },
+    BIOME_CAVES: {
+        "floor": (0.157, 0.196, 0.137),  # (40, 50, 35)
+        "wall": (0.216, 0.176, 0.137),  # (55, 45, 35)
+        "stairs": (0.392, 0.706, 0.392),  # (100, 180, 100)
+    },
+    BIOME_HELL: {
+        "floor": (0.196, 0.098, 0.078),  # (50, 25, 20)
+        "wall": (0.314, 0.118, 0.098),  # (80, 30, 25)
+        "stairs": (1.0, 0.392, 0.196),  # (255, 100, 50)
+    },
+    BIOME_ABYSS: {
+        "floor": (0.098, 0.078, 0.137),  # (25, 20, 35)
+        "wall": (0.137, 0.098, 0.196),  # (35, 25, 50)
+        "stairs": (0.706, 0.471, 1.0),  # (180, 120, 255)
+    },
+}
+
+# Class colors (RGB tuples)
+COLOR_CLASS_WARRIOR_RGB = (0.706, 0.235, 0.157)  # (180, 60, 40)
+COLOR_CLASS_MAGE_RGB = (0.392, 0.588, 1.0)  # (100, 150, 255)
+COLOR_CLASS_ROGUE_RGB = (0.706, 0.392, 1.0)  # (180, 100, 255)
+COLOR_CLASS_RANGER_RGB = (0.392, 0.784, 0.392)  # (100, 200, 100)
+
+# Enemy health bar colors (RGB tuples)
+COLOR_ENEMY_HP_BAR_RGB = (0.863, 0.314, 0.314)  # (220, 80, 80)
+COLOR_ENEMY_HP_BAR_BG_RGB = (0.157, 0.157, 0.157)  # (40, 40, 40) - no alpha in tuple
+
+# Rarity colors (RGB tuples)
+COLOR_RARITY_COMMON_RGB = (0.706, 0.706, 0.706)  # (180, 180, 180) - Gray
+COLOR_RARITY_UNCOMMON_RGB = (0.392, 0.784, 0.392)  # (100, 200, 100) - Green
+COLOR_RARITY_RARE_RGB = (0.392, 0.588, 1.0)  # (100, 150, 255) - Blue
+COLOR_RARITY_EPIC_RGB = (0.784, 0.392, 1.0)  # (200, 100, 255) - Purple
+COLOR_RARITY_LEGENDARY_RGB = (1.0, 0.706, 0.0)  # (255, 180, 0) - Gold
 
 # Player starting stats
 PLAYER_START_HP = 100

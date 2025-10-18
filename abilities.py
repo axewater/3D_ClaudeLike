@@ -67,7 +67,7 @@ class Fireball(Ability):
                 t = i / max(steps, 1)
                 trail_x = int(user.x + dx * t)
                 trail_y = int(user.y + dy * t)
-                game.anim_manager.add_ability_trail(trail_x, trail_y, (1.0, 150/255, 0.0), "fireball")
+                game.anim_manager.add_ability_trail(trail_x, trail_y, c.COLOR_FIREBALL_TRAIL_RGB, "fireball")
 
         for enemy in game.enemies[:]:
             dist_x = abs(enemy.x - tx)
@@ -77,12 +77,12 @@ class Fireball(Ability):
                 hit_count += 1
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(self.damage), (1.0, 150/255, 50/255))
-                game.anim_manager.add_particle_burst(enemy.x, enemy.y, (1.0, 100/255, 0.0), count=15, particle_type="circle")
+                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(self.damage), c.COLOR_FIREBALL_TEXT_RGB)
+                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FIREBALL_BURST_RGB, count=15, particle_type="circle")
 
                 # Directional impact
                 game.anim_manager.add_directional_impact(enemy.x, enemy.y, user.x, user.y,
-                                                        (1.0, 120/255, 0.0), count=12)
+                                                        c.COLOR_FIREBALL_EXPLOSION_RGB, count=12)
 
                 if enemy.hp <= 0:
                     game.anim_manager.add_death_burst(enemy.x, enemy.y, enemy.enemy_type)
@@ -139,10 +139,10 @@ class Dash(Ability):
                 t = i / max(steps, 1)
                 trail_x = int(old_x + dx * t)
                 trail_y = int(old_y + dy * t)
-                game.anim_manager.add_ability_trail(trail_x, trail_y, (150/255, 150/255, 1.0), "dash")
+                game.anim_manager.add_ability_trail(trail_x, trail_y, c.COLOR_DASH_TRAIL_RGB, "dash")
 
-        game.anim_manager.add_particle_burst(old_x, old_y, (150/255, 150/255, 1.0), count=12, particle_type="star")
-        game.anim_manager.add_particle_burst(tx, ty, (150/255, 150/255, 1.0), count=12, particle_type="star")
+        game.anim_manager.add_particle_burst(old_x, old_y, c.COLOR_DASH_BURST_RGB, count=12, particle_type="star")
+        game.anim_manager.add_particle_burst(tx, ty, c.COLOR_DASH_BURST_RGB, count=12, particle_type="star")
 
         return (True, "Dashed!")
 
@@ -168,7 +168,7 @@ class HealingTouch(Ability):
         actual_heal = user.hp - old_hp
 
         # Create animations (using RGB tuples)
-        game.anim_manager.add_floating_text(user.x, user.y, f"+{actual_heal}", (100/255, 1.0, 100/255))
+        game.anim_manager.add_floating_text(user.x, user.y, f"+{actual_heal}", c.COLOR_HEALING_TEXT_RGB)
         game.anim_manager.add_heal_sparkles(user.x, user.y)
 
         return (True, f"Healed {actual_heal} HP!")
@@ -201,7 +201,7 @@ class FrostNova(Ability):
                         ice_x = user.x + dx
                         ice_y = user.y + dy
                         if 0 <= ice_x < c.GRID_WIDTH and 0 <= ice_y < c.GRID_HEIGHT:
-                            game.anim_manager.add_ability_trail(ice_x, ice_y, (150/255, 200/255, 1.0), "ice")
+                            game.anim_manager.add_ability_trail(ice_x, ice_y, c.COLOR_FROST_TRAIL_RGB, "ice")
 
         for enemy in game.enemies:
             dist = abs(enemy.x - user.x) + abs(enemy.y - user.y)
@@ -211,8 +211,8 @@ class FrostNova(Ability):
                 frozen_count += 1
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_particle_burst(enemy.x, enemy.y, (150/255, 220/255, 1.0), count=12, particle_type="star")
-                game.anim_manager.add_flash_effect(enemy.x, enemy.y, (200/255, 230/255, 1.0))
+                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FROST_BURST_RGB, count=12, particle_type="star")
+                game.anim_manager.add_flash_effect(enemy.x, enemy.y, c.COLOR_FROST_FLASH_RGB)
 
         return (True, f"Froze {frozen_count} enemies for {self.freeze_duration} turns!")
 
@@ -238,10 +238,10 @@ class Whirlwind(Ability):
                     slash_x = user.x + dx
                     slash_y = user.y + dy
                     if 0 <= slash_x < c.GRID_WIDTH and 0 <= slash_y < c.GRID_HEIGHT:
-                        game.anim_manager.add_trail(slash_x, slash_y, (1.0, 150/255, 150/255), "fade")
+                        game.anim_manager.add_trail(slash_x, slash_y, c.COLOR_WHIRLWIND_TRAIL_RGB, "fade")
                         # Add directional particles for spinning effect
                         game.anim_manager.add_directional_impact(slash_x, slash_y, user.x, user.y,
-                                                                (1.0, 120/255, 120/255), count=6)
+                                                                c.COLOR_WHIRLWIND_BURST_RGB, count=6)
 
         # Attack all adjacent enemies
         hit_count = 0
@@ -256,7 +256,7 @@ class Whirlwind(Ability):
                 total_damage += damage
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage), (1.0, 100/255, 100/255))
+                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage), c.COLOR_WHIRLWIND_TEXT_RGB)
                 game.anim_manager.add_flash_effect(enemy.x, enemy.y)
 
                 if enemy.hp <= 0:
@@ -328,13 +328,12 @@ class ShadowStep(Ability):
                 trail_x = int(old_x + dx * t)
                 trail_y = int(old_y + dy * t)
                 # Dark purple/black smoke
-                smoke_color = (80/255, 20/255, 100/255)
-                game.anim_manager.add_trail(trail_x, trail_y, smoke_color, "fade")
+                game.anim_manager.add_trail(trail_x, trail_y, c.COLOR_SHADOW_SMOKE_RGB, "fade")
 
-        game.anim_manager.add_floating_text(target_enemy.x, target_enemy.y, str(damage), (200/255, 100/255, 1.0), is_crit=True)
-        game.anim_manager.add_particle_burst(behind_x, behind_y, (120/255, 40/255, 180/255), count=20, particle_type="star")
+        game.anim_manager.add_floating_text(target_enemy.x, target_enemy.y, str(damage), c.COLOR_SHADOW_TEXT_RGB, is_crit=True)
+        game.anim_manager.add_particle_burst(behind_x, behind_y, c.COLOR_SHADOW_BURST_RGB, count=20, particle_type="star")
         game.anim_manager.add_directional_impact(target_enemy.x, target_enemy.y, behind_x, behind_y,
-                                                (150/255, 50/255, 200/255), count=15, is_crit=True)
+                                                c.COLOR_SHADOW_EXPLOSION_RGB, count=15, is_crit=True)
 
         if target_enemy.hp <= 0:
             game.anim_manager.add_death_burst(target_enemy.x, target_enemy.y, target_enemy.enemy_type)

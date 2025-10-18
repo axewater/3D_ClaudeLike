@@ -95,15 +95,14 @@ def get_rarity_color_ursina(rarity: str):
         Ursina color object
     """
     from ursina import color as ursina_color
-    from graphics3d.utils import qcolor_to_ursina_color
 
-    rarity_colors = {
-        c.RARITY_COMMON: c.COLOR_RARITY_COMMON,
-        c.RARITY_UNCOMMON: c.COLOR_RARITY_UNCOMMON,
-        c.RARITY_RARE: c.COLOR_RARITY_RARE,
-        c.RARITY_EPIC: c.COLOR_RARITY_EPIC,
-        c.RARITY_LEGENDARY: c.COLOR_RARITY_LEGENDARY,
+    rarity_colors_rgb = {
+        c.RARITY_COMMON: c.COLOR_RARITY_COMMON_RGB,
+        c.RARITY_UNCOMMON: c.COLOR_RARITY_UNCOMMON_RGB,
+        c.RARITY_RARE: c.COLOR_RARITY_RARE_RGB,
+        c.RARITY_EPIC: c.COLOR_RARITY_EPIC_RGB,
+        c.RARITY_LEGENDARY: c.COLOR_RARITY_LEGENDARY_RGB,
     }
 
-    qcolor = rarity_colors.get(rarity, c.COLOR_RARITY_COMMON)
-    return qcolor_to_ursina_color(qcolor)
+    rgb_tuple = rarity_colors_rgb.get(rarity, c.COLOR_RARITY_COMMON_RGB)
+    return ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])

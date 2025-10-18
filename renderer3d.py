@@ -11,7 +11,7 @@ import random
 import constants as c
 from game import Game
 from graphics3d.tiles import create_floor_mesh, create_wall_mesh, create_stairs_mesh, create_ceiling_mesh
-from graphics3d.utils import world_to_3d_position, qcolor_to_ursina_color
+from graphics3d.utils import world_to_3d_position
 from graphics3d.enemies import create_enemy_model_3d, update_enemy_animation, create_health_bar_billboard, update_health_bar
 from graphics3d.items import create_item_model_3d, update_item_animation
 from animations3d import AnimationManager3D

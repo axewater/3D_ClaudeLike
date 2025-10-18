@@ -6,9 +6,8 @@ Converts 2D tile grid into 3D meshes using Ursina Engine.
 
 from typing import Tuple
 from ursina import Entity, color as ursina_color
-from PyQt6.QtGui import QColor
 import constants as c
-from graphics3d.utils import world_to_3d_position, qcolor_to_ursina_color, rgb_to_ursina_color
+from graphics3d.utils import world_to_3d_position, rgb_to_ursina_color
 from textures import get_moss_stone_texture, get_brick_texture
 from shaders import create_corner_shadow_shader
 
@@ -76,20 +75,19 @@ def create_floor_mesh(x: int, y: int, biome_color):
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
-        biome_color: QColor or RGB tuple for the biome (used for subtle tinting)
+        biome_color: RGB tuple (0-1 floats) for the biome (used for subtle tinting)
 
     Returns:
         Ursina Entity representing the floor tile
     """
     pos = world_to_3d_position(x, y, 0)
 
-    # Convert color for subtle tinting
-    if isinstance(biome_color, QColor):
-        floor_color = qcolor_to_ursina_color(biome_color)
-    elif isinstance(biome_color, tuple):
-        floor_color = rgb_to_ursina_color(*biome_color)
+    # Convert color tuple to ursina color for subtle tinting
+    if isinstance(biome_color, tuple) and len(biome_color) == 3:
+        floor_color = ursina_color.rgb(biome_color[0], biome_color[1], biome_color[2])
     else:
-        floor_color = biome_color
+        # Fallback to default floor color
+        floor_color = ursina_color.rgb(*c.COLOR_FLOOR_RGB)
 
     # Slight tint to preserve some biome identity, but let texture show through
     subtle_tint = ursina_color.rgb(
@@ -160,20 +158,19 @@ def create_stairs_mesh(x: int, y: int, biome_color):
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
-        biome_color: QColor or RGB tuple for the biome
+        biome_color: RGB tuple (0-1 floats) for the biome
 
     Returns:
         Ursina Entity representing stairs going down
     """
     pos = world_to_3d_position(x, y, 0.2)
 
-    # Convert color
-    if isinstance(biome_color, QColor):
-        stairs_color = qcolor_to_ursina_color(biome_color)
-    elif isinstance(biome_color, tuple):
-        stairs_color = rgb_to_ursina_color(*biome_color)
+    # Convert color tuple to ursina color
+    if isinstance(biome_color, tuple) and len(biome_color) == 3:
+        stairs_color = ursina_color.rgb(biome_color[0], biome_color[1], biome_color[2])
     else:
-        stairs_color = biome_color
+        # Fallback to default stairs color
+        stairs_color = ursina_color.rgb(*c.COLOR_STAIRS_RGB)
 
     # Brighten stairs to make them stand out
     bright_color = ursina_color.rgb(

@@ -6,7 +6,6 @@ Common functions for procedural 3D model generation, materials, and effects.
 
 from typing import Tuple
 from ursina import Vec3, color as ursina_color
-from PyQt6.QtGui import QColor
 
 
 def create_gradient_material(base_color: Tuple[int, int, int], brightness: float = 1.0):
@@ -89,18 +88,8 @@ def rgb_to_ursina_color(r: int, g: int, b: int):
 
     Returns:
         Ursina color object
+
+    Note: For constant colors, prefer using pre-calculated RGB tuples from constants.py
+    to avoid runtime division overhead (e.g., c.COLOR_PLAYER_RGB).
     """
     return ursina_color.rgb(r / 255.0, g / 255.0, b / 255.0)
-
-
-def qcolor_to_ursina_color(qcolor: QColor):
-    """
-    Convert PyQt6 QColor to Ursina color
-
-    Args:
-        qcolor: QColor object
-
-    Returns:
-        Ursina color object
-    """
-    return rgb_to_ursina_color(qcolor.red(), qcolor.green(), qcolor.blue())

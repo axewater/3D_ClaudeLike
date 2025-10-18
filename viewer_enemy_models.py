@@ -203,9 +203,19 @@ def create_enemy_grid():
 
         position = Vec3(x, y, z)
 
-        # Convert QColor to Ursina color
-        from graphics3d.utils import qcolor_to_ursina_color
-        enemy_color = qcolor_to_ursina_color(qcolor)
+        # Convert RGB tuple to Ursina color
+        from ursina import color as ursina_color
+        # Get RGB tuple for this enemy type
+        enemy_colors_rgb = {
+            c.ENEMY_GOBLIN: c.COLOR_ENEMY_GOBLIN_RGB,
+            c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
+            c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
+            c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
+            c.ENEMY_DEMON: c.COLOR_ENEMY_DEMON_RGB,
+            c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
+        }
+        rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_GOBLIN_RGB)
+        enemy_color = ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])
 
         # Create enemy model
         enemy_entity = create_func(position, enemy_color)
