@@ -58,6 +58,14 @@ class ClassSelection3D(Entity):
         self.transition_progress = 0.0
         self.transitioning = False
 
+        # Mouse drag rotation
+        self.is_dragging = False
+        self.last_mouse_x = 0
+        self.drag_sensitivity = 200.0  # Degrees per screen width
+        self.auto_rotate = True  # Auto-rotate when not dragging
+        self.idle_timer = 0.0  # Time since last drag
+        self.idle_timeout = 2.0  # Resume auto-rotation after 2 seconds of no dragging
+
         # Camera position
         self.camera_distance = 4.5  # Slightly closer
         self.camera_height = 1.2    # Lower to center on model better
@@ -297,8 +305,8 @@ class ClassSelection3D(Entity):
             print(f"[ClassSelection] Unknown class type: {class_type}")
             return
 
-        # Create model entity - scaled to comfortable viewing size (0.625)
-        model = model_func(position=Vec3(0, 0, 0), scale=Vec3(0.625, 0.625, 0.625))
+        # Create model entity - scaled to comfortable viewing size (0.3125 = 50% of original 0.625)
+        model = model_func(position=Vec3(0, 0, 0), scale=Vec3(0.3125, 0.3125, 0.3125))
         # NOTE: Do NOT override model.color - let child entities keep their individual colors
         model.rotation_y = 0
         model.rotation_z = 180  # Flip model right-side up
@@ -308,7 +316,7 @@ class ClassSelection3D(Entity):
 
         self.class_models[class_type] = model
 
-        print(f"✓ Created model for {class_type} at position {model.position} with scale 0.625")
+        print(f"✓ Created model for {class_type} at position {model.position} with scale 0.3125")
 
     def _update_ui_for_class(self):
         """Update UI text and colors for current class"""
@@ -360,6 +368,10 @@ class ClassSelection3D(Entity):
         self.current_class = self.classes[self.current_class_index]
         self._load_current_model()
         self._update_ui_for_class()
+        # Reset drag state when switching classes
+        self.is_dragging = False
+        self.auto_rotate = True
+        self.idle_timer = 0.0
         print(f"[ClassSelection] Selected: {self.current_class}")
 
     def _previous_class(self):
@@ -369,6 +381,10 @@ class ClassSelection3D(Entity):
         self.current_class = self.classes[self.current_class_index]
         self._load_current_model()
         self._update_ui_for_class()
+        # Reset drag state when switching classes
+        self.is_dragging = False
+        self.auto_rotate = True
+        self.idle_timer = 0.0
         print(f"[ClassSelection] Selected: {self.current_class}")
 
     def _start_game(self):
@@ -398,11 +414,43 @@ class ClassSelection3D(Entity):
 
         dt = ursina_time.dt
 
-        # Rotate model
-        if self.current_class in self.class_models:
-            model = self.class_models[self.current_class]
-            if model and model.enabled:
-                model.rotation_y += self.model_rotation_speed * dt
+        # Handle mouse drag rotation
+        if mouse.left:
+            if not self.is_dragging:
+                # Start dragging
+                self.is_dragging = True
+                self.last_mouse_x = mouse.x
+                self.auto_rotate = False
+                self.idle_timer = 0.0
+            else:
+                # Continue dragging - calculate delta and rotate
+                mouse_delta_x = mouse.x - self.last_mouse_x
+                self.last_mouse_x = mouse.x
+
+                # Apply rotation to current model
+                if self.current_class in self.class_models:
+                    model = self.class_models[self.current_class]
+                    if model and model.enabled:
+                        # Rotate based on horizontal drag
+                        rotation_amount = mouse_delta_x * self.drag_sensitivity
+                        model.rotation_y += rotation_amount
+        else:
+            if self.is_dragging:
+                # Stop dragging
+                self.is_dragging = False
+
+            # Increment idle timer
+            self.idle_timer += dt
+            if self.idle_timer >= self.idle_timeout:
+                # Resume auto-rotation after idle timeout
+                self.auto_rotate = True
+
+        # Auto-rotate model when not dragging
+        if self.auto_rotate and not self.is_dragging:
+            if self.current_class in self.class_models:
+                model = self.class_models[self.current_class]
+                if model and model.enabled:
+                    model.rotation_y += self.model_rotation_speed * dt
 
         # Handle keyboard input
         if held_keys['left arrow'] or held_keys['a']:
@@ -424,6 +472,11 @@ class ClassSelection3D(Entity):
     def show(self):
         """Show the class selection screen"""
         self.enabled = True
+
+        # Reset drag state
+        self.is_dragging = False
+        self.auto_rotate = True
+        self.idle_timer = 0.0
 
         # Show all UI elements
         for element in self.ui_elements:
