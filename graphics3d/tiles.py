@@ -9,7 +9,7 @@ from ursina import Entity, color as ursina_color
 import constants as c
 from graphics3d.utils import world_to_3d_position, rgb_to_ursina_color
 from textures import get_moss_stone_texture, get_brick_texture
-from shaders import create_corner_shadow_shader
+from shaders import create_corner_shadow_shader, create_toon_normal_shader
 
 
 # ===== CACHED PROCEDURAL TEXTURES =====
@@ -32,6 +32,23 @@ for i, seed in enumerate(wall_seeds):
         DUNGEON_WALL_TEXTURES.append(Texture(wall_pil))
 
 print(f"  ✓ {len(DUNGEON_WALL_TEXTURES)} wall variants generated")
+
+# Normal Maps: Generate 4 variants for bump mapping
+# Use brick base ONLY (no moss) since moss doesn't affect surface geometry
+from textures.bricks import generate_normal_map_from_brick_texture
+
+DUNGEON_WALL_NORMAL_MAPS = []
+for i, seed in enumerate(wall_seeds):
+    print(f"  - Generating wall normal map {i+1}/4 (seed={seed})...")
+    with RandomSeed(seed):
+        # Generate brick base WITHOUT moss overlay
+        # Normal maps represent actual geometry depth, not color variation
+        brick_pil = generate_brick_pattern(size=1024, darkness=1.0)
+        # EXTREME strength for cartoon effect (8.0 = super exaggerated depth)
+        normal_map_pil = generate_normal_map_from_brick_texture(brick_pil, strength=8.0)
+        DUNGEON_WALL_NORMAL_MAPS.append(Texture(normal_map_pil))
+
+print(f"  ✓ {len(DUNGEON_WALL_NORMAL_MAPS)} normal maps generated")
 
 # Floor: Generate 4 variants at 1024x1024 to break repetition
 # Brick with subtle moss accents
@@ -61,11 +78,18 @@ print(f"  ✓ {len(DUNGEON_CEILING_TEXTURES)} ceiling variants generated")
 
 print("✓ Procedural textures generated and cached")
 
-# ===== CACHED CORNER SHADOW SHADER =====
-# Generate shader once for all floor/ceiling tiles
+# ===== CACHED SHADERS =====
+# Generate shaders once for all tiles
+
+# Corner shadow shader for floors/ceilings
 print("Creating corner shadow shader for ambient occlusion...")
 CORNER_SHADOW_SHADER = create_corner_shadow_shader(intensity=c.CORNER_SHADOW_INTENSITY)
 print(f"✓ Corner shadow shader created (intensity={c.CORNER_SHADOW_INTENSITY})")
+
+# Toon shader for walls (cartoon depth effect with exaggerated normals)
+print("Creating toon shader for cartoon depth effect...")
+TOON_NORMAL_SHADER = create_toon_normal_shader(num_bands=4, rim_intensity=0.4)
+print("✓ Toon shader created (4 bands, rim lighting enabled)")
 
 
 def create_floor_mesh(x: int, y: int, biome_color):
@@ -139,9 +163,10 @@ def create_wall_mesh(x: int, y: int, biome_color, height: float = None):
     # This breaks repetition while being deterministic
     variant_idx = (x * 7 + y * 13) % len(DUNGEON_WALL_TEXTURES)
     wall_texture = DUNGEON_WALL_TEXTURES[variant_idx]
+    normal_map = DUNGEON_WALL_NORMAL_MAPS[variant_idx]
 
-    # Use procedural moss-covered stone texture (no color tinting needed)
-    return Entity(
+    # Create wall entity with procedural moss-covered stone texture
+    wall_entity = Entity(
         model='cube',
         position=pos,
         scale=(1, height, 1),
@@ -149,6 +174,21 @@ def create_wall_mesh(x: int, y: int, biome_color, height: float = None):
         texture=wall_texture,  # Select from 4 variants
         collider='box'  # Walls have collision
     )
+
+    # Apply normal map to second texture stage for bump mapping
+    # This works with our toon shader to create cartoon depth effect
+    from panda3d.core import TextureStage
+    ts = TextureStage('normal')
+    ts.setMode(TextureStage.MNormal)
+    # Extract underlying Panda3D texture from Ursina wrapper
+    panda_normal_map = normal_map._texture if hasattr(normal_map, '_texture') else normal_map
+    wall_entity.model.setTexture(ts, panda_normal_map)
+
+    # Apply toon shader for cartoon/cell shading effect
+    # This creates stepped lighting with deep black mortar grooves
+    wall_entity.shader = TOON_NORMAL_SHADER
+
+    return wall_entity
 
 
 def create_stairs_mesh(x: int, y: int, biome_color):

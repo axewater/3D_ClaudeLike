@@ -16,6 +16,45 @@ from typing import Tuple
 from PIL import Image, ImageDraw
 
 
+def _apply_curved_gradient_to_rect(image: Image.Image, x: int, y: int,
+                                   width: int, height: int, gradient: list):
+    """Apply gradient with curved/beveled edges for organic mortar look.
+
+    Adds sine wave curvature to brick edges to create rounded/beveled appearance
+    instead of sharp geometric transitions.
+
+    Args:
+        image: PIL Image to modify
+        x, y: Top-left corner of rectangle
+        width, height: Rectangle dimensions
+        gradient: List of RGBA color tuples
+    """
+    import math
+    pixels = image.load()
+    gradient_len = len(gradient)
+
+    # Apply gradient from all edges with curvature
+    for dy in range(height):
+        for dx in range(width):
+            # Calculate distance from edge (minimum of all 4 edges)
+            dist_from_edge = min(dx, dy, width - dx - 1, height - dy - 1)
+
+            if dist_from_edge < gradient_len:
+                # Add sine wave curvature for organic rounded edges
+                # This makes mortar joints appear curved/beveled instead of straight
+                t = dist_from_edge / gradient_len  # 0.0 at edge, 1.0 at center
+
+                # Apply ease-in-out curve (sine wave for smooth rounding)
+                curved_t = math.sin(t * math.pi / 2)  # Smooth S-curve
+                curved_dist = int(curved_t * gradient_len)
+                curved_dist = min(curved_dist, gradient_len - 1)
+
+                px = x + dx
+                py = y + dy
+                if 0 <= px < image.width and 0 <= py < image.height:
+                    pixels[px, py] = gradient[curved_dist]
+
+
 def generate_brick_pattern(size: int = 1024, darkness: float = 1.0) -> Image.Image:
     """Generate brick pattern with smooth gradient mortar joints (AAA Quality).
 
@@ -94,10 +133,11 @@ def generate_brick_pattern(size: int = 1024, darkness: float = 1.0) -> Image.Ima
             brick_w = brick_width
             brick_h = brick_height
 
-            # Apply gradients from all 4 edges inward
+            # Apply curved gradients from all 4 edges inward
             # This creates the depth effect: mortar → shadow → edge → brick face
-            apply_gradient_to_rect(image, brick_x, brick_y, brick_w, brick_h,
-                                  brick_gradient, direction='both')
+            # Using curved gradient for organic rounded/beveled appearance
+            _apply_curved_gradient_to_rect(image, brick_x, brick_y, brick_w, brick_h,
+                                          brick_gradient)
 
             # Add cracks for texture (2-3 per brick, scaled to size)
             crack_color = (
@@ -182,3 +222,73 @@ def _draw_single_brick(draw: ImageDraw.ImageDraw, x: int, y: int,
             fill=crack_color,
             width=1
         )
+
+
+def generate_normal_map_from_brick_texture(brick_pil: Image.Image, strength: float = 2.0) -> Image.Image:
+    """Generate normal map from brick texture for bump mapping.
+
+    Converts a brick pattern texture into a normal map by:
+    1. Converting to grayscale (luminance represents height)
+    2. Computing gradients using Sobel edge detection
+    3. Converting gradients to surface normals
+    4. Encoding normals as RGB values
+
+    The resulting normal map works with Panda3D's auto shader generator
+    to create realistic lighting with recessed mortar joints.
+
+    Args:
+        brick_pil: Input brick texture (PIL Image)
+        strength: Normal strength multiplier (higher = more pronounced depth)
+                  Default 2.0 gives visible but realistic bump effect
+                  Range: 1.0 (subtle) to 4.0 (extreme)
+
+    Returns:
+        PIL Image in RGB mode with encoded normal vectors
+        - Red channel: X normal component (left/right surface tilt)
+        - Green channel: Y normal component (up/down surface tilt)
+        - Blue channel: Z normal component (facing camera)
+
+    Technical Details:
+        - Normals are computed as: N = normalize([-∂z/∂x, -∂z/∂y, 1])
+        - Encoded to RGB: (N + 1.0) * 0.5 * 255
+        - Flat surfaces appear as (128, 128, 255) - blue/purple tint
+        - Recessed mortar has normals pointing inward (darker red/green)
+        - Raised brick edges have normals pointing outward (brighter red/green)
+
+    Example:
+        >>> brick = generate_brick_pattern(1024)
+        >>> normal_map = generate_normal_map_from_brick_texture(brick, strength=2.0)
+        >>> normal_map.save('brick_normals.png')  # Should look purple/blue
+    """
+    from scipy.ndimage import sobel
+    import numpy as np
+
+    # Convert to grayscale numpy array (luminance = height)
+    # Brighter pixels = higher surfaces (brick faces)
+    # Darker pixels = lower surfaces (mortar joints)
+    gray = np.array(brick_pil.convert('L'), dtype=np.float32)
+
+    # Apply Sobel operator to detect edges/gradients
+    # These gradients represent the rate of height change
+    sobel_x = sobel(gray, axis=1) * strength  # Horizontal gradient (∂z/∂x)
+    sobel_y = sobel(gray, axis=0) * strength  # Vertical gradient (∂z/∂y)
+
+    # Compute surface normals from gradients
+    # Normal vector points perpendicular to the surface
+    # Formula: N = [-∂z/∂x, -∂z/∂y, 1] (negated for correct lighting direction)
+    normals = np.zeros((*gray.shape, 3), dtype=np.float32)
+    normals[:, :, 0] = -sobel_x  # X component (tilt left/right)
+    normals[:, :, 1] = -sobel_y  # Y component (tilt up/down)
+    normals[:, :, 2] = 1.0       # Z component (always pointing toward camera)
+
+    # Normalize vectors to unit length
+    # This ensures consistent lighting intensity regardless of slope
+    norm = np.sqrt(np.sum(normals**2, axis=2, keepdims=True))
+    normals = normals / (norm + 1e-6)  # Add epsilon to prevent division by zero
+
+    # Encode normals to RGB color space
+    # Map from [-1, 1] range to [0, 255] range
+    # Neutral normal (0, 0, 1) becomes (128, 128, 255) = purple/blue
+    normal_map = ((normals + 1.0) * 0.5 * 255).astype(np.uint8)
+
+    return Image.fromarray(normal_map, mode='RGB')

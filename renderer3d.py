@@ -111,6 +111,10 @@ class Renderer3D:
         print("✓ Lighting configured with improved visibility (ambient: 0.4, directional: 0.6)")
         print("✓ Atmospheric fog enabled (density: 8-20 units, reduced from 5-15)")
 
+        # NOTE: Auto shader generation DISABLED - using custom toon shader for walls
+        # Walls use custom toon shader with exaggerated normal mapping for cartoon effect
+        print("✓ Custom toon shader will be applied to walls (not using auto shader)")
+
     def render_dungeon(self):
         """
         Render the entire dungeon from game.dungeon
