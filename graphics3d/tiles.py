@@ -262,13 +262,14 @@ def create_wall_mesh(x: int, y: int, biome: str, biome_color, height: float = No
     return wall_entity
 
 
-def create_stairs_mesh(x: int, y: int, biome_color):
+def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
     """
     Create traditional dungeon stairs descending straight down into darkness
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
+        biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
         biome_color: RGB tuple (0-1 floats) for the biome
 
     Returns:
@@ -282,6 +283,18 @@ def create_stairs_mesh(x: int, y: int, biome_color):
     else:
         # Fallback to default stairs color
         stairs_color = ursina_color.rgb(c.COLOR_STAIRS_RGB[0] * 255, c.COLOR_STAIRS_RGB[1] * 255, c.COLOR_STAIRS_RGB[2] * 255)
+
+    # Get floor texture for this biome (same as floor tiles)
+    biome_textures = FLOOR_TEXTURES.get(biome, FLOOR_TEXTURES[c.BIOME_DUNGEON])
+    variant_idx = (x * 7 + y * 13) % len(biome_textures)
+    floor_texture = biome_textures[variant_idx]
+
+    # Apply moderate tint to preserve biome identity (same as floor tinting)
+    floor_tint = ursina_color.rgb(
+        min(255, 0.3 * 255 + stairs_color.r * 255 * 0.7),
+        min(255, 0.3 * 255 + stairs_color.g * 255 * 0.7),
+        min(255, 0.3 * 255 + stairs_color.b * 255 * 0.7)
+    )
 
     # Parent entity to hold all stair components
     stair_group = Entity(position=pos)
@@ -301,42 +314,49 @@ def create_stairs_mesh(x: int, y: int, biome_color):
         # Fade to darkness as steps descend (0.0 = bright at top, 1.0 = dark at bottom)
         darkness_factor = i / (num_steps - 1)
 
-        # Calculate step color (bright at top, nearly black at bottom)
+        # Calculate step color tint (darkens progressively)
+        # Start with biome tint and darken it
         step_color = ursina_color.rgb(
-            max(5, stairs_color.r * 255 * (2.0 - darkness_factor * 1.8)),
-            max(5, stairs_color.g * 255 * (2.0 - darkness_factor * 1.8)),
-            max(5, stairs_color.b * 255 * (2.0 - darkness_factor * 1.8))
+            max(10, floor_tint.r * 255 * (1.0 - darkness_factor * 0.85)),
+            max(10, floor_tint.g * 255 * (1.0 - darkness_factor * 0.85)),
+            max(10, floor_tint.b * 255 * (1.0 - darkness_factor * 0.85))
         )
 
-        # Main step tread (horizontal walking surface)
+        # Main step tread (horizontal walking surface) with floor texture
         step_tread = Entity(
             parent=stair_group,
             model='cube',
             position=(0, step_y, step_z),
             scale=(step_width, 0.05, step_depth),  # Thin horizontal slab
             color=step_color,
+            texture=floor_texture,  # Apply floor texture
             collider=None
         )
+        step_tread.shader = CORNER_SHADOW_SHADER
 
-        # Left support block (end of step)
+        # Left support block (end of step) with floor texture
         left_support = Entity(
             parent=stair_group,
             model='cube',
             position=(-step_width/2 + support_size/2, step_y - support_size/2, step_z),
             scale=(support_size, support_size, step_depth),
             color=step_color,
+            texture=floor_texture,  # Apply floor texture
             collider=None
         )
+        left_support.shader = CORNER_SHADOW_SHADER
 
-        # Right support block (end of step)
+        # Right support block (end of step) with floor texture
         right_support = Entity(
             parent=stair_group,
             model='cube',
             position=(step_width/2 - support_size/2, step_y - support_size/2, step_z),
             scale=(support_size, support_size, step_depth),
             color=step_color,
+            texture=floor_texture,  # Apply floor texture
             collider=None
         )
+        right_support.shader = CORNER_SHADOW_SHADER
 
     return stair_group
 

@@ -195,8 +195,8 @@ class Renderer3D:
                     partial_floor.shader = CORNER_SHADOW_SHADER
                     tile_entities.append(partial_floor)
 
-                    # Create descending staircase
-                    stairs_entity = create_stairs_mesh(x, y, stairs_color)
+                    # Create descending staircase with biome floor texture
+                    stairs_entity = create_stairs_mesh(x, y, biome, floor_color)
                     tile_entities.append(stairs_entity)
 
                     # Render ceiling above stairs
