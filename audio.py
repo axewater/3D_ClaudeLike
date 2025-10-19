@@ -10,6 +10,9 @@ import os
 import tempfile
 import threading
 from typing import Dict, Optional
+from logger import get_logger
+
+log = get_logger()
 
 
 class SoundSynthesizer:
@@ -821,11 +824,11 @@ class AudioManager:
         """Play random menacing taunt"""
         import constants as c
         taunt = random.choice(c.VOICE_TAUNTS)
-        print(f"🔊 Playing taunt: '{taunt}'")
+        log.info(f"Enemy taunts: '{taunt}'", "game")
         if not self.enabled:
-            print("⚠ Audio disabled - taunt not played")
+            log.debug("Audio disabled - taunt not played", "audio")
         elif not self.voice_synth.enabled:
-            print("⚠ Voice synthesis disabled - taunt not played")
+            log.debug("Voice synthesis disabled - taunt not played", "audio")
         self.play_voice(taunt, volume=0.9)
 
     def start_background_music(self):

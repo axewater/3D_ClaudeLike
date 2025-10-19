@@ -468,6 +468,22 @@ TAUNT_CHANCE_ON_LEVEL = 0.80  # 80% chance when entering new level (increased fo
 TAUNT_LOW_HP_THRESHOLD = 0.30  # Trigger when below 30% health
 
 
+# ========================================
+# LOGGING CONFIGURATION
+# ========================================
+# Default log level (can be overridden via --log-level command line flag)
+# Options: "debug", "info", "warning", "error"
+DEFAULT_LOG_LEVEL = "info"
+
+# Heartbeat logging interval (frames) - only in DEBUG mode
+# Set to 0 to disable heartbeat logging entirely
+HEARTBEAT_INTERVAL_FRAMES = 300  # Every 5 seconds at 60 FPS (reduced from 60)
+
+# Player position logging interval (frames) - only in DEBUG mode
+# Set to 0 to disable position logging entirely
+PLAYER_POSITION_INTERVAL_FRAMES = 0  # Disabled (was 120 frames)
+
+
 # Helper functions
 def get_biome_for_level(level: int) -> str:
     """Determine biome based on current level"""

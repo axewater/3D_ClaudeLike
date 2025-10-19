@@ -13,6 +13,9 @@ from animations3d import Particle3D
 from ui3d_manager import UI3DManager
 from animation_interface import AnimationManagerInterface
 from particle_types import Particle
+from logger import get_logger
+
+log = get_logger()
 
 
 class ParticleListWrapper:
@@ -167,7 +170,7 @@ class GameCoordinator(Entity):
         # Check if a class was selected
         if hasattr(self.screen_manager, 'selected_class') and not self.game_initialized:
             class_type = self.screen_manager.selected_class
-            print(f"[GameCoordinator] Initializing game with class: {class_type}")
+            log.info(f"Initializing game with class: {class_type}", "coordinator")
 
             # Create game instance
             game = Game()
@@ -179,17 +182,20 @@ class GameCoordinator(Entity):
             renderer.render_dungeon()
             renderer.render_entities()
 
+            # Store renderer reference in game for attack animations
+            game.renderer = renderer
+
             # Replace 2D animation manager with 3D proxy
             game.anim_manager = AnimationManager3DProxy(renderer.animation_manager, renderer.enemy_entities)
-            print("✓ 3D particle system connected")
+            log.debug("3D particle system connected", "coordinator")
 
             # Create UI manager
             ui_manager = UI3DManager(game)
-            print("✓ UI3D system initialized")
+            log.debug("UI3D system initialized", "coordinator")
 
             # Connect game messages to UI combat log
             game.message_callback = ui_manager.add_message
-            print("✓ Game message callback connected to UI")
+            log.debug("Game message callback connected to UI", "coordinator")
 
             # Create game controller
             controller = GameController(game, renderer, ui_manager, self.screen_manager)
@@ -203,10 +209,7 @@ class GameCoordinator(Entity):
             from ui.screens.screen_manager_3d import ScreenState
             self.screen_manager.change_screen(ScreenState.GAME)
 
-            print(f"[GameCoordinator] Game initialized successfully")
-            print(f"Class: {class_type.title()}")
-            print(f"Level: {game.current_level}")
-            print(f"HP: {game.player.hp}/{game.player.max_hp}")
+            log.info(f"Game started - Class: {class_type.title()}, Level: {game.current_level}, HP: {game.player.hp}/{game.player.max_hp}", "coordinator")
 
 
 class GameController(Entity):
@@ -251,18 +254,20 @@ class GameController(Entity):
             '1': False, '2': False, '3': False,
             'escape': False, 'left mouse down': False,
             'left arrow': False, 'right arrow': False,
-            'f1': False  # Debug: reveal map
+            'f1': False,  # Debug: reveal map
+            'f2': False   # Debug: skip level
         }
 
-        print("✓ GameController initialized (First-Person Mode)")
+        log.debug("GameController initialized (First-Person Mode)", "controller")
 
     def update(self):
         """Update function called every frame by Ursina"""
         dt = ursina_time.dt
         self.frame_count += 1
 
-        if self.frame_count % 60 == 0:
-            print(f"[HEARTBEAT] Frame {self.frame_count} | dt={dt:.4f} | FPS={1/dt:.1f}")
+        # Heartbeat logging (DEBUG only, reduced frequency)
+        if c.HEARTBEAT_INTERVAL_FRAMES > 0 and self.frame_count % c.HEARTBEAT_INTERVAL_FRAMES == 0:
+            log.debug(f"Frame {self.frame_count} | dt={dt:.4f} | FPS={1/dt:.1f}", "heartbeat")
 
         self.move_cooldown -= dt
         self.ability_cooldown -= dt
@@ -289,14 +294,11 @@ class GameController(Entity):
         # Check for game over or victory
         if self.game.game_over or self.game.victory:
             if not self.game_over_displayed:
-                print("\n" + "=" * 50)
                 if self.game.victory:
-                    print("🎉 VICTORY! You conquered all 25 levels!")
+                    log.info("VICTORY! You conquered all 25 levels!", "game")
                 else:
-                    print("💀 GAME OVER! You were defeated.")
-                print(f"Final Level: {self.game.current_level}")
-                print(f"Final XP: {self.game.player.xp}")
-                print("=" * 50)
+                    log.info("GAME OVER! You were defeated.", "game")
+                log.info(f"Final Level: {self.game.current_level}, Final XP: {self.game.player.xp}", "game")
                 self.game_over_displayed = True
 
                 # Trigger screen transition if screen manager available
@@ -393,7 +395,7 @@ class GameController(Entity):
                     direction = "RIGHT"
 
             if moved:
-                print(f"[INPUT] {direction} | Yaw: {int(self.camera_yaw)}° | Target: ({new_x}, {new_y})")
+                log.debug(f"{direction} | Yaw: {int(self.camera_yaw)}° | Target: ({new_x}, {new_y})", "input")
 
             # Attempt move
             if moved:
@@ -408,7 +410,7 @@ class GameController(Entity):
 
                     if target_enemy:
                         # Attack enemy
-                        print(f"[COMBAT] Attacking enemy at ({new_x}, {new_y})")
+                        log.debug(f"Attacking {target_enemy.enemy_type} at ({new_x}, {new_y})", "combat")
                         self.game._player_attack(target_enemy)
                         self.game._enemy_turn()
                         self.game._reduce_ability_cooldowns()
@@ -418,14 +420,14 @@ class GameController(Entity):
                         self.game.player.start_move(new_x, new_y)
                         self.game.update_camera()
                         self.game.update_fov()
-                        print(f"[MOVE] Player moved: {old_pos} → ({self.game.player.x}, {self.game.player.y})")
+                        log.debug(f"Player moved: {old_pos} → ({self.game.player.x}, {self.game.player.y})", "movement")
 
                         # Check for item pickup
                         self.game._check_item_pickup()
 
                         # Check for stairs
                         if self.game.dungeon.get_tile(new_x, new_y) == c.TILE_STAIRS:
-                            print(f"[EVENT] Player on stairs! Descending...")
+                            log.info(f"Descending to level {self.game.current_level + 1}...", "game")
                             self.game._descend_stairs()
                             # Re-render dungeon after descending
                             self.renderer.render_dungeon()
@@ -438,7 +440,7 @@ class GameController(Entity):
 
                     self.move_cooldown = self.move_cooldown_time  # Reset cooldown
                 else:
-                    print(f"[BLOCKED] Cannot move to ({new_x}, {new_y}) - not walkable")
+                    log.debug(f"Cannot move to ({new_x}, {new_y}) - blocked", "movement")
 
         # Update game animations
         self.game.update(dt)
@@ -449,25 +451,37 @@ class GameController(Entity):
         # Update UI (with camera yaw for minimap)
         self.ui_manager.update(dt, self.camera_yaw)
 
-        # Debug output (every 120 frames = ~2 seconds at 60fps)
-        if self.frame_count % 120 == 0:
-            print(f"Player: ({self.game.player.x}, {self.game.player.y}) | "
-                  f"HP: {self.game.player.hp}/{self.game.player.max_hp} | "
-                  f"Level: {self.game.current_level} | "
-                  f"Enemies: {len(self.game.enemies)} | "
-                  f"Camera: {camera.position}")
+        # Debug player position (DEBUG only, configurable interval)
+        if c.PLAYER_POSITION_INTERVAL_FRAMES > 0 and self.frame_count % c.PLAYER_POSITION_INTERVAL_FRAMES == 0:
+            log.debug(f"Player: ({self.game.player.x}, {self.game.player.y}) | "
+                      f"HP: {self.game.player.hp}/{self.game.player.max_hp} | "
+                      f"Level: {self.game.current_level} | "
+                      f"Enemies: {len(self.game.enemies)}", "debug")
 
     def _handle_debug_input(self):
-        """Handle debug key inputs (F1 to reveal map)"""
+        """Handle debug key inputs (F1 to reveal map, F2 to skip level)"""
         # F1 key - Reveal entire map (debug)
         if held_keys['f1'] and not self.prev_key_states['f1']:
             if self.game.visibility_map:
                 self.game.visibility_map.reveal_all()
                 self.game.add_message("DEBUG: Map fully revealed!", "event")
-                print("🗺️  DEBUG: Full map revealed (F1)")
+                log.info("Full map revealed (F1)", "debug")
             self.prev_key_states['f1'] = True
         elif not held_keys['f1']:
             self.prev_key_states['f1'] = False
+
+        # F2 key - Skip to next level (debug)
+        if held_keys['f2'] and not self.prev_key_states['f2']:
+            # Use debug skip method (doesn't play sounds)
+            self.game.debug_skip_level()
+
+            # Rebuild dungeon renderer (clears old geometry and fog)
+            self.renderer.render_dungeon()
+
+            log.info(f"Skipped to level {self.game.current_level} (F2)", "debug")
+            self.prev_key_states['f2'] = True
+        elif not held_keys['f2']:
+            self.prev_key_states['f2'] = False
 
     def _handle_ability_input(self):
         """Handle ability input (1/2/3 keys) and targeting"""
@@ -478,10 +492,10 @@ class GameController(Entity):
             if targeting_system.mode == targeting_system.MODE_TARGETING:
                 # Cancel targeting
                 targeting_system.cancel_targeting()
-                print("[INPUT] Targeting cancelled")
+                log.debug("Targeting cancelled", "input")
             elif self.screen_manager and not self.paused:
                 # Open pause menu (only if not already paused)
-                print("[INPUT] Opening pause menu")
+                log.debug("Opening pause menu", "input")
                 from ui.screens.screen_manager_3d import ScreenState
                 self.screen_manager.change_screen(ScreenState.PAUSE)
             self.prev_key_states['escape'] = True
@@ -493,7 +507,7 @@ class GameController(Entity):
             if targeting_system.mode == targeting_system.MODE_TARGETING:
                 success = targeting_system.confirm_target()
                 if success:
-                    print(f"[ABILITY] Ability executed successfully")
+                    log.debug("Ability executed successfully", "ability")
             self.prev_key_states['left mouse down'] = True
         elif not mouse.left:
             self.prev_key_states['left mouse down'] = False
@@ -521,7 +535,7 @@ class GameController(Entity):
                 # Check if ability is ready
                 if not ability.is_ready():
                     self.ui_manager.add_message(f"{ability.name} is on cooldown ({int(ability.current_cooldown)}s remaining)", "event")
-                    print(f"[ABILITY] {ability.name} on cooldown")
+                    log.debug(f"{ability.name} on cooldown", "ability")
                     self.prev_key_states[key] = True
                     continue
 
@@ -531,16 +545,16 @@ class GameController(Entity):
                 if ability.name in targeting_abilities:
                     # Enter targeting mode
                     targeting_system.start_targeting(ability_index)
-                    print(f"[ABILITY] Entered targeting mode for {ability.name}")
+                    log.debug(f"Entered targeting mode for {ability.name}", "ability")
                 else:
                     # Use ability immediately (self-cast abilities)
                     # Note: use_ability() returns bool only, message is handled internally
                     success = self.game.use_ability(ability_index, self.game.player.x, self.game.player.y)
 
                     if success:
-                        print(f"[ABILITY] Used {ability.name}")
+                        log.debug(f"Used {ability.name}", "ability")
                     else:
-                        print(f"[ABILITY] Failed to use {ability.name}")
+                        log.debug(f"Failed to use {ability.name}", "ability")
 
                 self.ability_cooldown = self.ability_cooldown_time
                 self.prev_key_states[key] = True
@@ -598,7 +612,7 @@ class GameController(Entity):
         # Arrow Left - Rotate left (counterclockwise)
         if held_keys['left arrow'] and not self.prev_key_states['left arrow']:
             self.target_camera_yaw = (self.target_camera_yaw - 90) % 360
-            print(f"[CAMERA] Rotating left to {self.target_camera_yaw}°")
+            log.debug(f"Rotating left to {self.target_camera_yaw}°", "camera")
             self.prev_key_states['left arrow'] = True
         elif not held_keys['left arrow']:
             self.prev_key_states['left arrow'] = False
@@ -606,7 +620,7 @@ class GameController(Entity):
         # Arrow Right - Rotate right (clockwise)
         if held_keys['right arrow'] and not self.prev_key_states['right arrow']:
             self.target_camera_yaw = (self.target_camera_yaw + 90) % 360
-            print(f"[CAMERA] Rotating right to {self.target_camera_yaw}°")
+            log.debug(f"Rotating right to {self.target_camera_yaw}°", "camera")
             self.prev_key_states['right arrow'] = True
         elif not held_keys['right arrow']:
             self.prev_key_states['right arrow'] = False
@@ -659,20 +673,20 @@ def main_3d():
     # Set window resolution to Full HD for better performance
     window.size = (1920, 1080)
     window.position = (100, 50)  # Offset from top-left so title bar is accessible
-    print(f"✓ Window resolution set to 1920x1080, positioned at (100, 50)")
+    log.debug("Window resolution set to 1920x1080, positioned at (100, 50)", "main")
 
     # Set background color (dark blue, matching 2D title screen)
     window.color = color.rgb(0.05, 0.05, 0.15)
-    print("✓ Window background set to dark blue")
+    log.debug("Window background set to dark blue", "main")
 
     # Initialize screen manager
     from ui.screens.screen_manager_3d import ScreenManager3D, ScreenState
     screen_manager = ScreenManager3D()
-    print("✓ Screen manager initialized")
+    log.debug("Screen manager initialized", "main")
 
     # Create game coordinator (handles game initialization after class selection)
     coordinator = GameCoordinator(screen_manager)
-    print("✓ Game coordinator initialized")
+    log.debug("Game coordinator initialized", "main")
 
     # Create an entity that updates screen manager each frame
     class ScreenManagerUpdater(Entity):

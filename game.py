@@ -13,6 +13,9 @@ from audio import get_audio_manager
 from fov import calculate_fov
 from visibility import VisibilityMap
 import combat
+from logger import get_logger
+
+log = get_logger()
 
 
 class Game:
@@ -110,7 +113,6 @@ class Game:
         # Chance to taunt on level entry (except first level)
         if self.current_level > 1:
             roll = random.random()
-            print(f"🎲 Level entry taunt check: {roll:.2f} < {c.TAUNT_CHANCE_ON_LEVEL} = {roll < c.TAUNT_CHANCE_ON_LEVEL}")
             if roll < c.TAUNT_CHANCE_ON_LEVEL:
                 self._try_play_taunt()
 
@@ -473,6 +475,11 @@ class Game:
                 message, player_died = combat.enemy_attack_player(enemy, self.player)
                 damage = combat.calculate_damage(enemy.attack, self.player.defense)
 
+                # Trigger attack animation (3D renderer)
+                if hasattr(self, 'renderer') and self.renderer:
+                    enemy_id = id(enemy)
+                    self.renderer.trigger_enemy_attack(enemy_id)
+
                 # Play enemy attack sound
                 attack_strength = 'heavy' if damage > 12 else 'medium' if damage > 6 else 'light'
                 self.audio_manager.play_attack_sound(attack_strength)
@@ -499,7 +506,6 @@ class Game:
                 else:
                     # Chance to taunt when player takes damage
                     roll = random.random()
-                    print(f"🎲 Damage taunt check: {roll:.2f} < {c.TAUNT_CHANCE_ON_DAMAGE} = {roll < c.TAUNT_CHANCE_ON_DAMAGE}")
                     if roll < c.TAUNT_CHANCE_ON_DAMAGE:
                         self._try_play_taunt()
 
@@ -880,11 +886,10 @@ class Game:
     def _try_play_taunt(self):
         """Try to play a taunt if cooldown allows"""
         if self.taunt_timer <= 0:
-            print(f"🎭 Taunt triggered! (cooldown reset to {c.TAUNT_COOLDOWN}s)")
             self.audio_manager.play_voice_taunt()
             self.taunt_timer = c.TAUNT_COOLDOWN
-        else:
-            print(f"🎭 Taunt on cooldown ({self.taunt_timer:.1f}s remaining)")
+            # Note: audio_manager will log the actual taunt message
+        # Cooldown spam removed - no need to log when taunt is on cooldown
 
     def add_message(self, message: str, msg_type: str = "event"):
         """Add message to message log with type for color coding"""

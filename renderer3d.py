@@ -17,6 +17,9 @@ from graphics3d.items import create_item_model_3d, update_item_animation
 from animations3d import AnimationManager3D
 from textures import get_fog_of_war_texture
 import time
+from logger import get_logger
+
+log = get_logger()
 
 
 class Renderer3D:
@@ -71,20 +74,20 @@ class Renderer3D:
             camera.rotation_x = 0  # Look horizontally
             camera.fov = c.CAMERA_FOV_FPS
             camera.clip_plane_near = 0.05  # Reduce near clipping to prevent wall/floor disappearing
-            print(f"✓ First-person camera configured: eye_height={c.EYE_HEIGHT}, fov={c.CAMERA_FOV_FPS}°, near_clip=0.05")
+            log.debug(f"First-person camera configured: eye_height={c.EYE_HEIGHT}, fov={c.CAMERA_FOV_FPS}°", "renderer")
 
             # Apply barrel distortion shader if enabled
             if c.BARREL_DISTORTION_STRENGTH > 0.0:
                 from shaders import create_barrel_distortion_shader
                 barrel_shader = create_barrel_distortion_shader(strength=c.BARREL_DISTORTION_STRENGTH)
                 camera.shader = barrel_shader
-                print(f"✓ Barrel distortion shader applied (strength={c.BARREL_DISTORTION_STRENGTH})")
+                log.debug(f"Barrel distortion shader applied (strength={c.BARREL_DISTORTION_STRENGTH})", "renderer")
         else:
             # Third-person (legacy)
             camera.position = (0, c.CAMERA_HEIGHT, -c.CAMERA_DISTANCE)
             camera.rotation_x = c.CAMERA_ANGLE
             camera.fov = c.FOV
-            print(f"✓ Third-person camera configured: pos={camera.position}, angle={c.CAMERA_ANGLE}°, fov={c.FOV}°")
+            log.debug(f"Third-person camera configured", "renderer")
 
     def setup_lighting(self):
         """Set up basic 3D lighting with fog of war ambiance"""
@@ -108,12 +111,12 @@ class Renderer3D:
         scene.fog_color = ursina_color.rgb(0.1, 0.1, 0.15)  # Dark blue-gray
         scene.fog_density = (8, 20)  # Start at 8 units, full fog at 20 units
 
-        print("✓ Lighting configured with improved visibility (ambient: 0.4, directional: 0.6)")
-        print("✓ Atmospheric fog enabled (density: 8-20 units, reduced from 5-15)")
+        log.debug("Lighting configured with improved visibility (ambient: 0.4, directional: 0.6)", "renderer")
+        log.debug("Atmospheric fog enabled (density: 8-20 units)", "renderer")
 
         # NOTE: Auto shader generation DISABLED - using custom toon shader for walls
         # Walls use custom toon shader with exaggerated normal mapping for cartoon effect
-        print("✓ Custom toon shader will be applied to walls (not using auto shader)")
+        log.debug("Custom toon shader will be applied to walls", "renderer")
 
     def render_dungeon(self):
         """
@@ -127,6 +130,11 @@ class Renderer3D:
                 entity.disable()  # Disable instead of destroy for better performance
         self.dungeon_entities.clear()
         self.tile_visibility_cache.clear()
+
+        # Clear old fog entities from previous level
+        for fog_entity in self.fog_entities.values():
+            fog_entity.disable()
+        self.fog_entities.clear()
 
         if not self.game.dungeon:
             return
@@ -174,11 +182,11 @@ class Renderer3D:
                 if tile_entities:
                     self.dungeon_entities[(x, y)] = tile_entities
 
-        print(f"✓ Rendered dungeon: {len(self.dungeon_entities)} tiles")
-        print(f"  - Dungeon size: {self.game.dungeon.width}x{self.game.dungeon.height}")
+        # Summarize dungeon generation in one line (INFO level for important events)
         if self.game.player:
-            print(f"  - Player position: ({self.game.player.x}, {self.game.player.y})")
-        print(f"  - Biome: {self.game.dungeon.biome}")
+            log.info(f"Level {self.game.current_level} generated - {self.game.dungeon.width}x{self.game.dungeon.height} {self.game.dungeon.biome} dungeon ({len(self.dungeon_entities)} tiles)", "game")
+        else:
+            log.debug(f"Rendered {len(self.dungeon_entities)} tiles", "renderer")
 
     def render_player(self):
         """
@@ -216,7 +224,7 @@ class Renderer3D:
                     position=pos,
                     visible=False  # Hide player in first-person
                 )
-                print(f"✓ Created player entity (INVISIBLE - first-person mode)")
+                log.debug("Created player entity (INVISIBLE - first-person mode)", "renderer")
             else:
                 # Third-person: Visible player cube
                 self.player_entity = Entity(
@@ -226,14 +234,11 @@ class Renderer3D:
                     position=pos,
                     texture='white_cube'
                 )
-                print(f"✓ Created player cube at 3D position {pos}")
-                print(f"  - Grid position: ({self.game.player.x}, {self.game.player.y})")
-                print(f"  - Class: {self.game.player.class_type}")
-                print(f"  - Color: {player_color}")
+                log.debug(f"Created player cube at {pos}, class: {self.game.player.class_type}", "renderer")
 
             # Position camera immediately after creating player
             self.update_camera()
-            print(f"✓ Camera positioned at {camera.position}")
+            log.debug(f"Camera positioned at {camera.position}", "renderer")
         else:
             # Update position
             self.player_entity.position = pos
@@ -272,21 +277,43 @@ class Renderer3D:
 
             # Create enemy model if it doesn't exist
             if enemy_id not in self.enemy_entities:
-                enemy_model = create_enemy_model_3d(enemy.enemy_type, Vec3(*pos))
+                # Get dungeon level for creature scaling
+                dungeon_level = getattr(self.game, 'current_level', 1)
+
+                # Create enemy (DNA creature or legacy model)
+                enemy_model = create_enemy_model_3d(
+                    enemy.enemy_type,
+                    Vec3(*pos),
+                    dungeon_level=dungeon_level,
+                    use_dna_creatures=True  # Set to False to test legacy models
+                )
+
+                # For DNA creatures, the model is the creature object itself
+                # For legacy models, the model is an Entity
+                # Extract the root entity for positioning
+                if hasattr(enemy_model, 'root'):
+                    # DNA Creature
+                    root_entity = enemy_model.root
+                    creature_obj = enemy_model
+                else:
+                    # Legacy Entity
+                    root_entity = enemy_model
+                    creature_obj = None
 
                 # Create health bar billboard
                 hp_pct = enemy.hp / enemy.max_hp
                 health_bar = create_health_bar_billboard(hp_pct)
-                health_bar.parent = enemy_model  # Attach to enemy
+                health_bar.parent = root_entity  # Attach to root
 
                 # Store references
                 self.enemy_entities[enemy_id] = {
-                    'model': enemy_model,
+                    'creature': creature_obj,      # DNA creature object (or None for legacy)
+                    'model': root_entity,          # Root entity for positioning
                     'health_bar': health_bar,
                     'enemy_type': enemy.enemy_type
                 }
 
-                print(f"✓ Created 3D {enemy.enemy_type} at ({enemy.x}, {enemy.y})")
+                log.debug(f"Created {enemy.enemy_type} at ({enemy.x}, {enemy.y})", "renderer")
             else:
                 # Update existing enemy position
                 enemy_data = self.enemy_entities[enemy_id]
@@ -304,8 +331,9 @@ class Renderer3D:
             enemy_data = self.enemy_entities[enemy_id]
             enemy_data['model'].disable()  # Disable the model
             enemy_data['health_bar'].disable()  # Disable health bar
+            enemy_type = enemy_data.get('enemy_type', 'enemy')
             del self.enemy_entities[enemy_id]
-            print(f"✓ Removed dead enemy (ID: {enemy_id})")
+            log.debug(f"Removed dead {enemy_type}", "renderer")
 
     def render_items(self):
         """
@@ -341,7 +369,7 @@ class Renderer3D:
                 # Store reference
                 self.item_entities[item_id] = item_model
 
-                print(f"✓ Created 3D {item.rarity} {item.item_type} at ({item.x}, {item.y})")
+                log.debug(f"Created {item.rarity} {item.item_type} at ({item.x}, {item.y})", "renderer")
             else:
                 # Update existing item position (base position, animation handles float)
                 item_entity = self.item_entities[item_id]
@@ -357,7 +385,7 @@ class Renderer3D:
             item_entity = self.item_entities[item_id]
             item_entity.disable()  # Disable the model
             del self.item_entities[item_id]
-            print(f"✓ Removed picked up item (ID: {item_id})")
+            log.debug("Picked up item", "renderer")
 
     def render_entities(self):
         """
@@ -558,6 +586,30 @@ class Renderer3D:
 
         return None
 
+    def trigger_enemy_attack(self, enemy_id: int):
+        """
+        Trigger attack animation for an enemy (DNA creatures only).
+
+        Args:
+            enemy_id: Python id() of the enemy object
+        """
+        if enemy_id not in self.enemy_entities:
+            return
+
+        enemy_data = self.enemy_entities[enemy_id]
+        creature = enemy_data.get('creature')
+
+        if creature and hasattr(creature, 'start_attack'):
+            # Get player position as attack target
+            if self.game.player:
+                player_pos = Vec3(
+                    float(self.game.player.x),
+                    0.5,  # Mid-height
+                    float(self.game.player.y)
+                )
+                creature.start_attack(player_pos)
+                log.debug(f"Attack animation for {enemy_data['enemy_type']}", "renderer")
+
     def update_camera(self):
         """
         Update camera position and rotation
@@ -651,10 +703,17 @@ class Renderer3D:
 
         # Update enemy animations
         for enemy_id, enemy_data in self.enemy_entities.items():
+            # Get camera position for DNA creatures
+            camera_pos = Vec3(camera.position) if camera else None
+
+            # For DNA creatures, pass the creature object; for legacy, pass the model entity
+            animation_target = enemy_data.get('creature') or enemy_data['model']
+
             update_enemy_animation(
-                enemy_data['model'],
+                animation_target,
                 enemy_data['enemy_type'],
-                dt
+                dt,
+                camera_position=camera_pos
             )
 
         # Update item animations (floating and rotation)

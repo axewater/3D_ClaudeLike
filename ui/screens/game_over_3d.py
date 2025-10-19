@@ -227,7 +227,7 @@ class GameOverScreen3D(Entity):
             particle = Particle3D(
                 position=Vec3(x, y, z),
                 velocity=Vec3(vx, vy, vz),
-                color=particle_color,
+                color_rgb=particle_color,
                 size=random.uniform(0.15, 0.35),
                 lifetime=random.uniform(3.0, 5.0),
                 particle_type='circle',

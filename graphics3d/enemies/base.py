@@ -9,17 +9,30 @@ import constants as c
 from graphics3d.utils import world_to_3d_position
 
 
-def create_enemy_model_3d(enemy_type: str, position: Vec3) -> Entity:
+def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 1, use_dna_creatures: bool = True):
     """
     Factory function to create enemy 3D models
 
     Args:
         enemy_type: Enemy type string (goblin, slime, skeleton, etc.)
         position: 3D world position
+        dungeon_level: Dungeon depth (1-25) for DNA creature scaling
+        use_dna_creatures: If True, use DNA editor creatures; if False, use legacy models
 
     Returns:
-        Entity: Enemy 3D model
+        Entity or Creature: Enemy 3D model (returns creature object for DNA, Entity for legacy)
     """
+    # DNA CREATURES: Use procedural creatures from DNA editor with level scaling
+    if use_dna_creatures:
+        try:
+            from graphics3d.enemies.creature_factory import create_dna_creature
+            creature = create_dna_creature(enemy_type, position, dungeon_level)
+            return creature
+        except Exception as e:
+            print(f"⚠ DNA creature creation failed, falling back to legacy: {e}")
+            # Fall through to legacy models below
+
+    # LEGACY MODELS: Original procedural models (no level scaling)
     # Import enemy model creators
     from graphics3d.enemies.goblin import create_goblin_3d
     from graphics3d.enemies.slime import create_slime_3d
@@ -64,15 +77,33 @@ def create_enemy_model_3d(enemy_type: str, position: Vec3) -> Entity:
         )
 
 
-def update_enemy_animation(enemy_entity: Entity, enemy_type: str, dt: float):
+def update_enemy_animation(enemy_entity, enemy_type: str, dt: float, camera_position=None):
     """
     Update enemy idle animation based on type
 
     Args:
-        enemy_entity: Enemy entity to animate
+        enemy_entity: Enemy entity or creature to animate
         enemy_type: Enemy type string
         dt: Delta time since last frame
+        camera_position: Optional Vec3 camera position (for DNA creatures)
     """
+    # Check if this is a DNA creature (has update_animation method)
+    if hasattr(enemy_entity, 'update_animation'):
+        # DNA Creature - call its update_animation method
+        import time
+        try:
+            enemy_entity.update_animation(time.time(), camera_position)
+        except Exception as e:
+            print(f"⚠ DNA creature animation error: {e}")
+        return
+
+    # LEGACY MODELS: Use old animation system
+    # Check if this is a proper legacy model (has required attributes)
+    # Fallback entities from failed creature creation won't have these
+    if not hasattr(enemy_entity, 'idle_time'):
+        # Skip animation for fallback entities (simple cubes from failed creature creation)
+        return
+
     # Import animation updaters
     from graphics3d.enemies.goblin import update_goblin_animation
     from graphics3d.enemies.slime import update_slime_animation
@@ -82,18 +113,21 @@ def update_enemy_animation(enemy_entity: Entity, enemy_type: str, dt: float):
     from graphics3d.enemies.dragon import update_dragon_animation
 
     # Route to appropriate animation function
-    if enemy_type == c.ENEMY_GOBLIN:
-        update_goblin_animation(enemy_entity, dt)
-    elif enemy_type == c.ENEMY_SLIME:
-        update_slime_animation(enemy_entity, dt)
-    elif enemy_type == c.ENEMY_SKELETON:
-        update_skeleton_animation(enemy_entity, dt)
-    elif enemy_type == c.ENEMY_ORC:
-        update_orc_animation(enemy_entity, dt)
-    elif enemy_type == c.ENEMY_DEMON:
-        update_demon_animation(enemy_entity, dt)
-    elif enemy_type == c.ENEMY_DRAGON:
-        update_dragon_animation(enemy_entity, dt)
+    try:
+        if enemy_type == c.ENEMY_GOBLIN:
+            update_goblin_animation(enemy_entity, dt)
+        elif enemy_type == c.ENEMY_SLIME:
+            update_slime_animation(enemy_entity, dt)
+        elif enemy_type == c.ENEMY_SKELETON:
+            update_skeleton_animation(enemy_entity, dt)
+        elif enemy_type == c.ENEMY_ORC:
+            update_orc_animation(enemy_entity, dt)
+        elif enemy_type == c.ENEMY_DEMON:
+            update_demon_animation(enemy_entity, dt)
+        elif enemy_type == c.ENEMY_DRAGON:
+            update_dragon_animation(enemy_entity, dt)
+    except Exception as e:
+        print(f"⚠ Legacy animation error for {enemy_type}: {e}")
 
 
 def create_health_bar_billboard(hp_percentage: float) -> Entity:

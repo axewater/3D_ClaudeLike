@@ -114,6 +114,7 @@ The `AnimationManager3DProxy` in `main_3d.py` bridges neutral interface to 3D:
 - **Mouse** - Aim targeting reticle
 - **ESC** - Cancel targeting / Pause menu
 - **F1** - Debug: Reveal full map
+- **F2** - Debug: Skip to next level
 
 ---
 

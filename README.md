@@ -26,6 +26,7 @@ python main.py --skip-intro
 - Mouse - Aim targeting reticle for abilities
 - ESC - Cancel targeting / Pause menu
 - F1 - Debug: Reveal full map
+- F2 - Debug: Skip to next level
 
 ## 🎮 Game Features
 
@@ -394,6 +395,7 @@ app = Ursina(development_mode=True)  # Shows FPS, entity count, wireframes
 
 **Debug keys:**
 - F1 - Reveal entire map (disable fog of war)
+- F2 - Skip to next level (for testing)
 
 ### Testing Helpers
 
