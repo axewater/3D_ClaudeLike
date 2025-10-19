@@ -69,7 +69,8 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
         color=coin_color,
         scale=(0.2, 0.04, 0.2),  # Wide (X/Z) and very thin (Y)
         parent=coin,
-        position=(0, 0, 0)
+        position=(0, 0, 0),
+        rotation=(90, 0, 0)  # Rotate 90° around X-axis to stand upright
     )
 
     # Embossed center detail (smaller, brighter sphere for shine)
@@ -79,6 +80,7 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
         scale=(0.12, 0.05, 0.12),  # Smaller than main disc
         parent=coin,
         position=(0, 0, 0),
+        rotation=(90, 0, 0),  # Match coin disc rotation
         unlit=True  # Emissive shine
     )
 
@@ -90,6 +92,7 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
         scale=(0.22, 0.03, 0.22),  # Slightly larger and thinner
         parent=coin,
         position=(0, 0, 0),
+        rotation=(90, 0, 0),  # Match coin disc rotation
         alpha=0.7
     )
 
