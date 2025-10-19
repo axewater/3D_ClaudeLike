@@ -264,7 +264,7 @@ def create_wall_mesh(x: int, y: int, biome: str, biome_color, height: float = No
 
 def create_stairs_mesh(x: int, y: int, biome_color):
     """
-    Create a 3D staircase mesh
+    Create traditional dungeon stairs descending straight down into darkness
 
     Args:
         x: Grid X position
@@ -272,9 +272,9 @@ def create_stairs_mesh(x: int, y: int, biome_color):
         biome_color: RGB tuple (0-1 floats) for the biome
 
     Returns:
-        Ursina Entity representing stairs going down
+        Ursina Entity representing stairs descending into darkness
     """
-    pos = world_to_3d_position(x, y, 0.2)
+    pos = world_to_3d_position(x, y, 0)
 
     # Convert color tuple to ursina color (multiply by 255 for 0-255 integer range)
     if isinstance(biome_color, tuple) and len(biome_color) == 3:
@@ -283,21 +283,62 @@ def create_stairs_mesh(x: int, y: int, biome_color):
         # Fallback to default stairs color
         stairs_color = ursina_color.rgb(c.COLOR_STAIRS_RGB[0] * 255, c.COLOR_STAIRS_RGB[1] * 255, c.COLOR_STAIRS_RGB[2] * 255)
 
-    # Brighten stairs to make them stand out
-    bright_color = ursina_color.rgb(
-        min(255, stairs_color.r * 255 * 1.5),
-        min(255, stairs_color.g * 255 * 1.5),
-        min(255, stairs_color.b * 255 * 1.5)
-    )
+    # Parent entity to hold all stair components
+    stair_group = Entity(position=pos)
 
-    # Simple stairs: cube with glow effect
-    return Entity(
-        model='cube',
-        position=pos,
-        scale=(0.8, 0.4, 0.8),
-        color=bright_color,
-        texture='white_cube'
-    )
+    # Create 6 descending steps going straight down (north direction)
+    num_steps = 6
+    step_depth = 0.15  # How far forward each step goes
+    step_height = 0.15  # How much each step descends
+    step_width = 0.7   # Width of the step tread
+    support_size = 0.12  # Size of support blocks on ends
+
+    for i in range(num_steps):
+        # Calculate position (steps go forward/north and down)
+        step_z = -i * step_depth  # Move forward (negative Z)
+        step_y = -i * step_height  # Move down (negative Y)
+
+        # Fade to darkness as steps descend (0.0 = bright at top, 1.0 = dark at bottom)
+        darkness_factor = i / (num_steps - 1)
+
+        # Calculate step color (bright at top, nearly black at bottom)
+        step_color = ursina_color.rgb(
+            max(5, stairs_color.r * 255 * (2.0 - darkness_factor * 1.8)),
+            max(5, stairs_color.g * 255 * (2.0 - darkness_factor * 1.8)),
+            max(5, stairs_color.b * 255 * (2.0 - darkness_factor * 1.8))
+        )
+
+        # Main step tread (horizontal walking surface)
+        step_tread = Entity(
+            parent=stair_group,
+            model='cube',
+            position=(0, step_y, step_z),
+            scale=(step_width, 0.05, step_depth),  # Thin horizontal slab
+            color=step_color,
+            collider=None
+        )
+
+        # Left support block (end of step)
+        left_support = Entity(
+            parent=stair_group,
+            model='cube',
+            position=(-step_width/2 + support_size/2, step_y - support_size/2, step_z),
+            scale=(support_size, support_size, step_depth),
+            color=step_color,
+            collider=None
+        )
+
+        # Right support block (end of step)
+        right_support = Entity(
+            parent=stair_group,
+            model='cube',
+            position=(step_width/2 - support_size/2, step_y - support_size/2, step_z),
+            scale=(support_size, support_size, step_depth),
+            color=step_color,
+            collider=None
+        )
+
+    return stair_group
 
 
 def create_ceiling_mesh(x: int, y: int, biome: str, biome_color):

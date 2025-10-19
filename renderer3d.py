@@ -166,11 +166,36 @@ class Renderer3D:
                     tile_entities.append(entity)
 
                 elif tile == c.TILE_STAIRS:
-                    # Render floor first
-                    floor_entity = create_floor_mesh(x, y, biome, floor_color)
-                    tile_entities.append(floor_entity)
+                    # Create partial floor on back half (stairs take front half)
+                    # This fills the black void where stairs don't reach
+                    from graphics3d.tiles import FLOOR_TEXTURES, CORNER_SHADOW_SHADER
+                    pos = world_to_3d_position(x, y, 0)
 
-                    # Then stairs on top
+                    # Get floor texture and color (same as regular floors)
+                    biome_textures = FLOOR_TEXTURES.get(biome, FLOOR_TEXTURES[c.BIOME_DUNGEON])
+                    variant_idx = (x * 7 + y * 13) % len(biome_textures)
+                    floor_texture = biome_textures[variant_idx]
+
+                    floor_color_converted = ursina_color.rgb(floor_color[0] * 255, floor_color[1] * 255, floor_color[2] * 255)
+                    floor_tint = ursina_color.rgb(
+                        min(255, 0.3 * 255 + floor_color_converted.r * 255 * 0.7),
+                        min(255, 0.3 * 255 + floor_color_converted.g * 255 * 0.7),
+                        min(255, 0.3 * 255 + floor_color_converted.b * 255 * 0.7)
+                    )
+
+                    # Partial floor plane (back half only - positive Z)
+                    partial_floor = Entity(
+                        model='plane',
+                        position=(pos[0], pos[1], pos[2] + 0.25),  # Shift back by quarter tile
+                        scale=(1, 1, 0.5),  # Half depth
+                        color=floor_tint,
+                        texture=floor_texture,
+                        collider=None
+                    )
+                    partial_floor.shader = CORNER_SHADOW_SHADER
+                    tile_entities.append(partial_floor)
+
+                    # Create descending staircase
                     stairs_entity = create_stairs_mesh(x, y, stairs_color)
                     tile_entities.append(stairs_entity)
 
