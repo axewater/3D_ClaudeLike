@@ -139,9 +139,9 @@ class Renderer3D:
         if not self.game.dungeon:
             return
 
-        # Get biome colors
+        # Get biome colors (RGB tuples for 3D rendering)
         biome = self.game.dungeon.biome
-        biome_colors = c.BIOME_COLORS.get(biome, c.BIOME_COLORS[c.BIOME_DUNGEON])
+        biome_colors = c.BIOME_COLORS_RGB.get(biome, c.BIOME_COLORS_RGB[c.BIOME_DUNGEON])
         floor_color = biome_colors["floor"]
         wall_color = biome_colors["wall"]
         stairs_color = biome_colors["stairs"]
@@ -154,20 +154,20 @@ class Renderer3D:
 
                 if tile == c.TILE_FLOOR:
                     # Render floor
-                    entity = create_floor_mesh(x, y, floor_color)
+                    entity = create_floor_mesh(x, y, biome, floor_color)
                     tile_entities.append(entity)
 
                     # Render ceiling above floor
-                    ceiling_entity = create_ceiling_mesh(x, y)
+                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color)
                     tile_entities.append(ceiling_entity)
 
                 elif tile == c.TILE_WALL:
-                    entity = create_wall_mesh(x, y, wall_color)
+                    entity = create_wall_mesh(x, y, biome, wall_color)
                     tile_entities.append(entity)
 
                 elif tile == c.TILE_STAIRS:
                     # Render floor first
-                    floor_entity = create_floor_mesh(x, y, floor_color)
+                    floor_entity = create_floor_mesh(x, y, biome, floor_color)
                     tile_entities.append(floor_entity)
 
                     # Then stairs on top
@@ -175,7 +175,7 @@ class Renderer3D:
                     tile_entities.append(stairs_entity)
 
                     # Render ceiling above stairs
-                    ceiling_entity = create_ceiling_mesh(x, y)
+                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color)
                     tile_entities.append(ceiling_entity)
 
                 # Store entities by position for fog of war updates

@@ -14,67 +14,112 @@ from shaders import create_corner_shadow_shader, create_toon_normal_shader
 
 # ===== CACHED PROCEDURAL TEXTURES =====
 # Generate these once at module load for performance
-print("Generating procedural dungeon textures (AAA quality - 1024px, 4 variants)...")
+print("Generating procedural biome textures (AAA quality - 1024px, 4 variants per biome)...")
 
-# Wall: Generate 4 variants at 1024x1024 to break repetition
-# Each variant uses a different random seed for unique patterns
+# Wall: Generate 4 variants for EACH biome with distinct visual styles
 from textures import RandomSeed
 from textures.organic import generate_moss_stone_texture, generate_moss_overlay
 from textures.bricks import generate_brick_pattern
 from ursina import Texture
 
-DUNGEON_WALL_TEXTURES = []
+# Wall textures organized by biome
+WALL_TEXTURES = {}
 wall_seeds = [12345, 67890, 24680, 13579]
-for i, seed in enumerate(wall_seeds):
-    print(f"  - Generating wall variant {i+1}/4 (seed={seed})...")
-    with RandomSeed(seed):
-        wall_pil = generate_moss_stone_texture(size=1024, moss_density='medium')
-        DUNGEON_WALL_TEXTURES.append(Texture(wall_pil))
 
-print(f"  ✓ {len(DUNGEON_WALL_TEXTURES)} wall variants generated")
+# Define biome-specific texture parameters
+biome_wall_configs = {
+    c.BIOME_DUNGEON: {'moss_density': 'medium', 'base_darkness': 1.0, 'name': 'Dungeon (mossy stone)'},
+    c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.5, 'name': 'Catacombs (bone-white brick)'},
+    c.BIOME_CAVES: {'moss_density': 'light', 'base_darkness': 1.2, 'name': 'Caves (dark earthy stone)'},
+    c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.5, 'name': 'Hell (charred black brick)'},
+    c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.3, 'name': 'Abyss (alien dark stone)'},
+}
 
-# Normal Maps: Generate 4 variants for bump mapping
+for biome, config in biome_wall_configs.items():
+    print(f"  - Generating {config['name']} wall variants...")
+    WALL_TEXTURES[biome] = []
+    for i, seed in enumerate(wall_seeds):
+        with RandomSeed(seed):
+            if config['moss_density'] == 'none':
+                # No moss - just weathered brick
+                from textures.weathering import add_weathering
+                brick_pil = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
+                wall_pil = add_weathering(brick_pil, intensity=1.0)
+            else:
+                wall_pil = generate_moss_stone_texture(
+                    size=1024,
+                    moss_density=config['moss_density'],
+                    base_darkness=config['base_darkness']
+                )
+            WALL_TEXTURES[biome].append(Texture(wall_pil))
+
+print(f"  ✓ {len(WALL_TEXTURES)} biome wall sets generated ({sum(len(v) for v in WALL_TEXTURES.values())} total textures)")
+
+# Normal Maps: Generate 4 variants for bump mapping per biome
 # Use brick base ONLY (no moss) since moss doesn't affect surface geometry
 from textures.bricks import generate_normal_map_from_brick_texture
 
-DUNGEON_WALL_NORMAL_MAPS = []
-for i, seed in enumerate(wall_seeds):
-    print(f"  - Generating wall normal map {i+1}/4 (seed={seed})...")
-    with RandomSeed(seed):
-        # Generate brick base WITHOUT moss overlay
-        # Normal maps represent actual geometry depth, not color variation
-        brick_pil = generate_brick_pattern(size=1024, darkness=1.0)
-        # EXTREME strength for cartoon effect (8.0 = super exaggerated depth)
-        normal_map_pil = generate_normal_map_from_brick_texture(brick_pil, strength=8.0)
-        DUNGEON_WALL_NORMAL_MAPS.append(Texture(normal_map_pil))
+WALL_NORMAL_MAPS = {}
+for biome, config in biome_wall_configs.items():
+    WALL_NORMAL_MAPS[biome] = []
+    for i, seed in enumerate(wall_seeds):
+        with RandomSeed(seed):
+            # Generate brick base WITHOUT moss overlay
+            # Normal maps represent actual geometry depth, not color variation
+            brick_pil = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
+            # EXTREME strength for cartoon effect (8.0 = super exaggerated depth)
+            normal_map_pil = generate_normal_map_from_brick_texture(brick_pil, strength=8.0)
+            WALL_NORMAL_MAPS[biome].append(Texture(normal_map_pil))
 
-print(f"  ✓ {len(DUNGEON_WALL_NORMAL_MAPS)} normal maps generated")
+print(f"  ✓ {len(WALL_NORMAL_MAPS)} biome normal map sets generated ({sum(len(v) for v in WALL_NORMAL_MAPS.values())} total maps)")
 
-# Floor: Generate 4 variants at 1024x1024 to break repetition
-# Brick with subtle moss accents
-DUNGEON_FLOOR_TEXTURES = []
+# Floor: Generate 4 variants for EACH biome
+FLOOR_TEXTURES = {}
 floor_seeds = [11111, 22222, 33333, 44444]
-for i, seed in enumerate(floor_seeds):
-    print(f"  - Generating floor variant {i+1}/4 (seed={seed})...")
-    with RandomSeed(seed):
-        floor_brick = generate_brick_pattern(size=1024, darkness=0.8)
-        floor_mossy_pil = generate_moss_overlay(floor_brick, density='light')
-        DUNGEON_FLOOR_TEXTURES.append(Texture(floor_mossy_pil))
 
-print(f"  ✓ {len(DUNGEON_FLOOR_TEXTURES)} floor variants generated")
+biome_floor_configs = {
+    c.BIOME_DUNGEON: {'moss_density': 'light', 'base_darkness': 0.8},
+    c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.4},
+    c.BIOME_CAVES: {'moss_density': 'medium', 'base_darkness': 1.0},
+    c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.4},
+    c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.2},
+}
 
-# Ceiling: Generate 4 variants at 1024x1024 to break repetition
-# Dark weathered stone with hanging moss and water damage
+for biome, config in biome_floor_configs.items():
+    FLOOR_TEXTURES[biome] = []
+    for i, seed in enumerate(floor_seeds):
+        with RandomSeed(seed):
+            floor_brick = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
+            if config['moss_density'] == 'none':
+                from textures.weathering import add_weathering
+                floor_pil = add_weathering(floor_brick, intensity=0.8)
+            else:
+                floor_pil = generate_moss_overlay(floor_brick, density=config['moss_density'])
+            FLOOR_TEXTURES[biome].append(Texture(floor_pil))
+
+print(f"  ✓ {len(FLOOR_TEXTURES)} biome floor sets generated ({sum(len(v) for v in FLOOR_TEXTURES.values())} total textures)")
+
+# Ceiling: Generate 4 variants for EACH biome
 from textures.organic import generate_ceiling_texture
-DUNGEON_CEILING_TEXTURES = []
+CEILING_TEXTURES = {}
 ceiling_seeds = [55555, 66666, 77777, 88888]
-for i, seed in enumerate(ceiling_seeds):
-    print(f"  - Generating ceiling variant {i+1}/4 (seed={seed})...")
-    with RandomSeed(seed):
-        ceiling_pil = generate_ceiling_texture(size=1024, moisture_level='medium')
-        DUNGEON_CEILING_TEXTURES.append(Texture(ceiling_pil))
 
-print(f"  ✓ {len(DUNGEON_CEILING_TEXTURES)} ceiling variants generated")
+biome_ceiling_configs = {
+    c.BIOME_DUNGEON: {'moisture_level': 'medium'},
+    c.BIOME_CATACOMBS: {'moisture_level': 'dry'},
+    c.BIOME_CAVES: {'moisture_level': 'heavy'},
+    c.BIOME_HELL: {'moisture_level': 'dry'},
+    c.BIOME_ABYSS: {'moisture_level': 'dry'},
+}
+
+for biome, config in biome_ceiling_configs.items():
+    CEILING_TEXTURES[biome] = []
+    for i, seed in enumerate(ceiling_seeds):
+        with RandomSeed(seed):
+            ceiling_pil = generate_ceiling_texture(size=1024, moisture_level=config['moisture_level'])
+            CEILING_TEXTURES[biome].append(Texture(ceiling_pil))
+
+print(f"  ✓ {len(CEILING_TEXTURES)} biome ceiling sets generated ({sum(len(v) for v in CEILING_TEXTURES.values())} total textures)")
 
 print("✓ Procedural textures generated and cached")
 
@@ -97,45 +142,48 @@ TOON_NORMAL_SHADER = create_toon_normal_shader(
 print("✓ Toon shader created (4 bands, rim lighting, comic book outlines enabled)")
 
 
-def create_floor_mesh(x: int, y: int, biome_color):
+def create_floor_mesh(x: int, y: int, biome: str, biome_color):
     """
-    Create a 3D floor tile mesh with procedural brick texture
+    Create a 3D floor tile mesh with procedural biome-specific texture
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
-        biome_color: RGB tuple (0-1 floats) for the biome (used for subtle tinting)
+        biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
+        biome_color: RGB tuple (0-1 floats) for the biome tint
 
     Returns:
         Ursina Entity representing the floor tile
     """
     pos = world_to_3d_position(x, y, 0)
 
-    # Convert color tuple to ursina color for subtle tinting
+    # Convert color tuple to ursina color (multiply by 255 for 0-255 integer range)
     if isinstance(biome_color, tuple) and len(biome_color) == 3:
-        floor_color = ursina_color.rgb(biome_color[0], biome_color[1], biome_color[2])
+        floor_color = ursina_color.rgb(biome_color[0] * 255, biome_color[1] * 255, biome_color[2] * 255)
     else:
         # Fallback to default floor color
-        floor_color = ursina_color.rgb(*c.COLOR_FLOOR_RGB)
+        floor_color = ursina_color.rgb(c.COLOR_FLOOR_RGB[0] * 255, c.COLOR_FLOOR_RGB[1] * 255, c.COLOR_FLOOR_RGB[2] * 255)
 
-    # Slight tint to preserve some biome identity, but let texture show through
-    subtle_tint = ursina_color.rgb(
-        min(1.0, 0.5 + floor_color.r * 0.5),  # 50% white + 50% biome color
-        min(1.0, 0.5 + floor_color.g * 0.5),
-        min(1.0, 0.5 + floor_color.b * 0.5)
+    # Apply moderate tint to preserve biome identity while showing texture detail
+    # 30% white + 70% biome color (matches wall tinting)
+    floor_tint = ursina_color.rgb(
+        min(255, 0.3 * 255 + floor_color.r * 255 * 0.7),
+        min(255, 0.3 * 255 + floor_color.g * 255 * 0.7),
+        min(255, 0.3 * 255 + floor_color.b * 255 * 0.7)
     )
 
-    # Select texture variant based on position (deterministic hash)
+    # Select texture variant based on biome AND position (deterministic hash)
     # This breaks repetition while being deterministic
-    variant_idx = (x * 7 + y * 13) % len(DUNGEON_FLOOR_TEXTURES)
-    floor_texture = DUNGEON_FLOOR_TEXTURES[variant_idx]
+    biome_textures = FLOOR_TEXTURES.get(biome, FLOOR_TEXTURES[c.BIOME_DUNGEON])
+    variant_idx = (x * 7 + y * 13) % len(biome_textures)
+    floor_texture = biome_textures[variant_idx]
 
     # Create floor entity
     floor_entity = Entity(
         model='plane',
         position=pos,
         scale=(1, 1, 1),
-        color=subtle_tint,  # Subtle tint to preserve biome identity
+        color=floor_tint,  # Biome-specific tint
         texture=floor_texture,  # Select from 4 variants
         collider=None  # No collision for floors
     )
@@ -146,14 +194,15 @@ def create_floor_mesh(x: int, y: int, biome_color):
     return floor_entity
 
 
-def create_wall_mesh(x: int, y: int, biome_color, height: float = None):
+def create_wall_mesh(x: int, y: int, biome: str, biome_color, height: float = None):
     """
-    Create a 3D wall tile mesh with procedural moss-covered stone texture
+    Create a 3D wall tile mesh with procedural biome-specific texture
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
-        biome_color: QColor or RGB tuple for the biome (now unused - texture provides color)
+        biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
+        biome_color: RGB tuple (0-1 floats) for the biome tint
         height: Wall height in world units (defaults to c.WALL_HEIGHT)
 
     Returns:
@@ -164,18 +213,35 @@ def create_wall_mesh(x: int, y: int, biome_color, height: float = None):
 
     pos = world_to_3d_position(x, y, height / 2)
 
-    # Select texture variant based on position (deterministic hash)
+    # Convert color tuple to ursina color (multiply by 255 for 0-255 integer range)
+    if isinstance(biome_color, tuple) and len(biome_color) == 3:
+        wall_color = ursina_color.rgb(biome_color[0] * 255, biome_color[1] * 255, biome_color[2] * 255)
+    else:
+        # Fallback to default wall color
+        wall_color = ursina_color.rgb(c.COLOR_WALL_RGB[0] * 255, c.COLOR_WALL_RGB[1] * 255, c.COLOR_WALL_RGB[2] * 255)
+
+    # Apply moderate tint to preserve biome identity while showing texture detail
+    # 30% white + 70% biome color
+    wall_tint = ursina_color.rgb(
+        min(255, 0.3 * 255 + wall_color.r * 255 * 0.7),
+        min(255, 0.3 * 255 + wall_color.g * 255 * 0.7),
+        min(255, 0.3 * 255 + wall_color.b * 255 * 0.7)
+    )
+
+    # Select texture variant based on biome AND position (deterministic hash)
     # This breaks repetition while being deterministic
-    variant_idx = (x * 7 + y * 13) % len(DUNGEON_WALL_TEXTURES)
-    wall_texture = DUNGEON_WALL_TEXTURES[variant_idx]
-    normal_map = DUNGEON_WALL_NORMAL_MAPS[variant_idx]
+    biome_textures = WALL_TEXTURES.get(biome, WALL_TEXTURES[c.BIOME_DUNGEON])
+    biome_normal_maps = WALL_NORMAL_MAPS.get(biome, WALL_NORMAL_MAPS[c.BIOME_DUNGEON])
+    variant_idx = (x * 7 + y * 13) % len(biome_textures)
+    wall_texture = biome_textures[variant_idx]
+    normal_map = biome_normal_maps[variant_idx]
 
     # Create wall entity with procedural moss-covered stone texture
     wall_entity = Entity(
         model='cube',
         position=pos,
         scale=(1, height, 1),
-        color=ursina_color.white,  # Neutral tint - let texture show its true colors
+        color=wall_tint,  # Biome-specific tint
         texture=wall_texture,  # Select from 4 variants
         collider='box'  # Walls have collision
     )
@@ -210,18 +276,18 @@ def create_stairs_mesh(x: int, y: int, biome_color):
     """
     pos = world_to_3d_position(x, y, 0.2)
 
-    # Convert color tuple to ursina color
+    # Convert color tuple to ursina color (multiply by 255 for 0-255 integer range)
     if isinstance(biome_color, tuple) and len(biome_color) == 3:
-        stairs_color = ursina_color.rgb(biome_color[0], biome_color[1], biome_color[2])
+        stairs_color = ursina_color.rgb(biome_color[0] * 255, biome_color[1] * 255, biome_color[2] * 255)
     else:
         # Fallback to default stairs color
-        stairs_color = ursina_color.rgb(*c.COLOR_STAIRS_RGB)
+        stairs_color = ursina_color.rgb(c.COLOR_STAIRS_RGB[0] * 255, c.COLOR_STAIRS_RGB[1] * 255, c.COLOR_STAIRS_RGB[2] * 255)
 
     # Brighten stairs to make them stand out
     bright_color = ursina_color.rgb(
-        min(1, stairs_color.r * 1.5),
-        min(1, stairs_color.g * 1.5),
-        min(1, stairs_color.b * 1.5)
+        min(255, stairs_color.r * 255 * 1.5),
+        min(255, stairs_color.g * 255 * 1.5),
+        min(255, stairs_color.b * 255 * 1.5)
     )
 
     # Simple stairs: cube with glow effect
@@ -234,13 +300,15 @@ def create_stairs_mesh(x: int, y: int, biome_color):
     )
 
 
-def create_ceiling_mesh(x: int, y: int):
+def create_ceiling_mesh(x: int, y: int, biome: str, biome_color):
     """
-    Create a 3D ceiling tile mesh with procedural hanging moss texture
+    Create a 3D ceiling tile mesh with procedural biome-specific texture
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
+        biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
+        biome_color: RGB tuple (0-1 floats) for the biome tint
 
     Returns:
         Ursina Entity representing the ceiling tile
@@ -248,17 +316,33 @@ def create_ceiling_mesh(x: int, y: int):
     # Position ceiling at top of walls
     pos = world_to_3d_position(x, y, c.WALL_HEIGHT)
 
-    # Select texture variant based on position (deterministic hash)
+    # Convert color tuple to ursina color (multiply by 255 for 0-255 integer range)
+    if isinstance(biome_color, tuple) and len(biome_color) == 3:
+        ceiling_color = ursina_color.rgb(biome_color[0] * 255, biome_color[1] * 255, biome_color[2] * 255)
+    else:
+        # Fallback to default wall color (ceiling uses wall biome color)
+        ceiling_color = ursina_color.rgb(c.COLOR_WALL_RGB[0] * 255, c.COLOR_WALL_RGB[1] * 255, c.COLOR_WALL_RGB[2] * 255)
+
+    # Apply moderate tint to preserve biome identity while showing texture detail
+    # 30% white + 70% biome color (matches wall/floor tinting)
+    ceiling_tint = ursina_color.rgb(
+        min(255, 0.3 * 255 + ceiling_color.r * 255 * 0.7),
+        min(255, 0.3 * 255 + ceiling_color.g * 255 * 0.7),
+        min(255, 0.3 * 255 + ceiling_color.b * 255 * 0.7)
+    )
+
+    # Select texture variant based on biome AND position (deterministic hash)
     # This breaks repetition while being deterministic
-    variant_idx = (x * 7 + y * 13) % len(DUNGEON_CEILING_TEXTURES)
-    ceiling_texture = DUNGEON_CEILING_TEXTURES[variant_idx]
+    biome_textures = CEILING_TEXTURES.get(biome, CEILING_TEXTURES[c.BIOME_DUNGEON])
+    variant_idx = (x * 7 + y * 13) % len(biome_textures)
+    ceiling_texture = biome_textures[variant_idx]
 
     # Create ceiling plane facing downward
     ceiling_entity = Entity(
         model='plane',
         position=pos,
         scale=(1, 1, 1),
-        color=ursina_color.white,  # No tinting - let texture show
+        color=ceiling_tint,  # Biome-specific tint
         texture=ceiling_texture,  # Select from 4 variants
         rotation_x=180,  # Flip to face downward
         collider=None  # No collision for ceilings
