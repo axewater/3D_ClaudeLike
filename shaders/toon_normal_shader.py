@@ -15,12 +15,14 @@ Features:
 from ursina import Shader
 
 
-def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3) -> Shader:
+def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3,
+                             outline_thickness: float = 1.0, outline_threshold: float = 0.4) -> Shader:
     """
-    Create toon/cell shading shader with normal mapping support.
+    Create toon/cell shading shader with normal mapping support and comic book outlines.
 
     This shader quantizes lighting into discrete bands (like anime/cartoon shading)
     while using normal maps to calculate realistic surface orientation.
+    Edge detection adds thick black outlines at brick boundaries for a comic book look.
     The result is dramatic 3D depth with a stylized, non-photorealistic look.
 
     Args:
@@ -28,12 +30,17 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3) ->
                    Default 4 creates: deep shadow, shadow, mid-tone, highlight
         rim_intensity: Strength of rim lighting on edges (0.0 = off, 0.5 = strong)
                        Default 0.3 adds subtle edge highlights
+        outline_thickness: Width of comic book outlines (0.5 = thin, 1.0 = standard, 2.0 = thick)
+                          Default 1.0 provides balanced comic book look
+        outline_threshold: Edge detection sensitivity (0.2 = busy, 0.4 = balanced, 0.6 = minimal)
+                          Default 0.4 detects brick/mortar boundaries
 
     Returns:
         Ursina Shader object ready to apply to Entity
 
     Example:
-        shader = create_toon_normal_shader(num_bands=4, rim_intensity=0.3)
+        shader = create_toon_normal_shader(num_bands=4, rim_intensity=0.3,
+                                          outline_thickness=1.0, outline_threshold=0.4)
         wall_entity.shader = shader
 
     Lighting Bands (num_bands=4):
@@ -41,6 +48,10 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3) ->
         - Band 1: Shadow (0.25-0.5) - DARK GRAY (brick recesses)
         - Band 2: Mid-tone (0.5-0.75) - MEDIUM (brick faces)
         - Band 3: Highlight (0.75-1.0) - BRIGHT (brick edges)
+
+    Comic Book Outlines:
+        Uses Sobel edge detection on normal map to draw black outlines
+        wherever brick edges meet mortar joints.
     """
 
     # Vertex shader - transforms normals and calculates world position
@@ -113,6 +124,11 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3) ->
     const int num_bands = {num_bands};
     const float rim_intensity = {rim_intensity};
 
+    // Comic book outline parameters
+    const float outline_thickness = {outline_thickness};
+    const float outline_threshold = {outline_threshold};
+    const vec3 outline_color = vec3(0.0, 0.0, 0.0);  // Black outlines
+
     void main() {{
         // Sample base texture color
         vec4 base_color = texture(p3d_Texture0, texcoord);
@@ -149,6 +165,44 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3) ->
 
         // Apply lighting to base color
         vec3 final_color = base_color.rgb * final_light;
+
+        // ===== COMIC BOOK OUTLINES (Sobel Edge Detection) =====
+        // Calculate UV offset for sampling neighboring pixels
+        // Assumes 1024x1024 texture; adjust if needed
+        float texel_size = 1.0 / 1024.0;
+        float offset = texel_size * outline_thickness;
+
+        // Sample 9 neighboring normal map pixels in 3x3 grid
+        // Layout:  NW  N  NE
+        //          W   C  E
+        //          SW  S  SE
+        vec3 n_nw = texture(p3d_Texture1, texcoord + vec2(-offset,  offset)).rgb;
+        vec3 n_n  = texture(p3d_Texture1, texcoord + vec2(0.0,      offset)).rgb;
+        vec3 n_ne = texture(p3d_Texture1, texcoord + vec2( offset,  offset)).rgb;
+        vec3 n_w  = texture(p3d_Texture1, texcoord + vec2(-offset,  0.0)).rgb;
+        vec3 n_c  = texture(p3d_Texture1, texcoord).rgb;  // Center (already sampled above)
+        vec3 n_e  = texture(p3d_Texture1, texcoord + vec2( offset,  0.0)).rgb;
+        vec3 n_sw = texture(p3d_Texture1, texcoord + vec2(-offset, -offset)).rgb;
+        vec3 n_s  = texture(p3d_Texture1, texcoord + vec2(0.0,     -offset)).rgb;
+        vec3 n_se = texture(p3d_Texture1, texcoord + vec2( offset, -offset)).rgb;
+
+        // Apply Sobel operator to detect edges in normal map
+        // Horizontal kernel: [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+        vec3 sobel_h = -n_nw + n_ne - 2.0*n_w + 2.0*n_e - n_sw + n_se;
+
+        // Vertical kernel: [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
+        vec3 sobel_v = -n_nw - 2.0*n_n - n_ne + n_sw + 2.0*n_s + n_se;
+
+        // Calculate edge magnitude (gradient strength)
+        // Use length of gradient vector for each RGB channel, then average
+        float edge_strength = length(sobel_h) + length(sobel_v);
+        edge_strength /= 2.0;  // Normalize
+
+        // Apply threshold to create sharp outline
+        float edge = smoothstep(outline_threshold - 0.05, outline_threshold + 0.05, edge_strength);
+
+        // Mix between toon-shaded color and outline color
+        final_color = mix(final_color, outline_color, edge);
 
         // Output with original alpha
         fragColor = vec4(final_color, base_color.a);

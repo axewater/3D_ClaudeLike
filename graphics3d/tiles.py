@@ -88,8 +88,13 @@ print(f"✓ Corner shadow shader created (intensity={c.CORNER_SHADOW_INTENSITY})
 
 # Toon shader for walls (cartoon depth effect with exaggerated normals)
 print("Creating toon shader for cartoon depth effect...")
-TOON_NORMAL_SHADER = create_toon_normal_shader(num_bands=4, rim_intensity=0.4)
-print("✓ Toon shader created (4 bands, rim lighting enabled)")
+TOON_NORMAL_SHADER = create_toon_normal_shader(
+    num_bands=4,
+    rim_intensity=0.4,
+    outline_thickness=1.0,
+    outline_threshold=0.4
+)
+print("✓ Toon shader created (4 bands, rim lighting, comic book outlines enabled)")
 
 
 def create_floor_mesh(x: int, y: int, biome_color):
