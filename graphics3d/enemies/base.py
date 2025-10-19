@@ -4,7 +4,7 @@ Base utilities for 3D enemy model rendering
 Shared functions for all enemy models.
 """
 
-from ursina import Entity, Vec3, Text, color as ursina_color
+from ursina import Entity, Vec3, color as ursina_color
 import constants as c
 from graphics3d.utils import world_to_3d_position
 
@@ -132,61 +132,79 @@ def update_enemy_animation(enemy_entity, enemy_type: str, dt: float, camera_posi
 
 def create_health_bar_billboard(hp_percentage: float) -> Entity:
     """
-    Create a 3D health bar billboard above enemy
+    Create a 3D graphical health bar billboard above enemy
 
     Args:
         hp_percentage: Health percentage (0.0-1.0)
 
     Returns:
-        Ursina Text entity representing the health bar
+        Ursina Entity containing background and fill bar (graphical, not ASCII)
     """
-    # Calculate filled vs empty portions (10 blocks total)
-    filled = max(0, min(10, int(hp_percentage * 10)))
-    empty = 10 - filled
+    # Bar dimensions
+    bar_width = 0.8
+    bar_height = 0.1
 
-    # Bar text using ASCII characters (# for filled, - for empty)
-    bar_text = "#" * filled + "-" * empty
-
-    # Determine color based on HP percentage
+    # Determine color based on HP percentage (0-1 float scale for Entity colors)
     if hp_percentage > 0.6:
-        bar_color = ursina_color.rgb(80, 200, 120)  # Green
+        bar_color = ursina_color.rgb(0.31, 0.78, 0.47)  # Green (80, 200, 120 / 255)
     elif hp_percentage > 0.3:
-        bar_color = ursina_color.rgb(255, 193, 7)  # Yellow
+        bar_color = ursina_color.rgb(1.0, 0.76, 0.03)  # Yellow (255, 193, 7 / 255)
     else:
-        bar_color = ursina_color.rgb(244, 67, 54)  # Red
+        bar_color = ursina_color.rgb(0.96, 0.26, 0.21)  # Red (244, 67, 54 / 255)
 
-    # Create billboard text entity
-    health_bar = Text(
-        text=bar_text,
-        scale=c.HEALTH_BAR_SCALE,  # Now 2.0 for better readability
-        color=bar_color,
-        origin=(0, 0),
-        billboard=True,  # Always faces camera
-        position=(0, c.HEALTH_BAR_OFFSET_Y, 0)  # Above enemy
+    # Create parent container entity
+    health_bar_container = Entity(
+        position=(0, c.HEALTH_BAR_OFFSET_Y, 0),  # Above enemy
+        billboard=True  # Always faces camera
     )
 
-    return health_bar
+    # Background bar (dark gray)
+    health_bar_bg = Entity(
+        parent=health_bar_container,
+        model='quad',
+        color=ursina_color.rgb(0.12, 0.12, 0.12),  # Dark gray (30, 30, 30 / 255)
+        scale=(bar_width, bar_height),
+        position=(0, 0, 0.01),  # Slightly behind fill
+        origin=(0, 0)
+    )
+
+    # Fill bar (colored, scales with HP)
+    health_bar_fill = Entity(
+        parent=health_bar_container,
+        model='quad',
+        color=bar_color,
+        scale=(bar_width * hp_percentage, bar_height),  # Scale by HP
+        position=(-bar_width / 2, 0, 0),  # Align left edge with background's left edge
+        origin=(-0.5, 0)  # Left-aligned origin
+    )
+
+    # Store references in container for easy access during updates
+    health_bar_container.background = health_bar_bg
+    health_bar_container.fill = health_bar_fill
+    health_bar_container.max_width = bar_width  # Store max width for updates
+
+    return health_bar_container
 
 
 def update_health_bar(health_bar: Entity, hp_percentage: float):
     """
-    Update health bar text and color
+    Update graphical health bar fill and color
 
     Args:
-        health_bar: Health bar entity to update
+        health_bar: Health bar container entity (with fill and background)
         hp_percentage: New health percentage (0.0-1.0)
     """
-    # Calculate filled vs empty portions
-    filled = max(0, min(10, int(hp_percentage * 10)))
-    empty = 10 - filled
-
-    # Update text (# for filled, - for empty)
-    health_bar.text = "#" * filled + "-" * empty
-
-    # Update color
+    # Determine color based on HP percentage (0-1 float scale for Entity colors)
     if hp_percentage > 0.6:
-        health_bar.color = ursina_color.rgb(80, 200, 120)  # Green
+        bar_color = ursina_color.rgb(0.31, 0.78, 0.47)  # Green (80, 200, 120 / 255)
     elif hp_percentage > 0.3:
-        health_bar.color = ursina_color.rgb(255, 193, 7)  # Yellow
+        bar_color = ursina_color.rgb(1.0, 0.76, 0.03)  # Yellow (255, 193, 7 / 255)
     else:
-        health_bar.color = ursina_color.rgb(244, 67, 54)  # Red
+        bar_color = ursina_color.rgb(0.96, 0.26, 0.21)  # Red (244, 67, 54 / 255)
+
+    # Update fill bar scale and color
+    if hasattr(health_bar, 'fill'):
+        max_width = health_bar.max_width
+        health_bar.fill.scale_x = max_width * hp_percentage
+        # Position stays constant - only scale changes
+        health_bar.fill.color = bar_color
