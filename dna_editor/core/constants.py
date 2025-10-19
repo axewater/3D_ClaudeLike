@@ -10,10 +10,216 @@ DEFAULT_PARAMS = {
     'fourier': {'num_waves': 3, 'amplitude': 0.15}
 }
 
-# Preset configurations (name, algorithm, params)
+# Preset configurations for Tentacle creature (name, algorithm, params)
 PRESETS = [
     ('Default', 'bezier', {'control_strength': 0.4}),
     ('Tight', 'bezier', {'control_strength': 0.2}),
+]
+
+# Blob creature presets (name, params_dict)
+BLOB_PRESETS = [
+    ('Default', {
+        'blob_branch_depth': 2,
+        'blob_branch_count': 2,
+        'cube_size_min': 0.3,
+        'cube_size_max': 0.8,
+        'cube_spacing': 1.2,
+        'blob_color': (0.2, 0.8, 0.4),
+        'blob_transparency': 0.7,
+        'jiggle_speed': 2.0,
+        'blob_pulse_amount': 0.1
+    }),
+    ('Compact', {
+        'blob_branch_depth': 1,
+        'blob_branch_count': 3,
+        'cube_size_min': 0.25,
+        'cube_size_max': 0.6,
+        'cube_spacing': 0.8,
+        'blob_color': (0.3, 0.6, 0.9),
+        'blob_transparency': 0.6,
+        'jiggle_speed': 3.0,
+        'blob_pulse_amount': 0.15
+    }),
+    ('Branching', {
+        'blob_branch_depth': 3,
+        'blob_branch_count': 2,
+        'cube_size_min': 0.2,
+        'cube_size_max': 0.5,
+        'cube_spacing': 1.5,
+        'blob_color': (0.8, 0.3, 0.7),
+        'blob_transparency': 0.75,
+        'jiggle_speed': 1.5,
+        'blob_pulse_amount': 0.08
+    }),
+]
+
+# Polyp creature presets (name, params_dict)
+POLYP_PRESETS = [
+    ('Default', {
+        'num_spheres': 4,
+        'base_sphere_size': 0.8,
+        'polyp_color': (0.6, 0.3, 0.7),
+        'curve_intensity': 0.4,
+        'polyp_tentacles_per_sphere': 6,
+        'polyp_segments': 12,
+        'polyp_thickness': 0.2,
+        'polyp_taper': 0.6,
+        'polyp_anim_speed': 2.0,
+        'polyp_pulse_amount': 0.08
+    }),
+    ('Tall', {
+        'num_spheres': 5,
+        'base_sphere_size': 0.6,
+        'polyp_color': (0.3, 0.7, 0.5),
+        'curve_intensity': 0.6,
+        'polyp_tentacles_per_sphere': 5,
+        'polyp_segments': 10,
+        'polyp_thickness': 0.15,
+        'polyp_taper': 0.7,
+        'polyp_anim_speed': 1.5,
+        'polyp_pulse_amount': 0.1
+    }),
+    ('Bushy', {
+        'num_spheres': 3,
+        'base_sphere_size': 1.0,
+        'polyp_color': (0.8, 0.5, 0.3),
+        'curve_intensity': 0.3,
+        'polyp_tentacles_per_sphere': 8,
+        'polyp_segments': 14,
+        'polyp_thickness': 0.25,
+        'polyp_taper': 0.5,
+        'polyp_anim_speed': 2.5,
+        'polyp_pulse_amount': 0.06
+    }),
+]
+
+# Starfish creature presets (name, params_dict)
+STARFISH_PRESETS = [
+    ('Default', {
+        'num_arms': 5,
+        'arm_segments': 6,
+        'central_body_size': 0.8,
+        'arm_base_thickness': 0.4,
+        'starfish_color': (0.9, 0.5, 0.3),
+        'curl_factor': 0.3,
+        'starfish_anim_speed': 1.5,
+        'starfish_pulse_amount': 0.06
+    }),
+    ('Hexapus', {
+        'num_arms': 6,
+        'arm_segments': 8,
+        'central_body_size': 0.6,
+        'arm_base_thickness': 0.35,
+        'starfish_color': (0.4, 0.6, 0.9),
+        'curl_factor': 0.5,
+        'starfish_anim_speed': 2.0,
+        'starfish_pulse_amount': 0.08
+    }),
+    ('Octopus', {
+        'num_arms': 8,
+        'arm_segments': 7,
+        'central_body_size': 1.0,
+        'arm_base_thickness': 0.3,
+        'starfish_color': (0.6, 0.3, 0.4),
+        'curl_factor': 0.15,
+        'starfish_anim_speed': 1.2,
+        'starfish_pulse_amount': 0.05
+    }),
+]
+
+# Medusa creature presets (name, params_dict)
+MEDUSA_PRESETS = [
+    ('Default', {
+        'medusa_num_tentacles': 8,
+        'medusa_segments': 16,
+        'medusa_thickness': 0.25,
+        'medusa_taper': 0.6,
+        'medusa_body_scale': 1.0,
+        'medusa_color': (0.4, 0.2, 0.6),
+        'medusa_hue_shift': 0.08,
+        'medusa_anim_speed': 1.5,
+        'medusa_wave_amplitude': 0.08,
+        'medusa_pulse_speed': 1.2,
+        'medusa_pulse_amount': 0.06,
+        'medusa_eye_size': 0.18
+    }),
+    ('Jellyfish', {
+        'medusa_num_tentacles': 12,
+        'medusa_segments': 20,
+        'medusa_thickness': 0.15,
+        'medusa_taper': 0.7,
+        'medusa_body_scale': 1.2,
+        'medusa_color': (0.5, 0.7, 0.9),
+        'medusa_hue_shift': 0.05,
+        'medusa_anim_speed': 1.0,
+        'medusa_wave_amplitude': 0.12,
+        'medusa_pulse_speed': 1.5,
+        'medusa_pulse_amount': 0.1,
+        'medusa_eye_size': 0.12
+    }),
+    ('Squid', {
+        'medusa_num_tentacles': 6,
+        'medusa_segments': 12,
+        'medusa_thickness': 0.35,
+        'medusa_taper': 0.5,
+        'medusa_body_scale': 1.5,
+        'medusa_color': (0.7, 0.3, 0.2),
+        'medusa_hue_shift': 0.12,
+        'medusa_anim_speed': 2.0,
+        'medusa_wave_amplitude': 0.06,
+        'medusa_pulse_speed': 0.8,
+        'medusa_pulse_amount': 0.04,
+        'medusa_eye_size': 0.25
+    }),
+]
+
+# Dragon creature presets (name, params_dict)
+DRAGON_PRESETS = [
+    ('Default', {
+        'dragon_segments': 15,
+        'dragon_thickness': 0.3,
+        'dragon_taper': 0.6,
+        'dragon_head_scale': 3.0,
+        'dragon_body_color': (200, 40, 40),
+        'dragon_head_color': (255, 200, 50),
+        'dragon_weave_amplitude': 0.5,
+        'dragon_bob_amplitude': 0.3,
+        'dragon_anim_speed': 1.5,
+        'dragon_mouth_size': 0.25,
+        'dragon_num_whiskers': 2,
+        'dragon_whisker_segments': 4,
+        'dragon_whisker_thickness': 0.05
+    }),
+    ('Serpent', {
+        'dragon_segments': 25,
+        'dragon_thickness': 0.2,
+        'dragon_taper': 0.7,
+        'dragon_head_scale': 2.5,
+        'dragon_body_color': (50, 180, 50),
+        'dragon_head_color': (150, 255, 150),
+        'dragon_weave_amplitude': 0.7,
+        'dragon_bob_amplitude': 0.2,
+        'dragon_anim_speed': 2.0,
+        'dragon_mouth_size': 0.3,
+        'dragon_num_whiskers': 3,
+        'dragon_whisker_segments': 5,
+        'dragon_whisker_thickness': 0.04
+    }),
+    ('Wyrm', {
+        'dragon_segments': 10,
+        'dragon_thickness': 0.5,
+        'dragon_taper': 0.4,
+        'dragon_head_scale': 3.5,
+        'dragon_body_color': (120, 80, 200),
+        'dragon_head_color': (200, 150, 255),
+        'dragon_weave_amplitude': 0.3,
+        'dragon_bob_amplitude': 0.4,
+        'dragon_anim_speed': 1.0,
+        'dragon_mouth_size': 0.4,
+        'dragon_num_whiskers': 1,
+        'dragon_whisker_segments': 3,
+        'dragon_whisker_thickness': 0.06
+    }),
 ]
 
 # Default values

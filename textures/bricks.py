@@ -16,42 +16,55 @@ from typing import Tuple
 from PIL import Image, ImageDraw
 
 
-def generate_brick_pattern(size: int = 256, darkness: float = 1.0) -> Image.Image:
-    """Generate brick pattern with mortar lines.
+def generate_brick_pattern(size: int = 1024, darkness: float = 1.0) -> Image.Image:
+    """Generate brick pattern with smooth gradient mortar joints (AAA Quality).
 
     Creates a realistic brick wall texture with:
     - Running bond pattern (staggered rows)
     - Individual brick color variation
-    - Mortar lines between bricks
+    - Smooth gradient mortar joints (simulates recessed depth)
+    - 4-zone gradients: mortar core → shadow → brick edge → brick face
     - Hairline cracks on brick surfaces
     - Adjustable brightness via darkness parameter
 
     Args:
-        size: Texture size in pixels (will be square, power of 2 recommended)
+        size: Texture size in pixels (1024 recommended for AAA quality, power of 2)
         darkness: Brightness multiplier (0.0 = black, 1.0 = normal, <1.0 = darker)
 
     Returns:
         PIL Image with RGBA brick pattern
 
     Example:
-        >>> brick = generate_brick_pattern(256, darkness=0.8)
-        >>> brick.save('brick_texture.png')
+        brick = generate_brick_pattern(1024, darkness=0.8)
+        brick.save('brick_texture.png')
 
-    Reference:
-        Ported from ui/screens/title_screen_3d.py:238-284
+    Technical Details:
+        - At 1024px: 341×256px bricks, 16px mortar joints
+        - Gradient zones (16px): 6px core + 3px shadow + 3px edge + 4px face
+        - Uses numpy-based smooth gradients for depth simulation
     """
+    from textures.generator import create_depth_gradient, apply_gradient_to_rect
+
     # Brick colors (varied gray-brown tones)
     brick_base = (65, 60, 55)
-    mortar_color = (95, 90, 85, 255)
+    mortar_color = (95, 90, 85)
+
+    # Mortar width scales with texture size
+    # At 1024px: 16px mortar (prominent gradients)
+    # At 512px: 8px mortar (scaled down)
+    mortar_size = max(8, int(size * 0.015625))  # 16px at 1024, 8px at 512
 
     # Create image filled with mortar color
-    image = Image.new('RGBA', (size, size), color=mortar_color)
+    image = Image.new('RGBA', (size, size), color=mortar_color + (255,))
     draw = ImageDraw.Draw(image)
 
     # Brick dimensions
     brick_height = size // 4
     brick_width = size // 3
-    mortar_size = 3
+
+    # Pre-generate depth gradient for mortar joints
+    # This gradient simulates recessed mortar with shadow zones
+    gradient = create_depth_gradient(mortar_color, brick_base, mortar_size, shadow_factor=0.6)
 
     # Draw bricks in 4 rows
     for row in range(4):
@@ -69,32 +82,38 @@ def generate_brick_pattern(size: int = 256, darkness: float = 1.0) -> Image.Imag
             brick_color = (
                 max(0, min(255, brick_base[0] + variation)),
                 max(0, min(255, brick_base[1] + variation)),
-                max(0, min(255, brick_base[2] + variation)),
-                255
+                max(0, min(255, brick_base[2] + variation))
             )
 
-            # Draw brick (leaving mortar gaps)
-            brick_rect = [
-                x + mortar_size,
-                y + mortar_size,
-                x + brick_width - mortar_size,
-                y + brick_height - mortar_size
-            ]
-            draw.rectangle(brick_rect, fill=brick_color)
+            # Generate per-brick gradient (with color variation)
+            brick_gradient = create_depth_gradient(mortar_color, brick_color, mortar_size, shadow_factor=0.6)
 
-            # Add cracks for texture (2 per brick)
+            # Define brick area (full area including gradient zones)
+            brick_x = x
+            brick_y = y
+            brick_w = brick_width
+            brick_h = brick_height
+
+            # Apply gradients from all 4 edges inward
+            # This creates the depth effect: mortar → shadow → edge → brick face
+            apply_gradient_to_rect(image, brick_x, brick_y, brick_w, brick_h,
+                                  brick_gradient, direction='both')
+
+            # Add cracks for texture (2-3 per brick, scaled to size)
             crack_color = (
-                max(0, brick_base[0] - 15),
-                max(0, brick_base[1] - 15),
-                max(0, brick_base[2] - 15),
+                max(0, brick_color[0] - 15),
+                max(0, brick_color[1] - 15),
+                max(0, brick_color[2] - 15),
                 255
             )
 
-            for _ in range(2):
-                # Random crack position within brick
-                crack_x = x + random.randint(mortar_size, brick_width - mortar_size)
-                crack_y = y + random.randint(mortar_size, brick_height - mortar_size)
-                crack_len = random.randint(5, 15)
+            num_cracks = random.randint(2, 3)
+            for _ in range(num_cracks):
+                # Random crack position within brick interior (avoid gradient zones)
+                crack_margin = mortar_size + 5
+                crack_x = x + random.randint(crack_margin, brick_width - crack_margin)
+                crack_y = y + random.randint(crack_margin, brick_height - crack_margin)
+                crack_len = random.randint(int(size * 0.01), int(size * 0.025))  # Scale with resolution
                 crack_offset_y = random.randint(-3, 3)
 
                 # Draw hairline crack

@@ -116,3 +116,12 @@ class BaseCreaturePanel(QWidget):
     def set_state(self, state):
         """Set state - to be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement set_state()")
+
+    def load_preset(self, *args):
+        """Load a preset configuration - to be implemented by subclasses.
+
+        Args can vary by creature type:
+        - Tentacle: (algorithm, params)
+        - Others: (params_dict,)
+        """
+        raise NotImplementedError("Subclasses must implement load_preset()")

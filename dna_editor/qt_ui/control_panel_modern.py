@@ -9,7 +9,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from ..core.constants import PRESETS
+from ..core.constants import (
+    PRESETS, BLOB_PRESETS, POLYP_PRESETS, STARFISH_PRESETS,
+    MEDUSA_PRESETS, DRAGON_PRESETS
+)
 from .panels import TentaclePanel, BlobPanel, PolypPanel, StarfishPanel, DragonPanel, MedusaPanel
 
 
@@ -52,6 +55,10 @@ class ModernControlPanel(QWidget):
         self._wave_amplitude = 0.05
         self._pulse_speed = 1.5
         self._pulse_amount = 0.05
+
+        # Preset buttons (will be populated dynamically)
+        self.preset_buttons = []
+        self.preset_layout = None
 
         self._updating = False
         self._init_ui()
@@ -234,6 +241,18 @@ class ModernControlPanel(QWidget):
             }
         """
 
+    def _get_current_presets(self):
+        """Get presets for the current creature type."""
+        preset_map = {
+            'tentacle': PRESETS,
+            'blob': BLOB_PRESETS,
+            'polyp': POLYP_PRESETS,
+            'starfish': STARFISH_PRESETS,
+            'medusa': MEDUSA_PRESETS,
+            'dragon': DRAGON_PRESETS
+        }
+        return preset_map.get(self._creature_type, [])
+
     def _create_animation_section(self):
         """Create Animation card (tentacle creature specific)."""
         group = QGroupBox("ANIMATION")
@@ -311,11 +330,11 @@ class ModernControlPanel(QWidget):
         layout.setSpacing(12)
         layout.setContentsMargins(15, 15, 15, 15)
 
-        # Presets
-        for name, algo, params in PRESETS:
-            btn = QPushButton(name)
-            btn.clicked.connect(lambda checked, a=algo, p=params: self._load_preset(a, p))
-            layout.addWidget(btn)
+        # Store layout reference for dynamic updates
+        self.preset_layout = layout
+
+        # Populate presets for current creature type
+        self._populate_preset_buttons()
 
         layout.addStretch()
 
@@ -393,6 +412,59 @@ class ModernControlPanel(QWidget):
         label.setWordWrap(True)
         return label
 
+    def _populate_preset_buttons(self):
+        """Populate preset buttons for the current creature type."""
+        # Remove existing preset buttons
+        for btn in self.preset_buttons:
+            self.preset_layout.removeWidget(btn)
+            btn.deleteLater()
+        self.preset_buttons.clear()
+
+        # Get presets for current creature type
+        presets = self._get_current_presets()
+        print(f"[PRESET DEBUG] Loading {len(presets)} presets for creature type: {self._creature_type}")
+
+        # Create new preset buttons
+        for preset_data in presets:
+            if self._creature_type == 'tentacle':
+                # Tentacle presets have (name, algorithm, params) format
+                name, algo, params = preset_data
+                btn = QPushButton(name)
+                btn.clicked.connect(lambda checked, a=algo, p=params: self._load_preset(a, p))
+            else:
+                # Other creatures have (name, params_dict) format
+                name, params = preset_data
+                btn = QPushButton(name)
+                btn.clicked.connect(lambda checked, p=params: self._load_preset(None, p))
+
+            # Style the preset button
+            btn.setMinimumHeight(40)
+            btn.setMinimumWidth(100)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                               stop:0 #6366f1, stop:1 #8b5cf6);
+                    border: 2px solid #a78bfa;
+                    font-weight: bold;
+                    font-size: 11pt;
+                    color: white;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                               stop:0 #7c3aed, stop:1 #a78bfa);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                               stop:0 #5b21b6, stop:1 #7c3aed);
+                }
+            """)
+
+            self.preset_layout.insertWidget(len(self.preset_buttons), btn)
+            self.preset_buttons.append(btn)
+            print(f"  [PRESET DEBUG] Created button: '{name}'")
+
     # Event Handlers
     def _on_creature_type_changed(self, text):
         """Handle creature type selection change."""
@@ -415,6 +487,9 @@ class ModernControlPanel(QWidget):
             self.starfish_panel.setVisible(self._creature_type == "starfish")
             self.medusa_panel.setVisible(self._creature_type == "medusa")
             self.dragon_panel.setVisible(self._creature_type == "dragon")
+
+            # Update preset buttons for new creature type
+            self._populate_preset_buttons()
 
             self.creature_type_changed.emit(self._creature_type)
             self.creature_changed.emit()
@@ -444,13 +519,20 @@ class ModernControlPanel(QWidget):
             self.creature_changed.emit()
 
     def _load_preset(self, algorithm, params):
-        """Load preset (only applies to tentacle creature)."""
+        """Load preset for current creature type."""
         if self._creature_type == 'tentacle':
-            self.tentacle_panel.set_state({
-                'algorithm': algorithm,
-                'params': params,
-                **self.tentacle_panel.get_state()
-            })
+            # Tentacle creature uses algorithm + params
+            self.tentacle_panel.load_preset(algorithm, params)
+        elif self._creature_type == 'blob':
+            self.blob_panel.load_preset(params)
+        elif self._creature_type == 'polyp':
+            self.polyp_panel.load_preset(params)
+        elif self._creature_type == 'starfish':
+            self.starfish_panel.load_preset(params)
+        elif self._creature_type == 'medusa':
+            self.medusa_panel.load_preset(params)
+        elif self._creature_type == 'dragon':
+            self.dragon_panel.load_preset(params)
 
     def get_state(self):
         """Get current state from active panel."""

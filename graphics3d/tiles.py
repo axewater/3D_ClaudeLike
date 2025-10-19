@@ -14,9 +14,9 @@ from shaders import create_corner_shadow_shader
 
 # ===== CACHED PROCEDURAL TEXTURES =====
 # Generate these once at module load for performance
-print("Generating procedural dungeon textures (AAA quality - 512px, 4 variants)...")
+print("Generating procedural dungeon textures (AAA quality - 1024px, 4 variants)...")
 
-# Wall: Generate 4 variants at 512x512 to break repetition
+# Wall: Generate 4 variants at 1024x1024 to break repetition
 # Each variant uses a different random seed for unique patterns
 from textures import RandomSeed
 from textures.organic import generate_moss_stone_texture, generate_moss_overlay
@@ -28,25 +28,25 @@ wall_seeds = [12345, 67890, 24680, 13579]
 for i, seed in enumerate(wall_seeds):
     print(f"  - Generating wall variant {i+1}/4 (seed={seed})...")
     with RandomSeed(seed):
-        wall_pil = generate_moss_stone_texture(size=512, moss_density='medium')
+        wall_pil = generate_moss_stone_texture(size=1024, moss_density='medium')
         DUNGEON_WALL_TEXTURES.append(Texture(wall_pil))
 
 print(f"  ✓ {len(DUNGEON_WALL_TEXTURES)} wall variants generated")
 
-# Floor: Generate 4 variants at 512x512 to break repetition
+# Floor: Generate 4 variants at 1024x1024 to break repetition
 # Brick with subtle moss accents
 DUNGEON_FLOOR_TEXTURES = []
 floor_seeds = [11111, 22222, 33333, 44444]
 for i, seed in enumerate(floor_seeds):
     print(f"  - Generating floor variant {i+1}/4 (seed={seed})...")
     with RandomSeed(seed):
-        floor_brick = generate_brick_pattern(size=512, darkness=0.8)
+        floor_brick = generate_brick_pattern(size=1024, darkness=0.8)
         floor_mossy_pil = generate_moss_overlay(floor_brick, density='light')
         DUNGEON_FLOOR_TEXTURES.append(Texture(floor_mossy_pil))
 
 print(f"  ✓ {len(DUNGEON_FLOOR_TEXTURES)} floor variants generated")
 
-# Ceiling: Generate 4 variants at 512x512 to break repetition
+# Ceiling: Generate 4 variants at 1024x1024 to break repetition
 # Dark weathered stone with hanging moss and water damage
 from textures.organic import generate_ceiling_texture
 DUNGEON_CEILING_TEXTURES = []
@@ -54,7 +54,7 @@ ceiling_seeds = [55555, 66666, 77777, 88888]
 for i, seed in enumerate(ceiling_seeds):
     print(f"  - Generating ceiling variant {i+1}/4 (seed={seed})...")
     with RandomSeed(seed):
-        ceiling_pil = generate_ceiling_texture(size=512, moisture_level='medium')
+        ceiling_pil = generate_ceiling_texture(size=1024, moisture_level='medium')
         DUNGEON_CEILING_TEXTURES.append(Texture(ceiling_pil))
 
 print(f"  ✓ {len(DUNGEON_CEILING_TEXTURES)} ceiling variants generated")

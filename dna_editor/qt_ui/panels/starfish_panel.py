@@ -221,3 +221,10 @@ class StarfishPanel(BaseCreaturePanel):
         self.starfish_pulse_slider.setValue(int(self._starfish_pulse * 100))
 
         self._updating = False
+
+    def load_preset(self, params):
+        """Load a preset configuration."""
+        # Merge preset params with current state and apply
+        current_state = self.get_state()
+        current_state.update(params)
+        self.set_state(current_state)

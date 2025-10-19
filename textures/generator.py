@@ -242,3 +242,202 @@ def adjust_saturation(image: Image.Image, factor: float = 1.5) -> Image.Image:
     """
     enhancer = ImageEnhance.Color(image)
     return enhancer.enhance(factor)
+
+
+# ===== GRADIENT GENERATION UTILITIES (AAA Quality) =====
+
+def blend_colors(color1: tuple, color2: tuple, alpha: float) -> tuple:
+    """Blend two RGB(A) colors with linear interpolation.
+
+    Args:
+        color1: First color as (R, G, B) or (R, G, B, A)
+        color2: Second color as (R, G, B) or (R, G, B, A)
+        alpha: Blend factor (0.0 = color1, 1.0 = color2)
+
+    Returns:
+        Blended color tuple (same format as inputs)
+
+    Example:
+        mortar = (95, 90, 85)
+        brick = (65, 60, 55)
+        transition = blend_colors(mortar, brick, 0.5)
+        # Returns (80, 75, 70) - halfway between
+    """
+    # Ensure alpha is in valid range
+    alpha = max(0.0, min(1.0, alpha))
+
+    # Blend RGB channels
+    r = int(color1[0] * (1 - alpha) + color2[0] * alpha)
+    g = int(color1[1] * (1 - alpha) + color2[1] * alpha)
+    b = int(color1[2] * (1 - alpha) + color2[2] * alpha)
+
+    # Handle alpha channel if present
+    if len(color1) == 4 and len(color2) == 4:
+        a = int(color1[3] * (1 - alpha) + color2[3] * alpha)
+        return (r, g, b, a)
+
+    return (r, g, b)
+
+
+def ease_in_out(t: float) -> float:
+    """Smooth ease-in-out interpolation curve.
+
+    Creates a smooth S-curve for more natural gradients
+    (slow start, fast middle, slow end).
+
+    Args:
+        t: Input value (0.0 to 1.0)
+
+    Returns:
+        Eased value (0.0 to 1.0)
+
+    Example:
+        ease_in_out(0.0)  # Returns 0.0 (slow start)
+        ease_in_out(0.5)  # Returns 0.5 (fast middle)
+        ease_in_out(1.0)  # Returns 1.0 (slow end)
+    """
+    # Cubic ease-in-out: 3t² - 2t³
+    return t * t * (3.0 - 2.0 * t)
+
+
+def create_linear_gradient_1d(color1: tuple, color2: tuple,
+                               steps: int, curve: str = 'linear') -> list:
+    """Create 1D gradient array between two colors.
+
+    Args:
+        color1: Start color (R, G, B) or (R, G, B, A)
+        color2: End color (R, G, B) or (R, G, B, A)
+        steps: Number of gradient steps
+        curve: Interpolation curve - 'linear' or 'ease'
+
+    Returns:
+        List of color tuples (length = steps)
+
+    Example:
+        gradient = create_linear_gradient_1d((95, 90, 85), (65, 60, 55), 10)
+        # Returns 10 colors smoothly transitioning from mortar to brick
+    """
+    gradient = []
+
+    for i in range(steps):
+        t = i / max(1, steps - 1)  # Normalize to 0.0-1.0
+
+        # Apply easing curve if requested
+        if curve == 'ease':
+            t = ease_in_out(t)
+
+        # Blend colors
+        color = blend_colors(color1, color2, t)
+        gradient.append(color)
+
+    return gradient
+
+
+def create_depth_gradient(mortar_color: tuple, brick_color: tuple,
+                          width: int, shadow_factor: float = 0.7) -> list:
+    """Create gradient simulating recessed mortar depth.
+
+    Generates a 4-zone gradient:
+    1. Mortar core (lightest)
+    2. Shadow zone (darkest - simulates recess)
+    3. Brick edge (medium - weathered/beveled)
+    4. Brick face (full color)
+
+    Args:
+        mortar_color: Mortar base color (R, G, B)
+        brick_color: Brick base color (R, G, B)
+        width: Total gradient width in pixels
+        shadow_factor: Shadow darkness (0.0-1.0, lower = darker)
+
+    Returns:
+        List of RGBA color tuples (length = width)
+
+    Example:
+        gradient = create_depth_gradient((95, 90, 85), (65, 60, 55), 16)
+        # Returns 16 colors: mortar → shadow → edge → brick
+    """
+    # Calculate zone widths (total = width)
+    # 40% mortar core, 20% shadow, 20% edge bevel, 20% brick face
+    mortar_width = max(1, int(width * 0.40))
+    shadow_width = max(1, int(width * 0.20))
+    edge_width = max(1, int(width * 0.20))
+    face_width = width - mortar_width - shadow_width - edge_width
+
+    # Define zone colors
+    shadow_color = tuple(int(c * shadow_factor) for c in brick_color)  # Darken brick color
+    edge_color = tuple(int((brick_color[i] + shadow_color[i]) / 2) for i in range(3))  # Midpoint
+
+    gradient = []
+
+    # Zone 1: Mortar core (flat color)
+    for _ in range(mortar_width):
+        gradient.append(mortar_color + (255,))
+
+    # Zone 2: Mortar → Shadow (linear transition)
+    shadow_gradient = create_linear_gradient_1d(mortar_color, shadow_color, shadow_width, curve='ease')
+    for color in shadow_gradient:
+        gradient.append(color + (255,))
+
+    # Zone 3: Shadow → Brick edge (linear transition with easing)
+    edge_gradient = create_linear_gradient_1d(shadow_color, edge_color, edge_width, curve='ease')
+    for color in edge_gradient:
+        gradient.append(color + (255,))
+
+    # Zone 4: Edge → Brick face (linear transition)
+    face_gradient = create_linear_gradient_1d(edge_color, brick_color, face_width, curve='linear')
+    for color in face_gradient:
+        gradient.append(color + (255,))
+
+    return gradient
+
+
+def apply_gradient_to_rect(image: Image.Image, x: int, y: int,
+                           width: int, height: int,
+                           gradient: list, direction: str = 'horizontal'):
+    """Apply a gradient to a rectangular region of an image.
+
+    Args:
+        image: PIL Image to modify (RGBA)
+        x, y: Top-left corner of rectangle
+        width, height: Rectangle dimensions
+        gradient: List of RGBA color tuples
+        direction: 'horizontal', 'vertical', or 'both'
+
+    Note:
+        Modifies image in-place using pixel access.
+    """
+    pixels = image.load()
+    gradient_len = len(gradient)
+
+    if direction == 'horizontal':
+        # Apply gradient left to right
+        for dy in range(height):
+            for dx in range(width):
+                if dx < gradient_len:
+                    px = x + dx
+                    py = y + dy
+                    if 0 <= px < image.width and 0 <= py < image.height:
+                        pixels[px, py] = gradient[dx]
+
+    elif direction == 'vertical':
+        # Apply gradient top to bottom
+        for dy in range(height):
+            for dx in range(width):
+                if dy < gradient_len:
+                    px = x + dx
+                    py = y + dy
+                    if 0 <= px < image.width and 0 <= py < image.height:
+                        pixels[px, py] = gradient[dy]
+
+    elif direction == 'both':
+        # Apply gradient from all edges (border effect)
+        for dy in range(height):
+            for dx in range(width):
+                # Calculate distance from edge (minimum of all 4 edges)
+                dist_from_edge = min(dx, dy, width - dx - 1, height - dy - 1)
+
+                if dist_from_edge < gradient_len:
+                    px = x + dx
+                    py = y + dy
+                    if 0 <= px < image.width and 0 <= py < image.height:
+                        pixels[px, py] = gradient[dist_from_edge]

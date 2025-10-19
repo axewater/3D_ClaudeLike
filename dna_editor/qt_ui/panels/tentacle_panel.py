@@ -442,3 +442,16 @@ class TentaclePanel(BaseCreaturePanel):
 
         self._update_branch_info()
         self._updating = False
+
+    def load_preset(self, algorithm, params):
+        """Load a preset configuration.
+
+        Args:
+            algorithm: Algorithm name ('bezier' or 'fourier')
+            params: Dict of algorithm parameters
+        """
+        # Merge preset params with current state and apply
+        current_state = self.get_state()
+        current_state['algorithm'] = algorithm
+        current_state['params'] = params
+        self.set_state(current_state)

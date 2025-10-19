@@ -181,3 +181,10 @@ class PolypPanel(BaseCreaturePanel):
         self.polyp_color_button.set_color(self._polyp_color)
 
         self._updating = False
+
+    def load_preset(self, params):
+        """Load a preset configuration."""
+        # Merge preset params with current state and apply
+        current_state = self.get_state()
+        current_state.update(params)
+        self.set_state(current_state)
