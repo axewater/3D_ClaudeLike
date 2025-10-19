@@ -203,8 +203,9 @@ class MiniMap3D:
                         tile_color = self.COLOR_EXPLORED_FLOOR
 
                 # Draw tile as rectangle (scaled by pixel_scale)
+                # Flip Y coordinate to match game coordinate system
                 px = x * self.pixel_scale
-                py = y * self.pixel_scale
+                py = (c.GRID_HEIGHT - 1 - y) * self.pixel_scale
                 draw.rectangle(
                     [px, py, px + self.pixel_scale - 1, py + self.pixel_scale - 1],
                     fill=tile_color
@@ -214,7 +215,7 @@ class MiniMap3D:
         for item in self.game.items:
             if vis_map.is_visible(item.x, item.y):
                 px = item.x * self.pixel_scale
-                py = item.y * self.pixel_scale
+                py = (c.GRID_HEIGHT - 1 - item.y) * self.pixel_scale
                 # Draw as small dot
                 draw.ellipse(
                     [px, py, px + self.pixel_scale - 1, py + self.pixel_scale - 1],
@@ -225,7 +226,7 @@ class MiniMap3D:
         for enemy in self.game.enemies:
             if vis_map.is_visible(enemy.x, enemy.y):
                 px = enemy.x * self.pixel_scale
-                py = enemy.y * self.pixel_scale
+                py = (c.GRID_HEIGHT - 1 - enemy.y) * self.pixel_scale
                 # Draw as small dot
                 draw.ellipse(
                     [px, py, px + self.pixel_scale - 1, py + self.pixel_scale - 1],
@@ -247,7 +248,7 @@ class MiniMap3D:
         Args:
             draw: PIL ImageDraw object
             px: Player grid X
-            py: Player grid Y
+            py: Player grid Y (in game coordinates, will be flipped for image)
         """
         # Get camera yaw from game controller (via renderer)
         # We'll estimate it from cached value or default to 0
@@ -256,24 +257,25 @@ class MiniMap3D:
         # Convert yaw to radians (0° = North = -Y)
         angle_rad = math.radians(yaw)
 
-        # Calculate arrow points
+        # Calculate arrow points (flip Y coordinate for image space)
         center_x = px * self.pixel_scale + self.pixel_scale / 2
-        center_y = py * self.pixel_scale + self.pixel_scale / 2
+        center_y = (c.GRID_HEIGHT - 1 - py) * self.pixel_scale + self.pixel_scale / 2
 
         # Arrow size
         arrow_length = self.pixel_scale * 1.5
         arrow_width = self.pixel_scale * 0.8
 
         # Arrow tip (pointing in camera direction)
+        # Note: Y is flipped, so we need to invert the Y component
         tip_x = center_x + arrow_length * math.sin(angle_rad)
-        tip_y = center_y - arrow_length * math.cos(angle_rad)  # Negative because Y is down
+        tip_y = center_y + arrow_length * math.cos(angle_rad)  # Positive because Y is flipped
 
         # Arrow base corners (perpendicular to direction)
         perp_angle = angle_rad + math.pi / 2
         base1_x = center_x + arrow_width * math.sin(perp_angle)
-        base1_y = center_y - arrow_width * math.cos(perp_angle)
+        base1_y = center_y + arrow_width * math.cos(perp_angle)
         base2_x = center_x - arrow_width * math.sin(perp_angle)
-        base2_y = center_y + arrow_width * math.cos(perp_angle)
+        base2_y = center_y - arrow_width * math.cos(perp_angle)
 
         # Draw triangle
         draw.polygon(
