@@ -38,8 +38,6 @@ class Game:
         self.camera_x = 0  # Camera position (top-left of viewport in world coords)
         self.camera_y = 0
         self.message_callback = None  # Callback for visual combat log
-        self.taunt_timer = 0.0  # Timer for taunt cooldown
-        self.taunt_triggered_low_hp = False  # Track if low HP taunt was triggered this level
         self.visibility_map: Optional[VisibilityMap] = None  # Field of view / fog of war
         self.fog_timer = 0.0  # Timer for spawning fog particles
 
@@ -68,9 +66,6 @@ class Game:
 
         # Start background music
         self.audio_manager.start_background_music()
-
-        # Play welcome voice
-        self.audio_manager.play_voice_welcome()
 
     def _generate_level(self):
         """Generate a new dungeon level"""
@@ -106,15 +101,6 @@ class Game:
         self.update_fov()
 
         self.add_message(f"Entered dungeon level {self.current_level}.", "event")
-
-        # Reset low HP taunt flag for new level
-        self.taunt_triggered_low_hp = False
-
-        # Chance to taunt on level entry (except first level)
-        if self.current_level > 1:
-            roll = random.random()
-            if roll < c.TAUNT_CHANCE_ON_LEVEL:
-                self._try_play_taunt()
 
     def _spawn_enemies(self):
         """Spawn enemies on current level"""
@@ -426,10 +412,6 @@ class Game:
             self.audio_manager.play_enemy_death(enemy.enemy_type, position=(enemy.x, enemy.y),
                                                player_position=(self.player.x, self.player.y))
 
-            # Play special voice for dragon defeats
-            if enemy.enemy_type == c.ENEMY_DRAGON:
-                self.audio_manager.play_voice_dragon_defeated()
-
         # Use more specific event types for better visual feedback
         if enemy_died:
             self.add_message(message, "kill")
@@ -437,7 +419,6 @@ class Game:
             self.add_message(message, "crit")
         elif is_crit:
             self.add_message(message, "crit")
-            self.audio_manager.play_voice_critical()
         else:
             self.add_message(message, "player_attack")
 
@@ -448,7 +429,6 @@ class Game:
                 self.add_message(f"Level up! You are now level {self.player.level}!", "levelup")
                 self.anim_manager.add_heal_sparkles(self.player.x, self.player.y)
                 self.audio_manager.play_levelup()
-                self.audio_manager.play_voice_levelup()
 
     def _enemy_turn(self):
         """Process enemy turns"""
@@ -502,13 +482,6 @@ class Game:
                 if player_died:
                     self.anim_manager.add_screen_shake(8.0, 0.3)
                     self.audio_manager.play_gameover()
-                    self.audio_manager.play_voice_gameover()
-                else:
-                    # Chance to taunt when player takes damage
-                    roll = random.random()
-                    if roll < c.TAUNT_CHANCE_ON_DAMAGE:
-                        self._try_play_taunt()
-
                 self.add_message(message, "enemy_attack")
 
                 if player_died:
@@ -561,14 +534,6 @@ class Game:
                     # Play equip sound
                     self.audio_manager.play_equip()
 
-                    # Play voice for special rarities
-                    if item.rarity == c.RARITY_LEGENDARY:
-                        self.audio_manager.play_voice_legendary()
-                    elif item.rarity == c.RARITY_EPIC:
-                        self.audio_manager.play_voice_epic()
-                    elif item.rarity == c.RARITY_RARE:
-                        self.audio_manager.play_voice_rare()
-
                 # Display appropriate message
                 if item.item_type == c.ITEM_GOLD_COIN:
                     # Calculate gold amount for message
@@ -614,7 +579,6 @@ class Game:
 
         # Play stairs sound
         self.audio_manager.play_stairs()
-        self.audio_manager.play_voice_descending()
 
         # Announce biome change every 5 levels
         if self.current_level in [6, 11, 16, 21]:
@@ -766,18 +730,6 @@ class Game:
         if self.player and self.player.is_moving:
             self._spawn_footstep_particles()
 
-        # Update taunt timer
-        if self.taunt_timer > 0:
-            self.taunt_timer -= dt
-
-        # Check for low HP taunt trigger
-        if self.player and not self.taunt_triggered_low_hp:
-            hp_percent = self.player.hp / self.player.max_hp
-            if hp_percent < c.TAUNT_LOW_HP_THRESHOLD:
-                print(f"💀 Low HP taunt triggered! (HP: {hp_percent:.0%})")
-                self._try_play_taunt()
-                self.taunt_triggered_low_hp = True
-
         # Update music intensity based on nearby enemies
         if self.player:
             # Count enemies within 8 tiles
@@ -882,14 +834,6 @@ class Game:
                 apply_gravity=False
             )
             self.anim_manager.particles.append(particle)
-
-    def _try_play_taunt(self):
-        """Try to play a taunt if cooldown allows"""
-        if self.taunt_timer <= 0:
-            self.audio_manager.play_voice_taunt()
-            self.taunt_timer = c.TAUNT_COOLDOWN
-            # Note: audio_manager will log the actual taunt message
-        # Cooldown spam removed - no need to log when taunt is on cooldown
 
     def add_message(self, message: str, msg_type: str = "event"):
         """Add message to message log with type for color coding"""

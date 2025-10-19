@@ -5,10 +5,6 @@ Handles all sound effects and background music with procedural sound generation
 import pygame
 import numpy as np
 import random
-import io
-import os
-import tempfile
-import threading
 from typing import Dict, Optional
 from logger import get_logger
 
@@ -119,176 +115,6 @@ class SoundSynthesizer:
         return sound
 
 
-class VoiceSynthesizer:
-    """Generate robotic text-to-speech voices using pyttsx3"""
-
-    def __init__(self):
-        """Initialize voice synthesizer with robotic settings"""
-        self.voice_cache: Dict[str, pygame.mixer.Sound] = {}
-        self.enabled = True
-        self.engine = None
-        self.cache_lock = threading.Lock()  # Thread safety for cache
-        self.shutdown_flag = False
-
-        try:
-            import pyttsx3
-            self.engine = pyttsx3.init()
-
-            # Configure robotic voice settings
-            self.engine.setProperty('rate', 120)  # Slow robotic pace (default ~200)
-            self.engine.setProperty('volume', 0.9)  # Slightly quieter
-
-            # Try to set pitch lower (not all engines support this)
-            try:
-                voices = self.engine.getProperty('voices')
-                if voices:
-                    # Use first available voice
-                    self.engine.setProperty('voice', voices[0].id)
-            except:
-                pass  # Pitch/voice selection not available on this system
-
-            print("✓ Voice synthesizer initialized (pyttsx3 working)")
-        except Exception as e:
-            print(f"⚠ Voice synthesis unavailable: {e}")
-            print("  To enable voice taunts, install: pip install pyttsx3")
-            print("  Linux users also need: sudo apt-get install espeak")
-            self.engine = None
-            self.enabled = False
-
-    def generate_voice(self, text: str) -> Optional[pygame.mixer.Sound]:
-        """
-        Generate robot voice for given text and return as pygame Sound
-        Thread-safe method that checks cache first.
-
-        Args:
-            text: The text to synthesize
-
-        Returns:
-            pygame.mixer.Sound object or None if generation failed
-        """
-        if not self.enabled or not self.engine or self.shutdown_flag:
-            return None
-
-        # Check cache first (thread-safe)
-        with self.cache_lock:
-            if text in self.voice_cache:
-                return self.voice_cache[text]
-
-        # Retry up to 5 times if file generation fails
-        max_retries = 5
-        for attempt in range(max_retries):
-            try:
-                # Create temporary WAV file
-                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
-                    tmp_path = tmp_file.name
-
-                # Generate speech to file
-                self.engine.save_to_file(text, tmp_path)
-                self.engine.runAndWait()
-
-                # Wait a bit for file to be fully written (especially on slower systems)
-                import time
-                time.sleep(0.05)  # 50ms delay
-
-                # Validate the WAV file before loading
-                if not self._validate_wav_file(tmp_path):
-                    # File is corrupted or empty
-                    try:
-                        os.unlink(tmp_path)
-                    except:
-                        pass
-
-                    if attempt < max_retries - 1:
-                        # Retry with exponential backoff
-                        wait_time = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
-                        print(f"⚠ Voice file corrupted for '{text}', retrying ({attempt + 1}/{max_retries}) after {wait_time:.1f}s...")
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        print(f"⚠ Failed to generate valid voice file for '{text}' after {max_retries} attempts")
-                        return None
-
-                # File is valid, load as pygame Sound
-                sound = pygame.mixer.Sound(tmp_path)
-
-                # Cache the sound (thread-safe)
-                with self.cache_lock:
-                    self.voice_cache[text] = sound
-
-                # Clean up temp file
-                try:
-                    os.unlink(tmp_path)
-                except:
-                    pass  # File cleanup failed, but sound is loaded
-
-                return sound
-
-            except Exception as e:
-                if not self.shutdown_flag:
-                    if attempt < max_retries - 1:
-                        print(f"⚠ Error generating voice for '{text}': {e}, retrying ({attempt + 1}/{max_retries})...")
-                        import time
-                        time.sleep(0.1 * (2 ** attempt))
-                        continue
-                    else:
-                        print(f"⚠ Failed to generate voice for '{text}': {e}")
-                return None
-
-        return None
-
-    def _validate_wav_file(self, file_path: str) -> bool:
-        """
-        Validate that a WAV file exists and has proper structure
-
-        Args:
-            file_path: Path to WAV file to validate
-
-        Returns:
-            True if file is valid, False otherwise
-        """
-        try:
-            # Check file exists
-            if not os.path.exists(file_path):
-                return False
-
-            # Check file has content (minimum WAV header is 44 bytes)
-            file_size = os.path.getsize(file_path)
-            if file_size < 44:
-                return False
-
-            # Try to read and validate WAV header
-            with open(file_path, 'rb') as f:
-                # Read first 12 bytes (RIFF header)
-                header = f.read(12)
-
-                if len(header) < 12:
-                    return False
-
-                # Check RIFF signature
-                if header[0:4] != b'RIFF':
-                    return False
-
-                # Check WAVE signature
-                if header[8:12] != b'WAVE':
-                    return False
-
-            return True
-
-        except Exception as e:
-            return False
-
-    def shutdown(self):
-        """Shutdown the voice synthesizer and cleanup resources"""
-        self.shutdown_flag = True
-        if self.engine:
-            try:
-                self.engine.stop()
-            except:
-                pass
-        self.enabled = False
-        print("✓ Voice synthesizer shutdown")
-
-
 class AudioManager:
     """Manages all game audio - sound effects and music"""
 
@@ -301,7 +127,6 @@ class AudioManager:
         self.enabled = True
         self.sfx_volume = 0.7
         self.music_volume = 0.4
-        self.voice_volume = 0.6  # Slightly quieter than SFX
 
         # Sound cache
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
@@ -314,9 +139,6 @@ class AudioManager:
         # Combat state for adaptive audio
         self.enemies_nearby = 0
         self.in_combat = False
-
-        # Voice synthesizer
-        self.voice_synth = VoiceSynthesizer()
 
         # Generate all sounds
         self._generate_sounds()
@@ -756,81 +578,6 @@ class AudioManager:
         """Play letter landing impact sound"""
         self.play_sound('letter_impact', volume=0.6, pitch_variation=0.15)
 
-    # === VOICE SYNTHESIS ===
-
-    def play_voice(self, text: str, volume: float = 1.0):
-        """
-        Play robot voice line (non-blocking, uses threading)
-
-        Args:
-            text: Text to speak
-            volume: Volume multiplier (0.0 to 1.0)
-        """
-        if not self.enabled or not self.voice_synth.enabled:
-            return
-
-        def _generate_and_play():
-            """Generate voice in background thread and play when ready"""
-            sound = self.voice_synth.generate_voice(text)
-            if sound:
-                sound.set_volume(volume * self.voice_volume)
-                sound.play()
-
-        # Run voice generation in background thread to avoid blocking UI
-        thread = threading.Thread(target=_generate_and_play, daemon=True)
-        thread.start()
-
-    def play_voice_welcome(self):
-        """Play welcome voice line"""
-        self.play_voice("Welcome")
-
-    def play_voice_levelup(self):
-        """Play level up voice line"""
-        self.play_voice("Level up")
-
-    def play_voice_gameover(self):
-        """Play game over voice line"""
-        self.play_voice("Game over")
-
-    def play_voice_critical(self):
-        """Play critical hit voice line"""
-        self.play_voice("Critical", volume=1.2)
-
-    def play_voice_legendary(self):
-        """Play legendary item voice line"""
-        self.play_voice("Legendary", volume=1.3)
-
-    def play_voice_epic(self):
-        """Play epic item voice line"""
-        self.play_voice("Epic", volume=1.1)
-
-    def play_voice_rare(self):
-        """Play rare item voice line"""
-        self.play_voice("Rare item")
-
-    def play_voice_dragon_defeated(self):
-        """Play dragon defeated voice line"""
-        self.play_voice("Dragon defeated", volume=1.2)
-
-    def play_voice_descending(self):
-        """Play descending stairs voice line"""
-        self.play_voice("Descending")
-
-    def play_voice_class(self, class_name: str):
-        """Play class name voice line"""
-        self.play_voice(class_name, volume=1.1)
-
-    def play_voice_taunt(self):
-        """Play random menacing taunt"""
-        import constants as c
-        taunt = random.choice(c.VOICE_TAUNTS)
-        log.info(f"Enemy taunts: '{taunt}'", "game")
-        if not self.enabled:
-            log.debug("Audio disabled - taunt not played", "audio")
-        elif not self.voice_synth.enabled:
-            log.debug("Voice synthesis disabled - taunt not played", "audio")
-        self.play_voice(taunt, volume=0.9)
-
     def start_background_music(self):
         """Start playing background music"""
         if not self.enabled:
@@ -896,9 +643,6 @@ class AudioManager:
 
         # Stop music
         self.stop_music()
-
-        # Shutdown voice synthesizer
-        self.voice_synth.shutdown()
 
         # Quit pygame mixer
         try:

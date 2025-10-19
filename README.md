@@ -2,7 +2,7 @@
 
 A feature-rich, turn-based 3D roguelike with procedural dungeons, class-based combat, and no external assets - everything is procedurally generated!
 
-**First-person 3D dungeon crawler** with full UI overlay, procedural audio, and voice taunts!
+**First-person 3D dungeon crawler** with full UI overlay and procedural audio!
 
 ## 🚀 Quick Start
 
@@ -17,7 +17,7 @@ python main.py
 python main.py --skip-intro
 ```
 
-**Requirements**: Python 3.8+, ursina, panda3d, pygame, numpy, pyttsx3
+**Requirements**: Python 3.8+, ursina, panda3d, pygame, numpy
 
 **Controls**:
 - WASD - Move (camera-relative direction)
@@ -91,21 +91,14 @@ Enemy logic in `entities.py`, 3D rendering in `graphics3d/enemies/`.
 
 #### Sound Synthesis
 - **Wave types**: Sine, Square, Sweep, Noise
-- **29 unique sounds**: Combat, abilities, movement, UI, voice
+- **25+ unique sounds**: Combat, abilities, movement, UI
 - **Positional audio**: Volume based on distance from player
 - **Pitch variation**: Prevents repetition
 - **Adaptive music**: Changes with combat intensity
-- **Voice taunts**: Procedural TTS using pyttsx3 (menacing narrator)
 
 Implementation in `audio.py`:
 - `SoundSynthesizer` - Wave generation (numpy-based)
-- `VoiceSynthesizer` - Text-to-speech for taunts
 - `AudioManager` - Playback and mixing (singleton pattern)
-
-Voice taunt triggers:
-- When player takes damage (80% chance)
-- On level entry (80% chance)
-- When HP falls below 30% (once per level)
 
 Example usage:
 ```python
@@ -113,7 +106,6 @@ from audio import get_audio_manager
 audio = get_audio_manager()
 audio.play_attack_sound('heavy')
 audio.play_hit_sound(is_crit=True, position=(x, y), player_position=(px, py))
-audio.play_voice_taunt()  # Random menacing taunt
 ```
 
 ### 3D Visual Effects
@@ -148,7 +140,7 @@ audio.play_voice_taunt()  # Random menacing taunt
 | `combat.py` | Damage calculations | `calculate_damage()`, `apply_damage()` |
 | `abilities.py` | Ability system | `Ability` base class, 6 ability implementations |
 | `constants.py` | All game configuration | All constants, stats, colors |
-| `audio.py` | Procedural audio system | `AudioManager`, `SoundSynthesizer`, `VoiceSynthesizer` |
+| `audio.py` | Procedural audio system | `AudioManager`, `SoundSynthesizer` |
 
 ### 3D Rendering & UI
 
@@ -439,7 +431,7 @@ Typical performance:
 - Saving/loading not implemented (permadeath roguelike)
 - No multiplayer (single-player only)
 - No mod support (Python-based, hackable source code)
-- Audio requires pygame/pyttsx3 (included in requirements)
+- Audio requires pygame (included in requirements)
 - First-person only (no third-person camera mode)
 
 ## 📚 Additional Documentation
@@ -448,7 +440,7 @@ Typical performance:
 
 ## 🎯 Design Philosophy
 
-1. **No External Assets** - Everything procedurally generated (graphics, audio, voices)
+1. **No External Assets** - Everything procedurally generated (graphics, audio)
 2. **Clean Separation** - Game logic independent of rendering layer
 3. **First-Person Immersion** - True 3D dungeon crawler experience
 4. **Modular Design** - Easy to add content (enemies, abilities, items)

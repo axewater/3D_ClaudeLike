@@ -447,26 +447,6 @@ MINIMAP_OPACITY = 0.90  # Background panel opacity
 MINIMAP_BORDER_COLOR = (0.2, 0.4, 0.6, 0.4)  # Cyan border (matches HUD style)
 MINIMAP_PIXEL_SCALE = 2  # Pixels per tile (2 = 2x2 pixels per dungeon tile)
 
-# Voice taunts
-VOICE_TAUNTS = [
-    "You will never get there",
-    "You will fail miserably",
-    "Your death is inevitable",
-    "Give up now",
-    "You cannot win",
-    "Pathetic effort",
-    "Is that all you have",
-    "Weakness",
-    "You are doomed",
-    "Futile resistance",
-]
-
-# Taunt configuration
-TAUNT_COOLDOWN = 5.0  # Minimum seconds between taunts (reduced for testing)
-TAUNT_CHANCE_ON_DAMAGE = 0.80  # 80% chance when player takes damage (increased for testing)
-TAUNT_CHANCE_ON_LEVEL = 0.80  # 80% chance when entering new level (increased for testing)
-TAUNT_LOW_HP_THRESHOLD = 0.30  # Trigger when below 30% health
-
 
 # ========================================
 # LOGGING CONFIGURATION

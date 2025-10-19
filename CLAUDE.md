@@ -2,7 +2,7 @@
 
 A Python 3D first-person roguelike dungeon crawler built with Ursina Engine.
 
-**100% procedurally generated** - graphics, audio, and voice taunts!
+**100% procedurally generated** - graphics and audio!
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ python3 main.py --skip-intro
 - **`ui/screens/`** - Menu screens (title, class selection, pause, victory, game over)
 
 ### Support Systems
-- **`audio.py`** - Procedural sound synthesis (no audio files needed!) + voice taunts
+- **`audio.py`** - Procedural sound synthesis (no audio files needed!)
 - **`fov.py`** / **`visibility.py`** - Field of view and fog of war
 - **`shaders/`** - Custom GLSL shaders (barrel distortion, corner shadows)
 
@@ -67,7 +67,7 @@ python3 main.py --skip-intro
 - ✅ **Class selection screen** with rotating 3D models
 - ✅ **Title screen** (PyQt6 OpenGL flying letters)
 - ✅ **Menu screens** (main menu, pause, victory, game over)
-- ✅ **Audio system** (procedural SFX, music, voice taunts)
+- ✅ **Audio system** (procedural SFX, music)
 
 ## Architecture Notes
 
@@ -87,7 +87,6 @@ The `AnimationManager3DProxy` in `main_3d.py` bridges neutral interface to 3D:
 ### No External Assets
 - **Graphics**: All 3D models procedurally generated (no .obj/.fbx files)
 - **Audio**: All sounds procedurally synthesized (no .wav/.mp3 files)
-- **Voices**: Text-to-speech using pyttsx3 (no voice recordings)
 - **Textures**: Ursina primitive shapes with color/materials
 
 ## Development Workflow
@@ -104,7 +103,6 @@ The `AnimationManager3DProxy` in `main_3d.py` bridges neutral interface to 3D:
 - **PyQt6** - Title screen with OpenGL (flying letters effect)
 - **pygame** - Audio playback
 - **numpy** - Sound wave synthesis
-- **pyttsx3** - Text-to-speech for voice taunts
 
 ## Controls
 
