@@ -310,7 +310,7 @@ def generate_dragon_dna(level: int) -> dict:
 
 
 # ========================================
-# STARFISH CREATURE DNA (Future expansion)
+# STARFISH CREATURE DNA (Startle enemy)
 # ========================================
 
 def generate_starfish_dna(level: int, color_rgb: tuple) -> dict:
@@ -334,16 +334,24 @@ def generate_starfish_dna(level: int, color_rgb: tuple) -> dict:
     arm_segments = 4 + int(level / 4.0)
     arm_segments = min(10, arm_segments)
 
+    # Thickness: 0.25→0.5 (thicker arms for higher levels)
+    arm_base_thickness = 0.25 + (level_factor * 0.25)
+
+    # Body size: 0.6→1.0 (larger central body for higher levels)
+    central_body_size = 0.6 + (level_factor * 0.4)
+
+    # Curl factor: 0.2→0.5 (more curled arms for higher levels)
+    curl_factor = 0.2 + (level_factor * 0.3)
+
     return {
         'num_arms': num_arms,
         'arm_segments': arm_segments,
-        'arm_thickness': 0.25,
-        'arm_length': 1.5,
-        'body_size': 0.6,
+        'central_body_size': central_body_size,
+        'arm_base_thickness': arm_base_thickness,
         'starfish_color': color_rgb,
-        'starfish_taper': 0.5,
-        'starfish_anim_speed': 2.0,
-        'starfish_wave_amplitude': 0.15,
+        'curl_factor': curl_factor,
+        'anim_speed': 1.5,
+        'pulse_amount': 0.06,
     }
 
 

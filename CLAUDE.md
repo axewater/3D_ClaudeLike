@@ -11,10 +11,10 @@ A Python 3D first-person roguelike dungeon crawler built with Ursina Engine.
 pip install -r requirements.txt
 
 # Run the game
-python3 main.py
+python main.py
 
 # Skip intro animation for faster startup
-python3 main.py --skip-intro
+python main.py --skip-intro
 ```
 
 ## Project Structure
