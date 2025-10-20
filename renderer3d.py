@@ -305,16 +305,14 @@ class Renderer3D:
                 # Get dungeon level for creature scaling
                 dungeon_level = getattr(self.game, 'current_level', 1)
 
-                # Create enemy (DNA creature or legacy model)
+                # Create enemy (DNA creature)
                 enemy_model = create_enemy_model_3d(
                     enemy.enemy_type,
                     Vec3(*pos),
-                    dungeon_level=dungeon_level,
-                    use_dna_creatures=True  # Set to False to test legacy models
+                    dungeon_level=dungeon_level
                 )
 
-                # For DNA creatures, the model is the creature object itself
-                # For legacy models, the model is an Entity
+                # DNA creatures have a 'root' entity for positioning
                 # Extract the root entity for positioning
                 if hasattr(enemy_model, 'root'):
                     # DNA Creature
@@ -648,10 +646,20 @@ class Renderer3D:
         player_y = float(self.game.player.y)
 
         if c.USE_FIRST_PERSON:
-            # First-person: Camera AT player position
-            cam_x = player_x
+            # First-person with over-the-shoulder offset
+            # Calculate backward offset based on camera yaw
+            import math
+            yaw_rad = math.radians(self.camera_yaw)
+
+            # Camera faces forward, so backward offset is opposite of forward direction
+            # In Ursina: yaw 0° = +Z (South), 90° = +X (East), 180° = -Z (North), 270° = -X (West)
+            # Backward offset is negative of forward direction
+            back_offset_x = -math.sin(yaw_rad) * c.CAMERA_BACK_OFFSET
+            back_offset_z = -math.cos(yaw_rad) * c.CAMERA_BACK_OFFSET
+
+            cam_x = player_x + back_offset_x
             cam_y = c.EYE_HEIGHT
-            cam_z = player_y
+            cam_z = player_y + back_offset_z
 
             # On first call, jump directly to position
             if not self.camera_initialized:

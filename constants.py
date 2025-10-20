@@ -19,14 +19,15 @@ CAMERA_ANGLE = 45.0     # Camera pitch angle (degrees) (third-person only)
 
 # First-person camera settings
 USE_FIRST_PERSON = True  # True = first-person, False = third-person
-EYE_HEIGHT = 1.2        # Camera height at eye level (first-person) - lowered for better ground visibility
+EYE_HEIGHT = 1.6        # Camera height at eye level (raised for better overview)
 CAMERA_ROTATION_SPEED = 8.0  # Rotation interpolation speed (higher = snappier)
 CAMERA_FOV_FPS = 90     # Field of view for first-person (PC FPS standard 90-100°)
+CAMERA_BACK_OFFSET = 0.4  # How far back camera is from player position (over-the-shoulder effect)
 
 # Camera pitch (vertical tilt) settings
-DEFAULT_CAMERA_PITCH = 10.0   # Default pitch: look down 10° (AAA FPS standard for ground visibility)
+DEFAULT_CAMERA_PITCH = 15.0   # Default pitch: look down 15° for better ground/enemy visibility
 CAMERA_PITCH_SPEED = 1.5      # Pitch interpolation speed (smooth ~1 second transition)
-ENEMY_FOCUS_PITCH = 20.0      # Degrees to tilt down when focusing on adjacent enemy (additive with default)
+ENEMY_FOCUS_PITCH = 25.0      # Degrees to tilt down when focusing on adjacent enemy
 
 # Camera lens distortion (barrel/fisheye effect)
 BARREL_DISTORTION_STRENGTH = 0.10  # Subtle fisheye warp at edges (0.0=none, 0.1=subtle, 0.3=strong)

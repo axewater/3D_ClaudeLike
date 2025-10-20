@@ -183,26 +183,41 @@ ENEMY_STATS[ENEMY_VAMPIRE] = {
 }
 # RGB tuple for 3D color (0-1 range)
 COLOR_ENEMY_VAMPIRE_RGB = (0.6, 0.0, 0.0)
+ENEMY_NAMES[ENEMY_VAMPIRE] = "Vampire"
 ```
 
-**2. Create 3D model in `graphics3d/enemies/vampire.py`:**
+**2. Create DNA creatures using the DNA Editor:**
+- Launch `python dna_editor/main.py`
+- Design creatures for each difficulty level (basic, moderate, advanced, horrific, nightmare)
+- Save as presets in `dna_editor/library/creations/`
+
+**3. Create enemy pack in `dna_editor/library/enemy_packs/`:**
+```json
+{
+  "pack_name": "Vampire Pack",
+  "description": "Blood-sucking creatures",
+  "enemy_mappings": {
+    "ENEMY_VAMPIRE": [
+      {"min_level": 1, "max_level": 5, "preset": "vampire_basic.json"},
+      {"min_level": 6, "max_level": 10, "preset": "vampire_moderate.json"},
+      ...
+    ]
+  }
+}
+```
+
+**4. Update `creature_factory.py` mapping:**
 ```python
-def create_vampire_model(x, y):
-    """Create 3D vampire model"""
-    from ursina import Entity, color
-    model = Entity(model='cube', scale=(0.4, 0.6, 0.3),
-                   color=color.rgb(153, 0, 0))  # Use 0-255 RGB!
-    # Add details (fangs, cloak as child entities)
-    return model
+ENEMY_CREATURE_MAP = {
+    ...
+    c.ENEMY_VAMPIRE: 'tentacle',  # Or blob, polyp, medusa, dragon, starfish
+}
 ```
 
-**3. Register in `graphics3d/enemies/__init__.py`:**
-Add to `create_enemy_model_3d()` dispatcher function
-
-**4. Update spawn logic in `game.py`:**
+**5. Update spawn logic in `game.py`:**
 ```python
 # In _spawn_enemies() method
-enemy_types = [c.ENEMY_GOBLIN, c.ENEMY_VAMPIRE, ...]
+enemy_types = [c.ENEMY_STARTLE, c.ENEMY_VAMPIRE, ...]
 ```
 
 ### Add a New Ability

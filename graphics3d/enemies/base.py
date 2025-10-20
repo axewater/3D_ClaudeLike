@@ -1,7 +1,7 @@
 """
 Base utilities for 3D enemy model rendering
 
-Shared functions for all enemy models.
+DNA creature factory and animation handling.
 """
 
 from ursina import Entity, Vec3, color as ursina_color
@@ -9,69 +9,44 @@ import constants as c
 from graphics3d.utils import world_to_3d_position
 
 
-def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 1, use_dna_creatures: bool = True):
+def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 1):
     """
-    Factory function to create enemy 3D models
+    Factory function to create DNA creature enemies
 
     Args:
-        enemy_type: Enemy type string (goblin, slime, skeleton, etc.)
+        enemy_type: Enemy type string (startle, slime, skeleton, orc, demon, dragon)
         position: 3D world position
-        dungeon_level: Dungeon depth (1-25) for DNA creature scaling
-        use_dna_creatures: If True, use DNA editor creatures; if False, use legacy models
+        dungeon_level: Dungeon depth (1-25) for creature scaling
 
     Returns:
-        Entity or Creature: Enemy 3D model (returns creature object for DNA, Entity for legacy)
+        Creature: DNA creature instance with procedural 3D model
     """
-    # DNA CREATURES: Use procedural creatures from DNA editor with level scaling
-    if use_dna_creatures:
-        try:
-            from graphics3d.enemies.creature_factory import create_dna_creature
-            creature = create_dna_creature(enemy_type, position, dungeon_level)
-            return creature
-        except Exception as e:
-            print(f"⚠ DNA creature creation failed, falling back to legacy: {e}")
-            # Fall through to legacy models below
+    try:
+        from graphics3d.enemies.creature_factory import create_dna_creature
+        creature = create_dna_creature(enemy_type, position, dungeon_level)
+        return creature
+    except Exception as e:
+        # Fallback to simple cube if DNA creature creation fails
+        print(f"⚠ DNA creature creation failed for {enemy_type}: {e}")
+        import traceback
+        traceback.print_exc()
 
-    # LEGACY MODELS: Original procedural models (no level scaling)
-    # Import enemy model creators
-    from graphics3d.enemies.goblin import create_goblin_3d
-    from graphics3d.enemies.slime import create_slime_3d
-    from graphics3d.enemies.skeleton import create_skeleton_3d
-    from graphics3d.enemies.orc import create_orc_3d
-    from graphics3d.enemies.demon import create_demon_3d
-    from graphics3d.enemies.dragon import create_dragon_3d
+        # Get enemy color from constants (RGB tuples 0-1 range)
+        enemy_colors_rgb = {
+            c.ENEMY_STARTLE: c.COLOR_ENEMY_STARTLE_RGB,
+            c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
+            c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
+            c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
+            c.ENEMY_DEMON: c.COLOR_ENEMY_DEMON_RGB,
+            c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
+        }
 
-    # Get enemy color from constants (RGB tuples)
-    enemy_colors_rgb = {
-        c.ENEMY_STARTLE: c.COLOR_ENEMY_STARTLE_RGB,
-        c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
-        c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
-        c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
-        c.ENEMY_DEMON: c.COLOR_ENEMY_DEMON_RGB,
-        c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
-    }
+        rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_STARTLE_RGB)
+        fallback_color = ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])
 
-    rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_STARTLE_RGB)
-    enemy_color = ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])
-
-    # Create model based on type
-    if enemy_type == c.ENEMY_STARTLE:
-        return create_goblin_3d(position, enemy_color)
-    elif enemy_type == c.ENEMY_SLIME:
-        return create_slime_3d(position, enemy_color)
-    elif enemy_type == c.ENEMY_SKELETON:
-        return create_skeleton_3d(position, enemy_color)
-    elif enemy_type == c.ENEMY_ORC:
-        return create_orc_3d(position, enemy_color)
-    elif enemy_type == c.ENEMY_DEMON:
-        return create_demon_3d(position, enemy_color)
-    elif enemy_type == c.ENEMY_DRAGON:
-        return create_dragon_3d(position, enemy_color)
-    else:
-        # Fallback: generic cube
         return Entity(
             model='cube',
-            color=enemy_color,
+            color=fallback_color,
             scale=0.5,
             position=position
         )
@@ -79,13 +54,13 @@ def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 
 
 def update_enemy_animation(enemy_entity, enemy_type: str, dt: float, camera_position=None):
     """
-    Update enemy idle animation based on type
+    Update enemy idle animation
 
     Args:
-        enemy_entity: Enemy entity or creature to animate
-        enemy_type: Enemy type string
+        enemy_entity: DNA creature to animate
+        enemy_type: Enemy type string (for logging only)
         dt: Delta time since last frame
-        camera_position: Optional Vec3 camera position (for DNA creatures)
+        camera_position: Optional Vec3 camera position (for creature look-at)
     """
     # Check if this is a DNA creature (has update_animation method)
     if hasattr(enemy_entity, 'update_animation'):
@@ -94,40 +69,8 @@ def update_enemy_animation(enemy_entity, enemy_type: str, dt: float, camera_posi
         try:
             enemy_entity.update_animation(time.time(), camera_position)
         except Exception as e:
-            print(f"⚠ DNA creature animation error: {e}")
-        return
-
-    # LEGACY MODELS: Use old animation system
-    # Check if this is a proper legacy model (has required attributes)
-    # Fallback entities from failed creature creation won't have these
-    if not hasattr(enemy_entity, 'idle_time'):
-        # Skip animation for fallback entities (simple cubes from failed creature creation)
-        return
-
-    # Import animation updaters
-    from graphics3d.enemies.goblin import update_goblin_animation
-    from graphics3d.enemies.slime import update_slime_animation
-    from graphics3d.enemies.skeleton import update_skeleton_animation
-    from graphics3d.enemies.orc import update_orc_animation
-    from graphics3d.enemies.demon import update_demon_animation
-    from graphics3d.enemies.dragon import update_dragon_animation
-
-    # Route to appropriate animation function
-    try:
-        if enemy_type == c.ENEMY_STARTLE:
-            update_goblin_animation(enemy_entity, dt)
-        elif enemy_type == c.ENEMY_SLIME:
-            update_slime_animation(enemy_entity, dt)
-        elif enemy_type == c.ENEMY_SKELETON:
-            update_skeleton_animation(enemy_entity, dt)
-        elif enemy_type == c.ENEMY_ORC:
-            update_orc_animation(enemy_entity, dt)
-        elif enemy_type == c.ENEMY_DEMON:
-            update_demon_animation(enemy_entity, dt)
-        elif enemy_type == c.ENEMY_DRAGON:
-            update_dragon_animation(enemy_entity, dt)
-    except Exception as e:
-        print(f"⚠ Legacy animation error for {enemy_type}: {e}")
+            print(f"⚠ DNA creature animation error for {enemy_type}: {e}")
+    # else: Fallback cube entities don't need animation
 
 
 def create_health_bar_billboard(hp_percentage: float) -> Entity:

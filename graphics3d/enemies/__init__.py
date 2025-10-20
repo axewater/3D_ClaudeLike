@@ -1,7 +1,8 @@
 """
 3D enemy model rendering package
 
-Provides procedural 3D models for all enemy types with animations and health bars.
+DNA creature factory for procedurally generated enemies with animations and health bars.
+All enemies use the DNA editor system for level-scaled complexity.
 """
 
 from graphics3d.enemies.base import (
