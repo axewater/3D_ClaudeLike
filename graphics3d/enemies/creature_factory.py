@@ -2,16 +2,67 @@
 DNA Creature Factory - Level-based procedural enemy generation
 
 Integrates DNA editor creatures into the roguelike game with level scaling.
+Now supports loading enemy packs from the creature library!
 """
 
 from ursina import Vec3, color as ursina_color
 import constants as c
+from pathlib import Path
+import sys
+
+# Add dna_editor to path for library imports
+dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
+if dna_editor_path not in sys.path:
+    sys.path.insert(0, dna_editor_path)
+
+# Also add project root for absolute imports
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from dna_editor.models.library_data import EnemyPack
+from dna_editor.library.interpolator import get_interpolated_parameters_for_level
+
+
+# ========================================
+# ENEMY PACK LOADING
+# ========================================
+
+# Global enemy pack (loaded once at module import)
+_ENEMY_PACK = None
+
+def load_enemy_pack(pack_name: str = "my_first_pack.json") -> EnemyPack:
+    """
+    Load an enemy pack from the library.
+
+    Args:
+        pack_name: Name of the pack JSON file
+
+    Returns:
+        Loaded EnemyPack object, or None if loading fails
+    """
+    try:
+        pack_path = Path(__file__).parent.parent.parent / 'dna_editor' / 'library' / 'enemy_packs' / pack_name
+        if pack_path.exists():
+            pack = EnemyPack.load_from_file(pack_path)
+            print(f"✓ Loaded enemy pack: {pack.pack_name} from {pack_name}")
+            return pack
+        else:
+            print(f"⚠ Enemy pack not found: {pack_path}")
+            return None
+    except Exception as e:
+        print(f"⚠ Failed to load enemy pack: {e}")
+        return None
+
+# Load the default pack on module import
+_ENEMY_PACK = load_enemy_pack()
 
 
 # ========================================
 # ENEMY TYPE → CREATURE TYPE MAPPING
 # ========================================
 
+# Default mapping (used as fallback if no pack loaded)
 ENEMY_CREATURE_MAP = {
     c.ENEMY_STARTLE: 'starfish',    # Starfish creature
     c.ENEMY_SLIME: 'blob',          # Translucent blob
@@ -19,6 +70,16 @@ ENEMY_CREATURE_MAP = {
     c.ENEMY_ORC: 'tentacle',        # Muscular tentacle mass
     c.ENEMY_DEMON: 'medusa',        # Demonic medusa
     c.ENEMY_DRAGON: 'dragon',       # Space Harrier serpent
+}
+
+# Map lowercase enemy type strings to pack ENEMY_TYPE keys
+ENEMY_TYPE_TO_PACK_KEY = {
+    c.ENEMY_STARTLE: 'ENEMY_STARTLE',
+    c.ENEMY_SLIME: 'ENEMY_SLIME',
+    c.ENEMY_SKELETON: 'ENEMY_SKELETON',
+    c.ENEMY_ORC: 'ENEMY_ORC',
+    c.ENEMY_DEMON: 'ENEMY_DEMON',
+    c.ENEMY_DRAGON: 'ENEMY_DRAGON',
 }
 
 
@@ -363,8 +424,11 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
     """
     Factory function to create DNA editor creatures for game enemies.
 
+    Now supports loading from enemy packs! Will use pack parameters if available,
+    otherwise falls back to procedural generation.
+
     Args:
-        enemy_type: Enemy type constant (e.g., c.ENEMY_GOBLIN)
+        enemy_type: Enemy type constant (e.g., c.ENEMY_ORC)
         position: Vec3 3D world position
         dungeon_level: Dungeon depth (1-25) for scaling
 
@@ -374,7 +438,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
     Raises:
         ValueError: If enemy_type is unknown
     """
-    # Get enemy color from constants
+    # Get enemy color from constants (used as fallback)
     enemy_colors_rgb = {
         c.ENEMY_STARTLE: c.COLOR_ENEMY_STARTLE_RGB,
         c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
@@ -386,32 +450,65 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
 
     color_rgb = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_STARTLE_RGB)
 
-    # Get creature type mapping
-    creature_type = ENEMY_CREATURE_MAP.get(enemy_type)
+    # Try to get parameters from enemy pack first
+    creature_type = None
+    dna = None
+    use_pack = False
+
+    if _ENEMY_PACK:
+        # Convert lowercase enemy type to pack key (e.g., "slime" -> "ENEMY_SLIME")
+        pack_key = ENEMY_TYPE_TO_PACK_KEY.get(enemy_type)
+        if pack_key:
+            mappings = _ENEMY_PACK.get_all_mappings(pack_key)
+            if mappings:
+                try:
+                    # Get interpolated parameters for this level
+                    pack_params = get_interpolated_parameters_for_level(mappings, dungeon_level)
+                    # Get creature type from the mapping
+                    mapping = _ENEMY_PACK.get_mapping_for_level(pack_key, dungeon_level)
+                    if mapping:
+                        creature_type = mapping.creature_type
+                        dna = pack_params
+                        use_pack = True
+                        print(f"✓ Using enemy pack for {enemy_type} level {dungeon_level} ({creature_type})")
+                    else:
+                        print(f"⚠ No mapping found for {pack_key} level {dungeon_level} (have {len(mappings)} mappings)")
+                except Exception as e:
+                    print(f"⚠ Failed to get pack parameters for {pack_key} level {dungeon_level}: {e}")
+                    import traceback
+                    traceback.print_exc()
+            # No else - if no mappings, just use procedural generation
+
+    # Fallback to default mapping if pack didn't provide
+    if creature_type is None:
+        creature_type = ENEMY_CREATURE_MAP.get(enemy_type)
 
     if creature_type is None:
         raise ValueError(f"Unknown enemy type: {enemy_type}")
 
-    # Generate DNA based on creature type
+    # Generate DNA based on creature type (if not from pack)
     creature = None
 
     try:
         if creature_type == 'tentacle':
             from dna_editor.models.creature import TentacleCreature
-            dna = generate_tentacle_dna(dungeon_level, color_rgb)
+            if not use_pack:
+                dna = generate_tentacle_dna(dungeon_level, color_rgb)
             creature = TentacleCreature(**dna)
 
         elif creature_type == 'blob':
             from dna_editor.models.blob_creature import BlobCreature
-            # Slime is more transparent than goblin
-            transparency = 0.8 if enemy_type == c.ENEMY_SLIME else 0.6
-            dna = generate_blob_dna(dungeon_level, color_rgb, transparency)
+            if not use_pack:
+                # Slime is more transparent than goblin
+                transparency = 0.8 if enemy_type == c.ENEMY_SLIME else 0.6
+                dna = generate_blob_dna(dungeon_level, color_rgb, transparency)
             creature = BlobCreature(**dna)
 
         elif creature_type == 'polyp':
             from dna_editor.models.polyp_creature import PolypCreature
             from dna_editor.core.constants import GOLDEN_RATIO
-            dna = generate_polyp_dna(dungeon_level, color_rgb)
+            if not use_pack:
+                dna = generate_polyp_dna(dungeon_level, color_rgb)
             creature = PolypCreature(**dna)
 
             # Calculate proper Y offset so bottom tentacles don't clip through floor
@@ -435,17 +532,20 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
 
         elif creature_type == 'medusa':
             from dna_editor.models.medusa_creature import MedusaCreature
-            dna = generate_medusa_dna(dungeon_level, color_rgb)
+            if not use_pack:
+                dna = generate_medusa_dna(dungeon_level, color_rgb)
             creature = MedusaCreature(**dna)
 
         elif creature_type == 'dragon':
             from dna_editor.models.dragon_creature import DragonCreature
-            dna = generate_dragon_dna(dungeon_level)
+            if not use_pack:
+                dna = generate_dragon_dna(dungeon_level)
             creature = DragonCreature(**dna)
 
         elif creature_type == 'starfish':
             from dna_editor.models.starfish_creature import StarfishCreature
-            dna = generate_starfish_dna(dungeon_level, color_rgb)
+            if not use_pack:
+                dna = generate_starfish_dna(dungeon_level, color_rgb)
             creature = StarfishCreature(**dna)
 
         # Set creature position and scale

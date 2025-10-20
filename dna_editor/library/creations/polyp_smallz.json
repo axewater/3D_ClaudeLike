@@ -1,0 +1,19 @@
+{
+  "name": "Polyp SMallz",
+  "creature_type": "polyp",
+  "parameters": {
+    "num_spheres": 3,
+    "base_sphere_size": 0.4,
+    "polyp_color": [
+      0.30196078431372547,
+      0.3333333333333333,
+      0.33725490196078434
+    ],
+    "curve_intensity": 0.54,
+    "tentacles_per_sphere": 3,
+    "segments_per_tentacle": 7,
+    "algorithm": "bezier",
+    "thickness_base": 0.2,
+    "taper_factor": 0.6
+  }
+}

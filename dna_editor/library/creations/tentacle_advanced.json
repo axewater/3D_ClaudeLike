@@ -1,0 +1,29 @@
+{
+  "name": "Tentacle Advanced",
+  "creature_type": "tentacle",
+  "parameters": {
+    "num_tentacles": 10,
+    "segments_per_tentacle": 16,
+    "algorithm": "fourier",
+    "algorithm_params": {
+      "num_harmonics": 4,
+      "amplitude_decay": 0.5
+    },
+    "thickness_base": 0.3,
+    "taper_factor": 0.7,
+    "branch_depth": 1,
+    "branch_count": 2,
+    "body_scale": 1.4,
+    "tentacle_color": [0.8, 0.2, 0.5],
+    "hue_shift": 0.15,
+    "anim_speed": 2.5,
+    "wave_amplitude": 0.08,
+    "pulse_speed": 2.0,
+    "pulse_amount": 0.08,
+    "num_eyes": 6,
+    "eye_size_min": 0.12,
+    "eye_size_max": 0.25,
+    "eyeball_color": [1.0, 0.9, 0.8],
+    "pupil_color": [0.1, 0.0, 0.1]
+  }
+}

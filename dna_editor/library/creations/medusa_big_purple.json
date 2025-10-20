@@ -1,0 +1,36 @@
+{
+  "name": "Medusa Big Purple",
+  "creature_type": "medusa",
+  "parameters": {
+    "num_tentacles": 12,
+    "segments_per_tentacle": 20,
+    "algorithm": "bezier",
+    "algorithm_params": {
+      "control_strength": 0.66
+    },
+    "thickness_base": 0.25,
+    "taper_factor": 0.72,
+    "body_scale": 1.66,
+    "tentacle_color": [
+      0.5725490196078431,
+      0.14901960784313725,
+      0.8745098039215686
+    ],
+    "hue_shift": 0.04,
+    "anim_speed": 1.09,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 0.75,
+    "pulse_amount": 0.05,
+    "eye_size": 0.27,
+    "eyeball_color": [
+      1.0,
+      0.95,
+      0.85
+    ],
+    "pupil_color": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

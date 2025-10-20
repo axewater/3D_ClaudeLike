@@ -1,0 +1,19 @@
+{
+  "name": "Polyp Large hulk",
+  "creature_type": "polyp",
+  "parameters": {
+    "num_spheres": 5,
+    "base_sphere_size": 0.4,
+    "polyp_color": [
+      0.1568627450980392,
+      0.9176470588235294,
+      0.058823529411764705
+    ],
+    "curve_intensity": 1.0,
+    "tentacles_per_sphere": 7,
+    "segments_per_tentacle": 8,
+    "algorithm": "bezier",
+    "thickness_base": 0.2,
+    "taper_factor": 0.6
+  }
+}

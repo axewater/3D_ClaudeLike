@@ -1,0 +1,19 @@
+{
+  "name": "Blob Medium Mud",
+  "creature_type": "blob",
+  "parameters": {
+    "branch_depth": 2,
+    "branch_count": 2,
+    "cube_size_min": 0.15,
+    "cube_size_max": 0.92,
+    "cube_spacing": 0.79,
+    "blob_color": [
+      0.4196078431372549,
+      0.36470588235294116,
+      0.15294117647058825
+    ],
+    "blob_transparency": 0.45,
+    "jiggle_speed": 3.58,
+    "blob_pulse_amount": 0.2
+  }
+}

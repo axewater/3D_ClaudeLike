@@ -1,0 +1,44 @@
+{
+  "name": "Dragon Mediumz",
+  "creature_type": "dragon",
+  "parameters": {
+    "num_segments": 17,
+    "segment_thickness": 0.36,
+    "taper_factor": 0.71,
+    "head_scale": 3.3,
+    "body_color": [
+      255,
+      239,
+      15
+    ],
+    "head_color": [
+      255,
+      175,
+      64
+    ],
+    "weave_amplitude": 0.95,
+    "bob_amplitude": 0.62,
+    "anim_speed": 1.89,
+    "num_eyes": 3,
+    "eye_size": 0.3,
+    "eyeball_color": [
+      255,
+      200,
+      50
+    ],
+    "pupil_color": [
+      20,
+      0,
+      0
+    ],
+    "mouth_size": 0.3,
+    "mouth_color": [
+      20,
+      0,
+      0
+    ],
+    "num_whiskers_per_side": 0,
+    "whisker_segments": 3,
+    "whisker_thickness": 0.05
+  }
+}

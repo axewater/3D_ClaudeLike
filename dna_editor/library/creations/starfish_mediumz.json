@@ -1,0 +1,18 @@
+{
+  "name": "Starfish Mediumz",
+  "creature_type": "starfish",
+  "parameters": {
+    "num_arms": 8,
+    "arm_segments": 7,
+    "central_body_size": 1.34,
+    "arm_base_thickness": 0.6,
+    "starfish_color": [
+      0.24313725490196078,
+      0.8274509803921568,
+      0.9450980392156862
+    ],
+    "curl_factor": 0.8,
+    "anim_speed": 3.77,
+    "pulse_amount": 0.14
+  }
+}

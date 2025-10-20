@@ -1,0 +1,44 @@
+{
+  "name": "Dragon small dragonfly",
+  "creature_type": "dragon",
+  "parameters": {
+    "num_segments": 7,
+    "segment_thickness": 0.21,
+    "taper_factor": 0.47,
+    "head_scale": 2.6,
+    "body_color": [
+      99,
+      101,
+      200
+    ],
+    "head_color": [
+      255,
+      224,
+      255
+    ],
+    "weave_amplitude": 0.95,
+    "bob_amplitude": 0.62,
+    "anim_speed": 1.89,
+    "num_eyes": 2,
+    "eye_size": 0.15,
+    "eyeball_color": [
+      255,
+      200,
+      50
+    ],
+    "pupil_color": [
+      20,
+      0,
+      0
+    ],
+    "mouth_size": 0.25,
+    "mouth_color": [
+      20,
+      0,
+      0
+    ],
+    "num_whiskers_per_side": 2,
+    "whisker_segments": 4,
+    "whisker_thickness": 0.05
+  }
+}

@@ -6,17 +6,19 @@ Handles undo/redo, file export, and coordinate updates between UI and 3D.
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel,
-    QFileDialog, QMessageBox, QScrollArea
+    QFileDialog, QMessageBox, QScrollArea, QInputDialog
 )
 from PyQt6.QtGui import QAction, QKeySequence
 from PyQt6.QtCore import Qt
 import json
 import sys
 import os
+from pathlib import Path
 
 from .control_panel_modern import ModernControlPanel
 from .ursina_renderer import UrsinaRenderer
 from ..controllers.state_manager import StateManager
+from ..models.library_data import Creation
 
 
 class EditorWindow(QMainWindow):
@@ -286,6 +288,11 @@ class EditorWindow(QMainWindow):
         # File menu
         file_menu = menubar.addMenu("&File")
 
+        save_library_action = QAction("&Save to Library", self)
+        save_library_action.setShortcut(QKeySequence("Ctrl+S"))
+        save_library_action.triggered.connect(self._on_save_to_library)
+        file_menu.addAction(save_library_action)
+
         export_action = QAction("&Export JSON", self)
         export_action.setShortcut(QKeySequence("Ctrl+E"))
         export_action.triggered.connect(self._on_export)
@@ -511,6 +518,178 @@ class EditorWindow(QMainWindow):
     def _on_attack_2(self):
         """Handle Attack 2 button press (single tentacle slash)."""
         self.renderer.trigger_attack_2()
+
+    def _on_save_to_library(self):
+        """Handle save to library - prompts for name and saves creation."""
+        # Get current state
+        state = self.control_panel.get_state()
+        creature_type = state.get('creature_type', 'tentacle')
+
+        # Prompt for creation name
+        name, ok = QInputDialog.getText(
+            self,
+            "Save to Library",
+            f"Enter a name for this {creature_type} creation:",
+            text=f"{creature_type.capitalize()} Custom"
+        )
+
+        if not ok or not name.strip():
+            return  # User cancelled or entered empty name
+
+        name = name.strip()
+
+        # Create parameters dict based on creature type
+        parameters = self._extract_parameters(state, creature_type)
+
+        # Create Creation object
+        creation = Creation(
+            name=name,
+            creature_type=creature_type,
+            parameters=parameters
+        )
+
+        # Determine save path
+        library_dir = Path(__file__).parent.parent / 'library' / 'creations'
+        library_dir.mkdir(parents=True, exist_ok=True)
+
+        # Sanitize filename (replace spaces/special chars)
+        safe_filename = "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in name)
+        safe_filename = safe_filename.replace(' ', '_').lower()
+        file_path = library_dir / f"{safe_filename}.json"
+
+        # Check if file exists
+        if file_path.exists():
+            reply = QMessageBox.question(
+                self,
+                "File Exists",
+                f"A creation named '{name}' already exists. Overwrite it?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        # Save to file
+        try:
+            creation.save_to_file(file_path)
+
+            QMessageBox.information(
+                self,
+                "Save Successful",
+                f"Creation '{name}' saved to library:\n{file_path.name}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Save Failed",
+                f"Failed to save creation:\n{str(e)}"
+            )
+
+    def _extract_parameters(self, state, creature_type):
+        """Extract parameters for a specific creature type from state dict."""
+        parameters = {}
+
+        if creature_type == 'tentacle':
+            parameters = {
+                'num_tentacles': state['num_tentacles'],
+                'segments_per_tentacle': state['segments'],
+                'algorithm': state['algorithm'],
+                'algorithm_params': state['params'],
+                'thickness_base': state['thickness_base'],
+                'taper_factor': state['taper_factor'],
+                'branch_depth': state.get('branch_depth', 0),
+                'branch_count': state.get('branch_count', 1),
+                'body_scale': state.get('body_scale', 1.2),
+                'tentacle_color': state.get('tentacle_color', (0.6, 0.3, 0.7)),
+                'hue_shift': state.get('hue_shift', 0.1),
+                'anim_speed': state.get('anim_speed', 2.0),
+                'wave_amplitude': state.get('wave_amplitude', 0.05),
+                'pulse_speed': state.get('pulse_speed', 1.5),
+                'pulse_amount': state.get('pulse_amount', 0.05),
+                'num_eyes': state.get('num_eyes', 3),
+                'eye_size_min': state.get('eye_size_min', 0.1),
+                'eye_size_max': state.get('eye_size_max', 0.25),
+                'eyeball_color': state.get('eyeball_color', (1.0, 1.0, 1.0)),
+                'pupil_color': state.get('pupil_color', (0.0, 0.0, 0.0))
+            }
+        elif creature_type == 'blob':
+            parameters = {
+                'branch_depth': state.get('blob_branch_depth', 2),
+                'branch_count': state.get('blob_branch_count', 2),
+                'cube_size_min': state.get('cube_size_min', 0.3),
+                'cube_size_max': state.get('cube_size_max', 0.8),
+                'cube_spacing': state.get('cube_spacing', 1.2),
+                'blob_color': state.get('blob_color', (0.2, 0.8, 0.4)),
+                'blob_transparency': state.get('blob_transparency', 0.7),
+                'jiggle_speed': state.get('jiggle_speed', 2.0),
+                'blob_pulse_amount': state.get('blob_pulse_amount', 0.1)
+            }
+        elif creature_type == 'polyp':
+            parameters = {
+                'num_spheres': state.get('num_spheres', 4),
+                'base_sphere_size': state.get('base_sphere_size', 0.8),
+                'polyp_color': state.get('polyp_color', (0.6, 0.3, 0.7)),
+                'curve_intensity': state.get('curve_intensity', 0.4),
+                'tentacles_per_sphere': state.get('polyp_tentacles_per_sphere', 6),
+                'segments_per_tentacle': state.get('polyp_segments', 12),
+                'algorithm': state.get('algorithm', 'bezier'),
+                'thickness_base': state.get('thickness_base', 0.2),
+                'taper_factor': state.get('taper_factor', 0.6)
+            }
+        elif creature_type == 'starfish':
+            parameters = {
+                'num_arms': state.get('num_arms', 5),
+                'arm_segments': state.get('arm_segments', 6),
+                'central_body_size': state.get('central_body_size', 0.8),
+                'arm_base_thickness': state.get('arm_base_thickness', 0.4),
+                'starfish_color': state.get('starfish_color', (0.9, 0.5, 0.3)),
+                'curl_factor': state.get('curl_factor', 0.3),
+                'anim_speed': state.get('starfish_anim_speed', 1.5),
+                'pulse_amount': state.get('starfish_pulse_amount', 0.06)
+            }
+        elif creature_type == 'medusa':
+            parameters = {
+                'num_tentacles': state.get('num_tentacles', 8),
+                'segments_per_tentacle': state.get('segments_per_tentacle', 16),
+                'algorithm': state.get('algorithm', 'fourier'),
+                'algorithm_params': state.get('algorithm_params', {}),
+                'thickness_base': state.get('thickness_base', 0.25),
+                'taper_factor': state.get('taper_factor', 0.6),
+                'body_scale': state.get('body_scale', 1.0),
+                'tentacle_color': state.get('tentacle_color', (0.4, 0.2, 0.6)),
+                'hue_shift': state.get('hue_shift', 0.08),
+                'anim_speed': state.get('anim_speed', 1.5),
+                'wave_amplitude': state.get('wave_amplitude', 0.08),
+                'pulse_speed': state.get('pulse_speed', 1.2),
+                'pulse_amount': state.get('pulse_amount', 0.06),
+                'eye_size': state.get('eye_size', 0.18),
+                'eyeball_color': state.get('eyeball_color', (1.0, 0.95, 0.85)),
+                'pupil_color': state.get('pupil_color', (0.1, 0.0, 0.2))
+            }
+        elif creature_type == 'dragon':
+            parameters = {
+                'num_segments': state.get('dragon_segments', 15),
+                'segment_thickness': state.get('dragon_thickness', 0.3),
+                'taper_factor': state.get('dragon_taper', 0.6),
+                'head_scale': state.get('dragon_head_scale', 3.0),
+                'body_color': state.get('dragon_body_color', (200, 40, 40)),
+                'head_color': state.get('dragon_head_color', (255, 200, 50)),
+                'weave_amplitude': state.get('dragon_weave_amplitude', 0.5),
+                'bob_amplitude': state.get('dragon_bob_amplitude', 0.3),
+                'anim_speed': state.get('dragon_anim_speed', 1.5),
+                'num_eyes': state.get('dragon_num_eyes', 2),
+                'eye_size': state.get('dragon_eye_size', 0.15),
+                'eyeball_color': state.get('dragon_eyeball_color', (255, 200, 50)),
+                'pupil_color': state.get('dragon_pupil_color', (20, 0, 0)),
+                'mouth_size': state.get('dragon_mouth_size', 0.25),
+                'mouth_color': state.get('dragon_mouth_color', (20, 0, 0)),
+                'num_whiskers_per_side': state.get('dragon_num_whiskers_per_side', 2),
+                'whisker_segments': state.get('dragon_whisker_segments', 4),
+                'whisker_thickness': state.get('dragon_whisker_thickness', 0.05)
+            }
+
+        return parameters
 
     def _on_export(self):
         """Handle export to JSON."""

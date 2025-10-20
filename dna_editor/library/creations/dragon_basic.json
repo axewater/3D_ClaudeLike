@@ -1,0 +1,24 @@
+{
+  "name": "Dragon Basic",
+  "creature_type": "dragon",
+  "parameters": {
+    "num_segments": 12,
+    "segment_thickness": 0.3,
+    "taper_factor": 0.6,
+    "head_scale": 2.5,
+    "body_color": [200, 40, 40],
+    "head_color": [255, 200, 50],
+    "weave_amplitude": 0.5,
+    "bob_amplitude": 0.3,
+    "anim_speed": 1.5,
+    "num_eyes": 2,
+    "eye_size": 0.15,
+    "eyeball_color": [255, 200, 50],
+    "pupil_color": [20, 0, 0],
+    "mouth_size": 0.25,
+    "mouth_color": [20, 0, 0],
+    "num_whiskers_per_side": 2,
+    "whisker_segments": 4,
+    "whisker_thickness": 0.05
+  }
+}

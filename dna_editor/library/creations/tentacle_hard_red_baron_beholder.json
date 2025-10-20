@@ -1,0 +1,40 @@
+{
+  "name": "Tentacle Hard red baron beholder",
+  "creature_type": "tentacle",
+  "parameters": {
+    "num_tentacles": 8,
+    "segments_per_tentacle": 15,
+    "algorithm": "bezier",
+    "algorithm_params": {
+      "control_strength": 0.8
+    },
+    "thickness_base": 0.34,
+    "taper_factor": 1.0,
+    "branch_depth": 1,
+    "branch_count": 2,
+    "body_scale": 1.52,
+    "tentacle_color": [
+      0.9607843137254902,
+      0.058823529411764705,
+      0.07450980392156863
+    ],
+    "hue_shift": 0.3,
+    "anim_speed": 2.0,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 1.5,
+    "pulse_amount": 0.05,
+    "num_eyes": 7,
+    "eye_size_min": 0.15,
+    "eye_size_max": 0.38,
+    "eyeball_color": [
+      1.0,
+      0.06274509803921569,
+      0.0784313725490196
+    ],
+    "pupil_color": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

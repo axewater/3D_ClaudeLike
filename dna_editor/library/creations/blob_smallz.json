@@ -1,0 +1,19 @@
+{
+  "name": "Blob Smallz",
+  "creature_type": "blob",
+  "parameters": {
+    "branch_depth": 2,
+    "branch_count": 1,
+    "cube_size_min": 0.15,
+    "cube_size_max": 0.51,
+    "cube_spacing": 0.63,
+    "blob_color": [
+      0.2,
+      0.8,
+      0.4
+    ],
+    "blob_transparency": 0.45,
+    "jiggle_speed": 3.58,
+    "blob_pulse_amount": 0.2
+  }
+}

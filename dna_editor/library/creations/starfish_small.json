@@ -1,0 +1,18 @@
+{
+  "name": "Starfish SMall",
+  "creature_type": "starfish",
+  "parameters": {
+    "num_arms": 5,
+    "arm_segments": 5,
+    "central_body_size": 1.12,
+    "arm_base_thickness": 0.6,
+    "starfish_color": [
+      0.1450980392156863,
+      0.41568627450980394,
+      0.06666666666666667
+    ],
+    "curl_factor": 0.8,
+    "anim_speed": 3.77,
+    "pulse_amount": 0.14
+  }
+}

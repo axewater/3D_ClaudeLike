@@ -1,0 +1,29 @@
+{
+  "name": "Tentacle Basic",
+  "creature_type": "tentacle",
+  "parameters": {
+    "num_tentacles": 4,
+    "segments_per_tentacle": 10,
+    "algorithm": "bezier",
+    "algorithm_params": {
+      "control_distance": 1.5,
+      "control_angle": 45
+    },
+    "thickness_base": 0.2,
+    "taper_factor": 0.6,
+    "branch_depth": 0,
+    "branch_count": 1,
+    "body_scale": 1.0,
+    "tentacle_color": [0.6, 0.3, 0.7],
+    "hue_shift": 0.1,
+    "anim_speed": 2.0,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 1.5,
+    "pulse_amount": 0.05,
+    "num_eyes": 2,
+    "eye_size_min": 0.1,
+    "eye_size_max": 0.2,
+    "eyeball_color": [1.0, 1.0, 1.0],
+    "pupil_color": [0.0, 0.0, 0.0]
+  }
+}

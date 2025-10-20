@@ -1,0 +1,25 @@
+{
+  "name": "Medusa Basic",
+  "creature_type": "medusa",
+  "parameters": {
+    "num_tentacles": 8,
+    "segments_per_tentacle": 16,
+    "algorithm": "fourier",
+    "algorithm_params": {
+      "num_harmonics": 3,
+      "amplitude_decay": 0.6
+    },
+    "thickness_base": 0.25,
+    "taper_factor": 0.6,
+    "body_scale": 1.0,
+    "tentacle_color": [0.4, 0.2, 0.6],
+    "hue_shift": 0.08,
+    "anim_speed": 1.5,
+    "wave_amplitude": 0.08,
+    "pulse_speed": 1.2,
+    "pulse_amount": 0.06,
+    "eye_size": 0.18,
+    "eyeball_color": [1.0, 0.95, 0.85],
+    "pupil_color": [0.1, 0.0, 0.2]
+  }
+}

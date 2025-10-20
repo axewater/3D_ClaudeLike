@@ -1,0 +1,40 @@
+{
+  "name": "Tentacle Medium Blue beholder",
+  "creature_type": "tentacle",
+  "parameters": {
+    "num_tentacles": 8,
+    "segments_per_tentacle": 15,
+    "algorithm": "bezier",
+    "algorithm_params": {
+      "control_strength": 0.31
+    },
+    "thickness_base": 0.24,
+    "taper_factor": 1.0,
+    "branch_depth": 1,
+    "branch_count": 1,
+    "body_scale": 1.13,
+    "tentacle_color": [
+      0.023529411764705882,
+      0.023529411764705882,
+      0.9607843137254902
+    ],
+    "hue_shift": 0.3,
+    "anim_speed": 2.0,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 1.5,
+    "pulse_amount": 0.05,
+    "num_eyes": 12,
+    "eye_size_min": 0.1,
+    "eye_size_max": 0.19,
+    "eyeball_color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "pupil_color": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

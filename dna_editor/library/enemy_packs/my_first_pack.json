@@ -1,0 +1,619 @@
+{
+  "pack_name": "Untitled Pack",
+  "version": "1.0",
+  "enemies": {
+    "ENEMY_STARTLE": [
+      {
+        "level_range": [
+          1,
+          1
+        ],
+        "creature_type": "starfish",
+        "parameters": {
+          "num_arms": 5,
+          "arm_segments": 5,
+          "central_body_size": 1.12,
+          "arm_base_thickness": 0.6,
+          "starfish_color": [
+            0.1450980392156863,
+            0.41568627450980394,
+            0.06666666666666667
+          ],
+          "curl_factor": 0.8,
+          "anim_speed": 3.77,
+          "pulse_amount": 0.14
+        },
+        "creation_name": "Starfish SMall"
+      },
+      {
+        "level_range": [
+          2,
+          3
+        ],
+        "creature_type": "starfish",
+        "parameters": {
+          "num_arms": 8,
+          "arm_segments": 7,
+          "central_body_size": 1.34,
+          "arm_base_thickness": 0.6,
+          "starfish_color": [
+            0.24313725490196078,
+            0.8274509803921568,
+            0.9450980392156862
+          ],
+          "curl_factor": 0.8,
+          "anim_speed": 3.77,
+          "pulse_amount": 0.14
+        },
+        "creation_name": "Starfish Mediumz"
+      },
+      {
+        "level_range": [
+          4,
+          5
+        ],
+        "creature_type": "starfish",
+        "parameters": {
+          "num_arms": 8,
+          "arm_segments": 10,
+          "central_body_size": 0.53,
+          "arm_base_thickness": 0.22,
+          "starfish_color": [
+            0.3568627450980392,
+            0.1803921568627451,
+            0.7372549019607844
+          ],
+          "curl_factor": 0.8,
+          "anim_speed": 3.77,
+          "pulse_amount": 0.14
+        },
+        "creation_name": "Starfish Large"
+      }
+    ],
+    "ENEMY_SLIME": [
+      {
+        "level_range": [
+          1,
+          2
+        ],
+        "creature_type": "blob",
+        "parameters": {
+          "branch_depth": 2,
+          "branch_count": 1,
+          "cube_size_min": 0.15,
+          "cube_size_max": 0.51,
+          "cube_spacing": 0.63,
+          "blob_color": [
+            0.2,
+            0.8,
+            0.4
+          ],
+          "blob_transparency": 0.45,
+          "jiggle_speed": 3.58,
+          "blob_pulse_amount": 0.2
+        },
+        "creation_name": "Blob Smallz"
+      },
+      {
+        "level_range": [
+          3,
+          3
+        ],
+        "creature_type": "blob",
+        "parameters": {
+          "branch_depth": 2,
+          "branch_count": 2,
+          "cube_size_min": 0.15,
+          "cube_size_max": 0.92,
+          "cube_spacing": 0.79,
+          "blob_color": [
+            0.4196078431372549,
+            0.36470588235294116,
+            0.15294117647058825
+          ],
+          "blob_transparency": 0.45,
+          "jiggle_speed": 3.58,
+          "blob_pulse_amount": 0.2
+        },
+        "creation_name": "Blob Medium Mud"
+      },
+      {
+        "level_range": [
+          4,
+          5
+        ],
+        "creature_type": "blob",
+        "parameters": {
+          "branch_depth": 3,
+          "branch_count": 3,
+          "cube_size_min": 0.15,
+          "cube_size_max": 0.9,
+          "cube_spacing": 0.52,
+          "blob_color": [
+            0.9372549019607843,
+            0.27450980392156865,
+            0.050980392156862744
+          ],
+          "blob_transparency": 0.81,
+          "jiggle_speed": 3.58,
+          "blob_pulse_amount": 0.2
+        },
+        "creation_name": "Blob large vulcan"
+      }
+    ],
+    "ENEMY_SKELETON": [
+      {
+        "level_range": [
+          2,
+          5
+        ],
+        "creature_type": "polyp",
+        "parameters": {
+          "num_spheres": 3,
+          "base_sphere_size": 0.4,
+          "polyp_color": [
+            0.30196078431372547,
+            0.3333333333333333,
+            0.33725490196078434
+          ],
+          "curve_intensity": 0.54,
+          "tentacles_per_sphere": 3,
+          "segments_per_tentacle": 7,
+          "algorithm": "bezier",
+          "thickness_base": 0.2,
+          "taper_factor": 0.6
+        },
+        "creation_name": "Polyp SMallz"
+      },
+      {
+        "level_range": [
+          6,
+          9
+        ],
+        "creature_type": "polyp",
+        "parameters": {
+          "num_spheres": 3,
+          "base_sphere_size": 0.94,
+          "polyp_color": [
+            0.29411764705882354,
+            0.4549019607843137,
+            0.29411764705882354
+          ],
+          "curve_intensity": 0.54,
+          "tentacles_per_sphere": 3,
+          "segments_per_tentacle": 19,
+          "algorithm": "bezier",
+          "thickness_base": 0.2,
+          "taper_factor": 0.6
+        },
+        "creation_name": "Polyp Medium Soldier"
+      },
+      {
+        "level_range": [
+          10,
+          14
+        ],
+        "creature_type": "polyp",
+        "parameters": {
+          "num_spheres": 5,
+          "base_sphere_size": 0.4,
+          "polyp_color": [
+            0.1568627450980392,
+            0.9176470588235294,
+            0.058823529411764705
+          ],
+          "curve_intensity": 1.0,
+          "tentacles_per_sphere": 7,
+          "segments_per_tentacle": 8,
+          "algorithm": "bezier",
+          "thickness_base": 0.2,
+          "taper_factor": 0.6
+        },
+        "creation_name": "Polyp Large hulk"
+      }
+    ],
+    "ENEMY_ORC": [
+      {
+        "level_range": [
+          4,
+          8
+        ],
+        "creature_type": "tentacle",
+        "parameters": {
+          "num_tentacles": 4,
+          "segments_per_tentacle": 12,
+          "algorithm": "bezier",
+          "algorithm_params": {
+            "control_strength": 0.19
+          },
+          "thickness_base": 0.16,
+          "taper_factor": 0.6,
+          "branch_depth": 0,
+          "branch_count": 3,
+          "body_scale": 0.87,
+          "tentacle_color": [
+            0.8352941176470589,
+            0.41568627450980394,
+            0.9764705882352941
+          ],
+          "hue_shift": 0.3,
+          "anim_speed": 2.0,
+          "wave_amplitude": 0.05,
+          "pulse_speed": 1.5,
+          "pulse_amount": 0.05,
+          "num_eyes": 11,
+          "eye_size_min": 0.1,
+          "eye_size_max": 0.5,
+          "eyeball_color": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Tentacle Small Pink death"
+      },
+      {
+        "level_range": [
+          9,
+          14
+        ],
+        "creature_type": "tentacle",
+        "parameters": {
+          "num_tentacles": 8,
+          "segments_per_tentacle": 15,
+          "algorithm": "bezier",
+          "algorithm_params": {
+            "control_strength": 0.31
+          },
+          "thickness_base": 0.24,
+          "taper_factor": 1.0,
+          "branch_depth": 1,
+          "branch_count": 1,
+          "body_scale": 1.13,
+          "tentacle_color": [
+            0.023529411764705882,
+            0.023529411764705882,
+            0.9607843137254902
+          ],
+          "hue_shift": 0.3,
+          "anim_speed": 2.0,
+          "wave_amplitude": 0.05,
+          "pulse_speed": 1.5,
+          "pulse_amount": 0.05,
+          "num_eyes": 12,
+          "eye_size_min": 0.1,
+          "eye_size_max": 0.19,
+          "eyeball_color": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Tentacle Medium Blue beholder"
+      },
+      {
+        "level_range": [
+          15,
+          19
+        ],
+        "creature_type": "tentacle",
+        "parameters": {
+          "num_tentacles": 8,
+          "segments_per_tentacle": 15,
+          "algorithm": "bezier",
+          "algorithm_params": {
+            "control_strength": 0.8
+          },
+          "thickness_base": 0.34,
+          "taper_factor": 1.0,
+          "branch_depth": 1,
+          "branch_count": 2,
+          "body_scale": 1.52,
+          "tentacle_color": [
+            0.9607843137254902,
+            0.058823529411764705,
+            0.07450980392156863
+          ],
+          "hue_shift": 0.3,
+          "anim_speed": 2.0,
+          "wave_amplitude": 0.05,
+          "pulse_speed": 1.5,
+          "pulse_amount": 0.05,
+          "num_eyes": 7,
+          "eye_size_min": 0.15,
+          "eye_size_max": 0.38,
+          "eyeball_color": [
+            1.0,
+            0.06274509803921569,
+            0.0784313725490196
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Tentacle Hard red baron beholder"
+      }
+    ],
+    "ENEMY_DEMON": [
+      {
+        "level_range": [
+          6,
+          9
+        ],
+        "creature_type": "medusa",
+        "parameters": {
+          "num_tentacles": 4,
+          "segments_per_tentacle": 12,
+          "algorithm": "bezier",
+          "algorithm_params": {
+            "control_strength": 0.8
+          },
+          "thickness_base": 0.15,
+          "taper_factor": 0.49,
+          "body_scale": 0.66,
+          "tentacle_color": [
+            0.6,
+            0.03137254901960784,
+            0.03137254901960784
+          ],
+          "hue_shift": 0.18,
+          "anim_speed": 2.87,
+          "wave_amplitude": 0.15,
+          "pulse_speed": 3.0,
+          "pulse_amount": 0.07,
+          "eye_size": 0.27,
+          "eyeball_color": [
+            1.0,
+            0.95,
+            0.85
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Medusa Small red"
+      },
+      {
+        "level_range": [
+          10,
+          15
+        ],
+        "creature_type": "medusa",
+        "parameters": {
+          "num_tentacles": 6,
+          "segments_per_tentacle": 20,
+          "algorithm": "fourier",
+          "algorithm_params": {
+            "num_waves": 3,
+            "amplitude": 0.15
+          },
+          "thickness_base": 0.4,
+          "taper_factor": 0.49,
+          "body_scale": 1.18,
+          "tentacle_color": [
+            0.7803921568627451,
+            0.7803921568627451,
+            0.7803921568627451
+          ],
+          "hue_shift": 0.04,
+          "anim_speed": 1.09,
+          "wave_amplitude": 0.05,
+          "pulse_speed": 0.75,
+          "pulse_amount": 0.05,
+          "eye_size": 0.27,
+          "eyeball_color": [
+            1.0,
+            0.95,
+            0.85
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Medusa Medium WHITE"
+      },
+      {
+        "level_range": [
+          16,
+          25
+        ],
+        "creature_type": "medusa",
+        "parameters": {
+          "num_tentacles": 12,
+          "segments_per_tentacle": 20,
+          "algorithm": "bezier",
+          "algorithm_params": {
+            "control_strength": 0.66
+          },
+          "thickness_base": 0.25,
+          "taper_factor": 0.72,
+          "body_scale": 1.66,
+          "tentacle_color": [
+            0.5725490196078431,
+            0.14901960784313725,
+            0.8745098039215686
+          ],
+          "hue_shift": 0.04,
+          "anim_speed": 1.09,
+          "wave_amplitude": 0.05,
+          "pulse_speed": 0.75,
+          "pulse_amount": 0.05,
+          "eye_size": 0.27,
+          "eyeball_color": [
+            1.0,
+            0.95,
+            0.85
+          ],
+          "pupil_color": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "creation_name": "Medusa Big Purple"
+      }
+    ],
+    "ENEMY_DRAGON": [
+      {
+        "level_range": [
+          10,
+          12
+        ],
+        "creature_type": "dragon",
+        "parameters": {
+          "num_segments": 7,
+          "segment_thickness": 0.21,
+          "taper_factor": 0.47,
+          "head_scale": 2.6,
+          "body_color": [
+            99,
+            101,
+            200
+          ],
+          "head_color": [
+            255,
+            224,
+            255
+          ],
+          "weave_amplitude": 0.95,
+          "bob_amplitude": 0.62,
+          "anim_speed": 1.89,
+          "num_eyes": 2,
+          "eye_size": 0.15,
+          "eyeball_color": [
+            255,
+            200,
+            50
+          ],
+          "pupil_color": [
+            20,
+            0,
+            0
+          ],
+          "mouth_size": 0.25,
+          "mouth_color": [
+            20,
+            0,
+            0
+          ],
+          "num_whiskers_per_side": 2,
+          "whisker_segments": 4,
+          "whisker_thickness": 0.05
+        },
+        "creation_name": "Dragon small dragonfly"
+      },
+      {
+        "level_range": [
+          13,
+          20
+        ],
+        "creature_type": "dragon",
+        "parameters": {
+          "num_segments": 17,
+          "segment_thickness": 0.36,
+          "taper_factor": 0.71,
+          "head_scale": 3.3,
+          "body_color": [
+            255,
+            239,
+            15
+          ],
+          "head_color": [
+            255,
+            175,
+            64
+          ],
+          "weave_amplitude": 0.95,
+          "bob_amplitude": 0.62,
+          "anim_speed": 1.89,
+          "num_eyes": 3,
+          "eye_size": 0.3,
+          "eyeball_color": [
+            255,
+            200,
+            50
+          ],
+          "pupil_color": [
+            20,
+            0,
+            0
+          ],
+          "mouth_size": 0.3,
+          "mouth_color": [
+            20,
+            0,
+            0
+          ],
+          "num_whiskers_per_side": 0,
+          "whisker_segments": 3,
+          "whisker_thickness": 0.05
+        },
+        "creation_name": "Dragon Mediumz"
+      },
+      {
+        "level_range": [
+          21,
+          25
+        ],
+        "creature_type": "dragon",
+        "parameters": {
+          "num_segments": 30,
+          "segment_thickness": 0.71,
+          "taper_factor": 0.71,
+          "head_scale": 2.5,
+          "body_color": [
+            255,
+            0,
+            4
+          ],
+          "head_color": [
+            255,
+            234,
+            1
+          ],
+          "weave_amplitude": 1.0,
+          "bob_amplitude": 1.0,
+          "anim_speed": 5.0,
+          "num_eyes": 5,
+          "eye_size": 0.24,
+          "eyeball_color": [
+            255,
+            200,
+            50
+          ],
+          "pupil_color": [
+            0,
+            20,
+            0
+          ],
+          "mouth_size": 0.3,
+          "mouth_color": [
+            20,
+            0,
+            0
+          ],
+          "num_whiskers_per_side": 0,
+          "whisker_segments": 3,
+          "whisker_thickness": 0.05
+        },
+        "creation_name": "Dragon Largez"
+      }
+    ]
+  }
+}

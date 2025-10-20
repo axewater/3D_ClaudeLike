@@ -1,0 +1,37 @@
+{
+  "name": "Medusa Medium WHITE",
+  "creature_type": "medusa",
+  "parameters": {
+    "num_tentacles": 6,
+    "segments_per_tentacle": 20,
+    "algorithm": "fourier",
+    "algorithm_params": {
+      "num_waves": 3,
+      "amplitude": 0.15
+    },
+    "thickness_base": 0.4,
+    "taper_factor": 0.49,
+    "body_scale": 1.18,
+    "tentacle_color": [
+      0.7803921568627451,
+      0.7803921568627451,
+      0.7803921568627451
+    ],
+    "hue_shift": 0.04,
+    "anim_speed": 1.09,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 0.75,
+    "pulse_amount": 0.05,
+    "eye_size": 0.27,
+    "eyeball_color": [
+      1.0,
+      0.95,
+      0.85
+    ],
+    "pupil_color": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

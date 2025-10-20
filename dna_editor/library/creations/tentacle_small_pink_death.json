@@ -1,0 +1,40 @@
+{
+  "name": "Tentacle Small Pink death",
+  "creature_type": "tentacle",
+  "parameters": {
+    "num_tentacles": 4,
+    "segments_per_tentacle": 12,
+    "algorithm": "bezier",
+    "algorithm_params": {
+      "control_strength": 0.19
+    },
+    "thickness_base": 0.16,
+    "taper_factor": 0.6,
+    "branch_depth": 0,
+    "branch_count": 3,
+    "body_scale": 0.87,
+    "tentacle_color": [
+      0.8352941176470589,
+      0.41568627450980394,
+      0.9764705882352941
+    ],
+    "hue_shift": 0.3,
+    "anim_speed": 2.0,
+    "wave_amplitude": 0.05,
+    "pulse_speed": 1.5,
+    "pulse_amount": 0.05,
+    "num_eyes": 11,
+    "eye_size_min": 0.1,
+    "eye_size_max": 0.5,
+    "eyeball_color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "pupil_color": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

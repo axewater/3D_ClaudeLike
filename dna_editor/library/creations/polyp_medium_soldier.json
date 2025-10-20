@@ -1,0 +1,19 @@
+{
+  "name": "Polyp Medium Soldier",
+  "creature_type": "polyp",
+  "parameters": {
+    "num_spheres": 3,
+    "base_sphere_size": 0.94,
+    "polyp_color": [
+      0.29411764705882354,
+      0.4549019607843137,
+      0.29411764705882354
+    ],
+    "curve_intensity": 0.54,
+    "tentacles_per_sphere": 3,
+    "segments_per_tentacle": 19,
+    "algorithm": "bezier",
+    "thickness_base": 0.2,
+    "taper_factor": 0.6
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Polyp Basic",
+  "creature_type": "polyp",
+  "parameters": {
+    "num_spheres": 4,
+    "base_sphere_size": 0.8,
+    "polyp_color": [0.6, 0.3, 0.7],
+    "curve_intensity": 0.4,
+    "tentacles_per_sphere": 6,
+    "segments_per_tentacle": 12,
+    "algorithm": "bezier",
+    "thickness_base": 0.2,
+    "taper_factor": 0.6
+  }
+}

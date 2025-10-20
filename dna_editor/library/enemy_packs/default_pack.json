@@ -1,0 +1,203 @@
+{
+  "pack_name": "Default Enemy Pack",
+  "version": "1.0",
+  "enemies": {
+    "ENEMY_STARTLE": {
+      "mappings": [
+        {
+          "level_range": [1, 10],
+          "creature_type": "starfish",
+          "creation_name": "Starfish Basic",
+          "parameters": {
+            "num_arms": 5,
+            "arm_segments": 6,
+            "central_body_size": 0.8,
+            "arm_base_thickness": 0.4,
+            "starfish_color": [0.9, 0.5, 0.3],
+            "curl_factor": 0.3,
+            "anim_speed": 1.5,
+            "pulse_amount": 0.06
+          }
+        },
+        {
+          "level_range": [11, 25],
+          "creature_type": "starfish",
+          "creation_name": "Starfish Basic",
+          "parameters": {
+            "num_arms": 7,
+            "arm_segments": 10,
+            "central_body_size": 1.2,
+            "arm_base_thickness": 0.5,
+            "starfish_color": [0.95, 0.3, 0.2],
+            "curl_factor": 0.5,
+            "anim_speed": 2.0,
+            "pulse_amount": 0.1
+          }
+        }
+      ]
+    },
+    "ENEMY_SLIME": {
+      "mappings": [
+        {
+          "level_range": [1, 25],
+          "creature_type": "blob",
+          "creation_name": "Blob Simple",
+          "parameters": {
+            "branch_depth": 1,
+            "branch_count": 2,
+            "cube_size_min": 0.3,
+            "cube_size_max": 0.6,
+            "cube_spacing": 1.2,
+            "blob_color": [0.2, 0.8, 0.4],
+            "blob_transparency": 0.7,
+            "jiggle_speed": 2.0,
+            "blob_pulse_amount": 0.08
+          }
+        }
+      ]
+    },
+    "ENEMY_SKELETON": {
+      "mappings": [
+        {
+          "level_range": [1, 25],
+          "creature_type": "polyp",
+          "creation_name": "Polyp Basic",
+          "parameters": {
+            "num_spheres": 4,
+            "base_sphere_size": 0.8,
+            "polyp_color": [0.6, 0.3, 0.7],
+            "curve_intensity": 0.4,
+            "tentacles_per_sphere": 6,
+            "segments_per_tentacle": 12,
+            "algorithm": "bezier",
+            "thickness_base": 0.2,
+            "taper_factor": 0.6
+          }
+        }
+      ]
+    },
+    "ENEMY_ORC": {
+      "mappings": [
+        {
+          "level_range": [1, 10],
+          "creature_type": "tentacle",
+          "creation_name": "Tentacle Basic",
+          "parameters": {
+            "num_tentacles": 4,
+            "segments_per_tentacle": 10,
+            "algorithm": "bezier",
+            "algorithm_params": {
+              "control_distance": 1.5,
+              "control_angle": 45
+            },
+            "thickness_base": 0.2,
+            "taper_factor": 0.6,
+            "branch_depth": 0,
+            "branch_count": 1,
+            "body_scale": 1.0,
+            "tentacle_color": [0.6, 0.3, 0.7],
+            "hue_shift": 0.1,
+            "anim_speed": 2.0,
+            "wave_amplitude": 0.05,
+            "pulse_speed": 1.5,
+            "pulse_amount": 0.05,
+            "num_eyes": 2,
+            "eye_size_min": 0.1,
+            "eye_size_max": 0.2,
+            "eyeball_color": [1.0, 1.0, 1.0],
+            "pupil_color": [0.0, 0.0, 0.0]
+          }
+        },
+        {
+          "level_range": [11, 25],
+          "creature_type": "tentacle",
+          "creation_name": "Tentacle Advanced",
+          "parameters": {
+            "num_tentacles": 10,
+            "segments_per_tentacle": 16,
+            "algorithm": "fourier",
+            "algorithm_params": {
+              "num_harmonics": 4,
+              "amplitude_decay": 0.5
+            },
+            "thickness_base": 0.3,
+            "taper_factor": 0.7,
+            "branch_depth": 1,
+            "branch_count": 2,
+            "body_scale": 1.4,
+            "tentacle_color": [0.8, 0.2, 0.5],
+            "hue_shift": 0.15,
+            "anim_speed": 2.5,
+            "wave_amplitude": 0.08,
+            "pulse_speed": 2.0,
+            "pulse_amount": 0.08,
+            "num_eyes": 6,
+            "eye_size_min": 0.12,
+            "eye_size_max": 0.25,
+            "eyeball_color": [1.0, 0.9, 0.8],
+            "pupil_color": [0.1, 0.0, 0.1]
+          }
+        }
+      ]
+    },
+    "ENEMY_DEMON": {
+      "mappings": [
+        {
+          "level_range": [1, 25],
+          "creature_type": "medusa",
+          "creation_name": "Medusa Basic",
+          "parameters": {
+            "num_tentacles": 8,
+            "segments_per_tentacle": 16,
+            "algorithm": "fourier",
+            "algorithm_params": {
+              "num_harmonics": 3,
+              "amplitude_decay": 0.6
+            },
+            "thickness_base": 0.25,
+            "taper_factor": 0.6,
+            "body_scale": 1.0,
+            "tentacle_color": [0.4, 0.2, 0.6],
+            "hue_shift": 0.08,
+            "anim_speed": 1.5,
+            "wave_amplitude": 0.08,
+            "pulse_speed": 1.2,
+            "pulse_amount": 0.06,
+            "eye_size": 0.18,
+            "eyeball_color": [1.0, 0.95, 0.85],
+            "pupil_color": [0.1, 0.0, 0.2]
+          }
+        }
+      ]
+    },
+    "ENEMY_DRAGON": {
+      "mappings": [
+        {
+          "level_range": [1, 25],
+          "creature_type": "dragon",
+          "creation_name": "Dragon Basic",
+          "parameters": {
+            "num_segments": 12,
+            "segment_thickness": 0.3,
+            "taper_factor": 0.6,
+            "head_scale": 2.5,
+            "body_color": [200, 40, 40],
+            "head_color": [255, 200, 50],
+            "weave_amplitude": 0.5,
+            "bob_amplitude": 0.3,
+            "anim_speed": 1.5,
+            "num_eyes": 2,
+            "eye_size": 0.15,
+            "eyeball_color": [255, 200, 50],
+            "pupil_color": [20, 0, 0],
+            "mouth_size": 0.25,
+            "mouth_color": [20, 0, 0],
+            "num_whiskers_per_side": 2,
+            "whisker_segments": 4,
+            "whisker_thickness": 0.05
+          }
+        }
+      ]
+    }
+  }
+}

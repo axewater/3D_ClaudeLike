@@ -1,0 +1,15 @@
+{
+  "name": "Blob Simple",
+  "creature_type": "blob",
+  "parameters": {
+    "branch_depth": 1,
+    "branch_count": 2,
+    "cube_size_min": 0.3,
+    "cube_size_max": 0.6,
+    "cube_spacing": 1.2,
+    "blob_color": [0.2, 0.8, 0.4],
+    "blob_transparency": 0.7,
+    "jiggle_speed": 2.0,
+    "blob_pulse_amount": 0.08
+  }
+}

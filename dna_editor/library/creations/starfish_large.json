@@ -1,0 +1,18 @@
+{
+  "name": "Starfish Large",
+  "creature_type": "starfish",
+  "parameters": {
+    "num_arms": 8,
+    "arm_segments": 10,
+    "central_body_size": 0.53,
+    "arm_base_thickness": 0.22,
+    "starfish_color": [
+      0.3568627450980392,
+      0.1803921568627451,
+      0.7372549019607844
+    ],
+    "curl_factor": 0.8,
+    "anim_speed": 3.77,
+    "pulse_amount": 0.14
+  }
+}
