@@ -471,7 +471,7 @@ class Enemy(Entity):
     def _get_bob_amplitude(self) -> float:
         """Get bob amplitude based on enemy type"""
         amplitudes = {
-            c.ENEMY_GOBLIN: 0.18,    # Quick, jittery
+            c.ENEMY_STARTLE: 0.18,   # Quick, jittery
             c.ENEMY_SKELETON: 0.14,  # Rattling, uneven
             c.ENEMY_DRAGON: 0.25,    # Heavy, imposing
         }
@@ -480,7 +480,7 @@ class Enemy(Entity):
     def _get_bob_speed(self) -> float:
         """Get bob speed based on enemy type"""
         speeds = {
-            c.ENEMY_GOBLIN: 3.5,     # Fast, nervous movement
+            c.ENEMY_STARTLE: 3.5,    # Fast, nervous movement
             c.ENEMY_SKELETON: 2.2,   # Jerky, unnatural
             c.ENEMY_DRAGON: 1.2,     # Slow, powerful
         }

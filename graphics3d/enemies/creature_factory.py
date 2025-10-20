@@ -13,7 +13,7 @@ import constants as c
 # ========================================
 
 ENEMY_CREATURE_MAP = {
-    c.ENEMY_GOBLIN: 'blob',        # Green slime blob
+    c.ENEMY_STARTLE: 'starfish',    # Starfish creature
     c.ENEMY_SLIME: 'blob',          # Translucent blob
     c.ENEMY_SKELETON: 'polyp',      # Bone-white polyp stack
     c.ENEMY_ORC: 'tentacle',        # Muscular tentacle mass
@@ -368,7 +368,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
     """
     # Get enemy color from constants
     enemy_colors_rgb = {
-        c.ENEMY_GOBLIN: c.COLOR_ENEMY_GOBLIN_RGB,
+        c.ENEMY_STARTLE: c.COLOR_ENEMY_STARTLE_RGB,
         c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
         c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
         c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
@@ -376,7 +376,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
         c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
     }
 
-    color_rgb = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_GOBLIN_RGB)
+    color_rgb = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_STARTLE_RGB)
 
     # Get creature type mapping
     creature_type = ENEMY_CREATURE_MAP.get(enemy_type)
@@ -424,7 +424,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
         if creature:
             # Scale by enemy difficulty (smaller = early-game, larger = late-game)
             enemy_scales = {
-                c.ENEMY_GOBLIN: 0.4,   # Smallest (early-game)
+                c.ENEMY_STARTLE: 0.4,  # Smallest (early-game)
                 c.ENEMY_SLIME: 0.4,    # Smallest (early-game)
                 c.ENEMY_SKELETON: 0.5, # Medium (mid-game)
                 c.ENEMY_ORC: 0.5,      # Medium (mid-game)
@@ -449,6 +449,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
         print(f"  Falling back to simple cube\n")
         # Fallback to simple cube
         from ursina import Entity
+        # Use STARTLE color as fallback (was GOBLIN)
         fallback_color = ursina_color.rgb(color_rgb[0], color_rgb[1], color_rgb[2])
         return Entity(
             model='cube',

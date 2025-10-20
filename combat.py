@@ -4,6 +4,7 @@ Combat system for Claude-Like
 import random
 from typing import Tuple
 import constants as c
+from constants import get_enemy_display_name
 from entities import Player, Enemy
 
 
@@ -47,16 +48,18 @@ def player_attack_enemy(player: Player, enemy: Enemy, is_backstab: bool = False)
 
     if enemy_died:
         xp = enemy.xp_reward
+        enemy_name = get_enemy_display_name(enemy.enemy_type)
         if is_backstab:
-            message = f"BACKSTAB! You dealt {damage} damage and killed the {enemy.enemy_type}! (+{xp} XP)"
+            message = f"BACKSTAB! You dealt {damage} damage and killed the {enemy_name}! (+{xp} XP)"
         else:
-            message = f"You dealt {damage} damage and killed the {enemy.enemy_type}! (+{xp} XP)"
+            message = f"You dealt {damage} damage and killed the {enemy_name}! (+{xp} XP)"
         return (message, True, xp, is_backstab)
     else:
+        enemy_name = get_enemy_display_name(enemy.enemy_type)
         if is_backstab:
-            message = f"BACKSTAB! You dealt {damage} damage to the {enemy.enemy_type}. ({enemy.hp}/{enemy.max_hp} HP)"
+            message = f"BACKSTAB! You dealt {damage} damage to the {enemy_name}. ({enemy.hp}/{enemy.max_hp} HP)"
         else:
-            message = f"You dealt {damage} damage to the {enemy.enemy_type}. ({enemy.hp}/{enemy.max_hp} HP)"
+            message = f"You dealt {damage} damage to the {enemy_name}. ({enemy.hp}/{enemy.max_hp} HP)"
         return (message, False, 0, is_backstab)
 
 
@@ -66,10 +69,11 @@ def enemy_attack_player(enemy: Enemy, player: Player) -> Tuple[str, bool]:
     Returns: (message, player_died)
     """
     damage, player_died = resolve_combat(enemy, player)
+    enemy_name = get_enemy_display_name(enemy.enemy_type)
 
     if player_died:
-        message = f"The {enemy.enemy_type} dealt {damage} damage and killed you!"
+        message = f"The {enemy_name} dealt {damage} damage and killed you!"
         return (message, True)
     else:
-        message = f"The {enemy.enemy_type} dealt {damage} damage to you. ({player.hp}/{player.max_hp} HP)"
+        message = f"The {enemy_name} dealt {damage} damage to you. ({player.hp}/{player.max_hp} HP)"
         return (message, False)

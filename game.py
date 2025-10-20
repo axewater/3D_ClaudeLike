@@ -113,14 +113,14 @@ class Game:
         for _ in range(num_enemies):
             # Choose enemy type based on level (balanced progression with 6 enemy types)
             if self.current_level == 1:
-                # Early intro: Goblin 80%, Slime 20%
-                enemy_types = [c.ENEMY_GOBLIN] * 8 + [c.ENEMY_SLIME] * 2
+                # Early intro: Startle 80%, Slime 20%
+                enemy_types = [c.ENEMY_STARTLE] * 8 + [c.ENEMY_SLIME] * 2
             elif self.current_level <= 3:
-                # Gradual difficulty: Goblin 50%, Slime 30%, Skeleton 20%
-                enemy_types = [c.ENEMY_GOBLIN] * 5 + [c.ENEMY_SLIME] * 3 + [c.ENEMY_SKELETON] * 2
+                # Gradual difficulty: Startle 50%, Slime 30%, Skeleton 20%
+                enemy_types = [c.ENEMY_STARTLE] * 5 + [c.ENEMY_SLIME] * 3 + [c.ENEMY_SKELETON] * 2
             elif self.current_level <= 5:
-                # Mid-game variety: Goblin 20%, Slime 20%, Skeleton 40%, Orc 20%
-                enemy_types = [c.ENEMY_GOBLIN] * 2 + [c.ENEMY_SLIME] * 2 + [c.ENEMY_SKELETON] * 4 + [c.ENEMY_ORC] * 2
+                # Mid-game variety: Startle 20%, Slime 20%, Skeleton 40%, Orc 20%
+                enemy_types = [c.ENEMY_STARTLE] * 2 + [c.ENEMY_SLIME] * 2 + [c.ENEMY_SKELETON] * 4 + [c.ENEMY_ORC] * 2
             elif self.current_level <= 9:
                 # Challenging mix: Skeleton 25%, Orc 35%, Demon 40%
                 enemy_types = [c.ENEMY_SKELETON] * 25 + [c.ENEMY_ORC] * 35 + [c.ENEMY_DEMON] * 40

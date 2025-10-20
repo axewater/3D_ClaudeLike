@@ -43,7 +43,7 @@ def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 
 
     # Get enemy color from constants (RGB tuples)
     enemy_colors_rgb = {
-        c.ENEMY_GOBLIN: c.COLOR_ENEMY_GOBLIN_RGB,
+        c.ENEMY_STARTLE: c.COLOR_ENEMY_STARTLE_RGB,
         c.ENEMY_SLIME: c.COLOR_ENEMY_SLIME_RGB,
         c.ENEMY_SKELETON: c.COLOR_ENEMY_SKELETON_RGB,
         c.ENEMY_ORC: c.COLOR_ENEMY_ORC_RGB,
@@ -51,11 +51,11 @@ def create_enemy_model_3d(enemy_type: str, position: Vec3, dungeon_level: int = 
         c.ENEMY_DRAGON: c.COLOR_ENEMY_DRAGON_RGB,
     }
 
-    rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_GOBLIN_RGB)
+    rgb_tuple = enemy_colors_rgb.get(enemy_type, c.COLOR_ENEMY_STARTLE_RGB)
     enemy_color = ursina_color.rgb(rgb_tuple[0], rgb_tuple[1], rgb_tuple[2])
 
     # Create model based on type
-    if enemy_type == c.ENEMY_GOBLIN:
+    if enemy_type == c.ENEMY_STARTLE:
         return create_goblin_3d(position, enemy_color)
     elif enemy_type == c.ENEMY_SLIME:
         return create_slime_3d(position, enemy_color)
@@ -114,7 +114,7 @@ def update_enemy_animation(enemy_entity, enemy_type: str, dt: float, camera_posi
 
     # Route to appropriate animation function
     try:
-        if enemy_type == c.ENEMY_GOBLIN:
+        if enemy_type == c.ENEMY_STARTLE:
             update_goblin_animation(enemy_entity, dt)
         elif enemy_type == c.ENEMY_SLIME:
             update_slime_animation(enemy_entity, dt)

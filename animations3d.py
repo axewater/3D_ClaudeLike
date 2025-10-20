@@ -619,7 +619,7 @@ class AnimationManager3D:
         pos = world_to_3d_position(grid_x, grid_y, 0.5)
 
         # Different colors/patterns per enemy type
-        if enemy_type == c.ENEMY_GOBLIN:
+        if enemy_type == c.ENEMY_STARTLE:
             color = (0.4, 0.86, 0.31)
             count = 20
             particle_type = "circle"

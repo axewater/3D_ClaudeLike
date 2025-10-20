@@ -78,10 +78,10 @@ See `dungeon.py` for generation logic.
 Item definitions in `entities.py`, visual rendering in `graphics3d/items/`.
 
 #### Enemies
-- **6 Enemy Types**: Goblin, Slime, Skeleton, Orc, Demon, Dragon
+- **6 Enemy Types**: Startle, Slimey, Polypian, Tentacle, Medusa, Dragon
 - **Smart AI** with pathfinding and alert system
 - **Level scaling** - Stats increase with dungeon level
-- **Unique visuals** - Each enemy has distinct procedurally-generated 3D models
+- **Unique visuals** - Each enemy has distinct procedurally-generated 3D models from DNA creatures
 
 Enemy logic in `entities.py`, 3D rendering in `graphics3d/enemies/`.
 
