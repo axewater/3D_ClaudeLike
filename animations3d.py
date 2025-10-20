@@ -475,6 +475,96 @@ class AlertParticle3D:
             self.entity = None
 
 
+class LevelTitleCard3D:
+    """Large centered title card for level transitions"""
+
+    def __init__(self, level_number: int):
+        """
+        Create level title card with dramatic effects
+
+        Args:
+            level_number: The level number to display
+        """
+        self.level_number = level_number
+        self.lifetime = 0.0
+        self.max_lifetime = 2.3  # 2-2.5 seconds
+
+        # Create centered text entity in screen space
+        self.entity = Text(
+            text=f"Entering the Dungeon - Level {level_number}",
+            position=(0, 0),  # Center of screen
+            scale=2.5,  # Large text
+            color=ursina_color.white,
+            origin=(0, 0),  # Center origin
+            billboard=False,  # Not billboard - this is screen-space UI
+            parent=camera.ui  # Attach to camera UI for screen-space rendering
+        )
+
+        # Animation properties
+        self.base_scale = 2.5
+        self.color_phase = 0.0  # For color shifting
+
+    def update(self, dt: float) -> bool:
+        """
+        Update title card animation
+
+        Returns:
+            False when animation is complete
+        """
+        self.lifetime += dt
+
+        if self.lifetime >= self.max_lifetime:
+            return False
+
+        # Calculate animation progress (0.0 to 1.0)
+        progress = self.lifetime / self.max_lifetime
+
+        # Scale up effect: gradually grows larger
+        scale_factor = 1.0 + (progress * 0.5)  # Grows to 150% of original size
+        self.entity.scale = self.base_scale * scale_factor
+
+        # Glow pulse effect: pulsing brightness
+        pulse = math.sin(self.lifetime * 3.0) * 0.3 + 0.7  # Oscillates 0.4-1.0
+
+        # Color shift: white → gold → transparent
+        if progress < 0.3:
+            # First 30%: Stay white with pulse
+            r, g, b = 1.0, 1.0, 1.0
+        elif progress < 0.6:
+            # Middle 30%: Shift to gold
+            shift = (progress - 0.3) / 0.3  # 0.0 to 1.0
+            r = 1.0
+            g = 1.0 - (shift * 0.15)  # 1.0 → 0.85
+            b = 1.0 - (shift * 0.35)  # 1.0 → 0.65
+        else:
+            # Last 40%: Gold color maintained
+            r, g, b = 1.0, 0.85, 0.65
+
+        # Apply pulse to brightness
+        r *= pulse
+        g *= pulse
+        b *= pulse
+
+        # Fade out in last 40% of lifetime
+        fade_start = self.max_lifetime * 0.6
+        if self.lifetime > fade_start:
+            fade_progress = (self.lifetime - fade_start) / (self.max_lifetime - fade_start)
+            alpha = 1.0 - fade_progress
+        else:
+            alpha = 1.0
+
+        # Apply final color with alpha
+        self.entity.color = ursina_color.rgba(r, g, b, alpha)
+
+        return True
+
+    def destroy(self):
+        """Clean up"""
+        if self.entity:
+            destroy(self.entity)
+            self.entity = None
+
+
 class AnimationManager3D:
     """Manages all 3D animations and effects"""
 
@@ -488,6 +578,7 @@ class AnimationManager3D:
         self.ambient_particles: List[AmbientParticle3D] = []
         self.alert_particles: List[AlertParticle3D] = []
         self.screen_shake: Optional[ScreenShake3D] = None
+        self.level_titles: List[LevelTitleCard3D] = []
 
     def add_floating_text(self, grid_x: int, grid_y: int, text: str,
                          color_rgb: tuple, is_crit: bool = False):
@@ -682,6 +773,10 @@ class AnimationManager3D:
                 AmbientParticle3D(world_x, world_y, world_z, dust_color)
             )
 
+    def add_level_title(self, level_number: int):
+        """Add level entry title card"""
+        self.level_titles.append(LevelTitleCard3D(level_number))
+
     def update(self, dt: float):
         """Update all animations"""
         # Update and remove dead particles
@@ -692,6 +787,7 @@ class AnimationManager3D:
         self.trails = [t for t in self.trails if t.update(dt) or not t.destroy()]
         self.ambient_particles = [p for p in self.ambient_particles if p.update(dt) or not p.destroy()]
         self.alert_particles = [a for a in self.alert_particles if a.update(dt) or not a.destroy()]
+        self.level_titles = [t for t in self.level_titles if t.update(dt) or not t.destroy()]
 
         # Enforce particle count limit for performance
         total_particles = len(self.particles) + len(self.directional_particles)
@@ -743,6 +839,8 @@ class AnimationManager3D:
             p.destroy()
         for a in self.alert_particles:
             a.destroy()
+        for t in self.level_titles:
+            t.destroy()
 
         # Clear lists
         self.particles.clear()
@@ -752,4 +850,5 @@ class AnimationManager3D:
         self.trails.clear()
         self.ambient_particles.clear()
         self.alert_particles.clear()
+        self.level_titles.clear()
         self.screen_shake = None

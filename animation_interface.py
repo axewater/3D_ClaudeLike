@@ -90,6 +90,11 @@ class AnimationManagerInterface(ABC):
         pass
 
     @abstractmethod
+    def add_level_title(self, level_number: int):
+        """Add level entry title card"""
+        pass
+
+    @abstractmethod
     def update(self, dt: float):
         """Update all animations"""
         pass

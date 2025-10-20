@@ -410,8 +410,28 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
 
         elif creature_type == 'polyp':
             from dna_editor.models.polyp_creature import PolypCreature
+            from dna_editor.core.constants import GOLDEN_RATIO
             dna = generate_polyp_dna(dungeon_level, color_rgb)
             creature = PolypCreature(**dna)
+
+            # Calculate proper Y offset so bottom tentacles don't clip through floor
+            # Polyp spine goes from y=0.5 (top) to y=-1.5 (bottom)
+            # Bottom sphere has tentacles that extend downward
+            num_spheres = dna['num_spheres']
+            base_sphere_size = dna['base_sphere_size']
+            bottom_sphere_size = base_sphere_size / (GOLDEN_RATIO ** (num_spheres - 1))
+
+            # Tentacle extension calculation:
+            # - Anchor is at sphere surface: sphere_y + (-0.9 * sphere_size * 0.9) = sphere_y - 0.81 * sphere_size
+            # - Target extends down by: (-0.9 * sphere_size - 3.0 * sphere_size) = -3.9 * sphere_size
+            # - Total extension from sphere center: 0.81 + 3.9 = 4.71 * sphere_size
+            tentacle_extension = 4.71 * bottom_sphere_size
+
+            # Bottom sphere Y = -1.5, tentacles extend further down
+            absolute_bottom_y = -1.5 - tentacle_extension
+
+            # Offset so absolute_bottom_y aligns with floor (position.y, typically 0)
+            polyp_y_offset = -absolute_bottom_y
 
         elif creature_type == 'medusa':
             from dna_editor.models.medusa_creature import MedusaCreature
@@ -441,8 +461,15 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
             }
             creature.root.scale = enemy_scales.get(enemy_type, 0.5)
 
-            # Raise Y position to prevent floating inside ground
-            creature.root.position = Vec3(position.x, position.y + 0.5, position.z)
+            # Calculate Y offset based on creature type
+            # Polyp creatures need custom offset due to their vertical spine structure
+            if creature_type == 'polyp':
+                y_offset = polyp_y_offset
+            else:
+                y_offset = 0.5  # Default offset for other creatures
+
+            # Position creature so bottom aligns with floor
+            creature.root.position = Vec3(position.x, position.y + y_offset, position.z)
 
             complexity = dna.get('num_tentacles') or dna.get('num_segments') or dna.get('branch_depth') or '?'
             print(f"✓ DNA: Created {creature_type} for {enemy_type} (lvl {dungeon_level}, complexity: {complexity})")

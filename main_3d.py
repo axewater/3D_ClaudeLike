@@ -146,6 +146,10 @@ class AnimationManager3DProxy(AnimationManagerInterface):
         """Death burst effect for enemy type"""
         self.anim_3d.add_death_burst(x, y, enemy_type)
 
+    def add_level_title(self, level_number):
+        """Add level entry title card"""
+        self.anim_3d.add_level_title(level_number)
+
     def update(self, dt):
         """Animation manager is updated in renderer, not here"""
         pass

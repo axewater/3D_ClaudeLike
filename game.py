@@ -580,6 +580,9 @@ class Game:
         # Play stairs sound
         self.audio_manager.play_stairs()
 
+        # Show level entry title
+        self.anim_manager.add_level_title(self.current_level)
+
         # Announce biome change every 5 levels
         if self.current_level in [6, 11, 16, 21]:
             biome = c.get_biome_for_level(self.current_level)
