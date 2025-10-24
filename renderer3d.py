@@ -153,12 +153,22 @@ class Renderer3D:
                 tile_entities = []
 
                 if tile == c.TILE_FLOOR:
-                    # Render floor
-                    entity = create_floor_mesh(x, y, biome, floor_color)
+                    # Check adjacent tiles for wall detection (for edge-based shadows)
+                    has_wall_north = self.game.dungeon.get_tile(x, y - 1) == c.TILE_WALL
+                    has_wall_south = self.game.dungeon.get_tile(x, y + 1) == c.TILE_WALL
+                    has_wall_east = self.game.dungeon.get_tile(x + 1, y) == c.TILE_WALL
+                    has_wall_west = self.game.dungeon.get_tile(x - 1, y) == c.TILE_WALL
+
+                    # Render floor with wall adjacency info
+                    entity = create_floor_mesh(x, y, biome, floor_color,
+                                              has_wall_north, has_wall_south,
+                                              has_wall_east, has_wall_west)
                     tile_entities.append(entity)
 
-                    # Render ceiling above floor
-                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color)
+                    # Render ceiling above floor with wall adjacency info
+                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color,
+                                                        has_wall_north, has_wall_south,
+                                                        has_wall_east, has_wall_west)
                     tile_entities.append(ceiling_entity)
 
                 elif tile == c.TILE_WALL:
@@ -166,6 +176,12 @@ class Renderer3D:
                     tile_entities.append(entity)
 
                 elif tile == c.TILE_STAIRS:
+                    # Check adjacent tiles for wall detection (for edge-based shadows)
+                    has_wall_north = self.game.dungeon.get_tile(x, y - 1) == c.TILE_WALL
+                    has_wall_south = self.game.dungeon.get_tile(x, y + 1) == c.TILE_WALL
+                    has_wall_east = self.game.dungeon.get_tile(x + 1, y) == c.TILE_WALL
+                    has_wall_west = self.game.dungeon.get_tile(x - 1, y) == c.TILE_WALL
+
                     # Create partial floor on back half (stairs take front half)
                     # This fills the black void where stairs don't reach
                     from graphics3d.tiles import FLOOR_TEXTURES, CORNER_SHADOW_SHADER
@@ -193,14 +209,21 @@ class Renderer3D:
                         collider=None
                     )
                     partial_floor.shader = CORNER_SHADOW_SHADER
+                    # Pass wall adjacency info to shader
+                    partial_floor.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
+                    partial_floor.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
+                    partial_floor.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
+                    partial_floor.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
                     tile_entities.append(partial_floor)
 
                     # Create descending staircase with biome floor texture
                     stairs_entity = create_stairs_mesh(x, y, biome, floor_color)
                     tile_entities.append(stairs_entity)
 
-                    # Render ceiling above stairs
-                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color)
+                    # Render ceiling above stairs with wall adjacency info
+                    ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color,
+                                                        has_wall_north, has_wall_south,
+                                                        has_wall_east, has_wall_west)
                     tile_entities.append(ceiling_entity)
 
                 # Store entities by position for fog of war updates

@@ -177,15 +177,24 @@ TOON_NORMAL_SHADER = create_toon_normal_shader(
 print("✓ Toon shader created (4 bands, rim lighting, comic book outlines enabled)")
 
 
-def create_floor_mesh(x: int, y: int, biome: str, biome_color):
+def create_floor_mesh(x: int, y: int, biome: str, biome_color,
+                      has_wall_north: bool = False, has_wall_south: bool = False,
+                      has_wall_east: bool = False, has_wall_west: bool = False):
     """
     Create a 3D floor tile mesh with procedural biome-specific texture
+
+    Applies edge-based ambient occlusion shadows only at edges adjacent to walls,
+    creating realistic corner darkening where walls meet the floor.
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
         biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
         biome_color: RGB tuple (0-1 floats) for the biome tint
+        has_wall_north: True if there's a wall at y-1 (north/back edge)
+        has_wall_south: True if there's a wall at y+1 (south/front edge)
+        has_wall_east: True if there's a wall at x+1 (east/right edge)
+        has_wall_west: True if there's a wall at x-1 (west/left edge)
 
     Returns:
         Ursina Entity representing the floor tile
@@ -223,8 +232,14 @@ def create_floor_mesh(x: int, y: int, biome: str, biome_color):
         collider=None  # No collision for floors
     )
 
-    # Apply corner shadow shader for dramatic ambient occlusion
+    # Apply corner shadow shader for edge-based ambient occlusion
     floor_entity.shader = CORNER_SHADOW_SHADER
+
+    # Pass wall adjacency info to shader (only darken edges where walls exist)
+    floor_entity.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
+    floor_entity.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
+    floor_entity.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
+    floor_entity.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
 
     return floor_entity
 
@@ -396,15 +411,24 @@ def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
     return stair_group
 
 
-def create_ceiling_mesh(x: int, y: int, biome: str, biome_color):
+def create_ceiling_mesh(x: int, y: int, biome: str, biome_color,
+                        has_wall_north: bool = False, has_wall_south: bool = False,
+                        has_wall_east: bool = False, has_wall_west: bool = False):
     """
     Create a 3D ceiling tile mesh with procedural biome-specific texture
+
+    Applies edge-based ambient occlusion shadows only at edges adjacent to walls,
+    creating realistic corner darkening where walls meet the ceiling.
 
     Args:
         x: Grid X position
         y: Grid Y position (becomes Z in 3D space)
         biome: Biome name (e.g., c.BIOME_DUNGEON, c.BIOME_CATACOMBS, etc.)
         biome_color: RGB tuple (0-1 floats) for the biome tint
+        has_wall_north: True if there's a wall at y-1 (north/back edge)
+        has_wall_south: True if there's a wall at y+1 (south/front edge)
+        has_wall_east: True if there's a wall at x+1 (east/right edge)
+        has_wall_west: True if there's a wall at x-1 (west/left edge)
 
     Returns:
         Ursina Entity representing the ceiling tile
@@ -444,7 +468,13 @@ def create_ceiling_mesh(x: int, y: int, biome: str, biome_color):
         collider=None  # No collision for ceilings
     )
 
-    # Apply corner shadow shader for dramatic ambient occlusion
+    # Apply corner shadow shader for edge-based ambient occlusion
     ceiling_entity.shader = CORNER_SHADOW_SHADER
+
+    # Pass wall adjacency info to shader (only darken edges where walls exist)
+    ceiling_entity.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
+    ceiling_entity.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
+    ceiling_entity.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
+    ceiling_entity.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
 
     return ceiling_entity
