@@ -443,6 +443,14 @@ MAX_PARTICLES = 100  # Maximum active particles (performance limit)
 UI_UPDATE_THROTTLE = 0.05  # Minimum seconds between UI updates (20 FPS update rate)
 ENABLE_AMBIENT_PARTICLES_3D = False  # Disable fog/cloud particles in 3D mode (can't see outside dungeon in first-person)
 
+# Enemy model pool settings (CRITICAL for eliminating lag spikes when enemies appear)
+ENEMY_POOL_SIZE_PER_TYPE = 4     # Pre-create 4 instances per enemy type (covers most encounters)
+ENABLE_ENEMY_POOL = True         # Use model pool system (highly recommended)
+
+# Enemy geometry cache settings (speeds up loading across sessions)
+ENABLE_ENEMY_CACHE = True        # Cache creature geometry to disk (first load slower, subsequent loads much faster)
+PRELOAD_ENEMY_CACHE = True       # Pre-generate cache on first encounter (vs lazy loading)
+
 # Distance culling and fog optimization (HIGH IMPACT performance settings)
 RENDER_DISTANCE_MARGIN = 3       # Tiles beyond vision radius to render (vision=10, margin=3, total=13 tiles)
 ENABLE_FOG_ANIMATION = True      # UV scrolling animation on fog planes (swirling fog effect)

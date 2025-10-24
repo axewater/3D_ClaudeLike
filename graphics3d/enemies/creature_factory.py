@@ -10,6 +10,14 @@ import constants as c
 from pathlib import Path
 import sys
 
+# Import enemy model cache (if enabled)
+if c.ENABLE_ENEMY_CACHE:
+    from graphics3d.enemy_model_cache import (
+        cache_exists,
+        load_model_from_cache,
+        save_model_to_cache
+    )
+
 # Add dna_editor to path for library imports
 dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
 if dna_editor_path not in sys.path:
@@ -454,6 +462,7 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
     creature_type = None
     dna = None
     use_pack = False
+    creation_name = None
 
     if _ENEMY_PACK:
         # Convert lowercase enemy type to pack key (e.g., "slime" -> "ENEMY_SLIME")
@@ -462,15 +471,31 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
             mappings = _ENEMY_PACK.get_all_mappings(pack_key)
             if mappings:
                 try:
-                    # Get interpolated parameters for this level
-                    pack_params = get_interpolated_parameters_for_level(mappings, dungeon_level)
                     # Get creature type from the mapping
                     mapping = _ENEMY_PACK.get_mapping_for_level(pack_key, dungeon_level)
                     if mapping:
                         creature_type = mapping.creature_type
-                        dna = pack_params
-                        use_pack = True
-                        print(f"✓ Using enemy pack for {enemy_type} level {dungeon_level} ({creature_type})")
+                        creation_name = mapping.creation_name or f"level_{dungeon_level}"
+
+                        # Check cache first (if enabled)
+                        if c.ENABLE_ENEMY_CACHE and cache_exists(_ENEMY_PACK.pack_name, pack_key, creation_name):
+                            cached = load_model_from_cache(_ENEMY_PACK.pack_name, pack_key, creation_name)
+                            if cached:
+                                creature_type = cached['creature_type']
+                                dna = cached['dna_parameters']
+                                use_pack = True
+                                print(f"✓ Loaded {enemy_type} level {dungeon_level} from cache ({creature_type})")
+                        else:
+                            # No cache - generate from pack parameters
+                            pack_params = get_interpolated_parameters_for_level(mappings, dungeon_level)
+                            dna = pack_params
+                            use_pack = True
+                            print(f"✓ Using enemy pack for {enemy_type} level {dungeon_level} ({creature_type})")
+
+                            # Save to cache for next time (if enabled)
+                            if c.ENABLE_ENEMY_CACHE and c.PRELOAD_ENEMY_CACHE:
+                                save_model_to_cache(_ENEMY_PACK.pack_name, pack_key, creation_name,
+                                                  creature_type, dna)
                     else:
                         print(f"⚠ No mapping found for {pack_key} level {dungeon_level} (have {len(mappings)} mappings)")
                 except Exception as e:

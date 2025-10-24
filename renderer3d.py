@@ -46,6 +46,10 @@ class Renderer3D:
         self.enemy_entities: Dict[int, Entity] = {}  # enemy id -> Entity
         self.item_entities: Dict[int, Entity] = {}   # item id -> Entity
 
+        # Enemy model pool (for performance - eliminates lag spikes)
+        self.enemy_model_pool: Dict[str, List[Dict]] = {}  # enemy_type -> [pool entries]
+        self.pool_initialized = False  # Track if pool has been created for current level
+
         # Lighting
         self.ambient_light: Optional[AmbientLight] = None
         self.sun_light: Optional[DirectionalLight] = None
@@ -237,6 +241,9 @@ class Renderer3D:
                 if tile_entities:
                     self.dungeon_entities[(x, y)] = tile_entities
 
+        # Preload enemy models for this level (eliminates lag spikes)
+        self.preload_enemy_models()
+
         # Summarize dungeon generation in one line (INFO level for important events)
         if self.game.player:
             log.info(f"Level {self.game.current_level} generated - {self.game.dungeon.width}x{self.game.dungeon.height} {self.game.dungeon.biome} dungeon ({len(self.dungeon_entities)} tiles)", "game")
@@ -335,36 +342,19 @@ class Renderer3D:
                 # Get dungeon level for creature scaling
                 dungeon_level = getattr(self.game, 'current_level', 1)
 
-                # Create enemy (DNA creature)
-                enemy_model = create_enemy_model_3d(
+                # Get enemy from pool (or create new if pool exhausted/disabled)
+                enemy_data = self.get_from_pool(
                     enemy.enemy_type,
                     Vec3(*pos),
-                    dungeon_level=dungeon_level
+                    dungeon_level
                 )
 
-                # DNA creatures have a 'root' entity for positioning
-                # Extract the root entity for positioning
-                if hasattr(enemy_model, 'root'):
-                    # DNA Creature
-                    root_entity = enemy_model.root
-                    creature_obj = enemy_model
-                else:
-                    # Legacy Entity
-                    root_entity = enemy_model
-                    creature_obj = None
-
-                # Create health bar billboard
+                # Update health bar to current HP
                 hp_pct = enemy.hp / enemy.max_hp
-                health_bar = create_health_bar_billboard(hp_pct)
-                health_bar.parent = root_entity  # Attach to root
+                update_health_bar(enemy_data['health_bar'], hp_pct)
 
                 # Store references
-                self.enemy_entities[enemy_id] = {
-                    'creature': creature_obj,      # DNA creature object (or None for legacy)
-                    'model': root_entity,          # Root entity for positioning
-                    'health_bar': health_bar,
-                    'enemy_type': enemy.enemy_type
-                }
+                self.enemy_entities[enemy_id] = enemy_data
 
                 log.debug(f"Created {enemy.enemy_type} at ({enemy.x}, {enemy.y})", "renderer")
             else:
@@ -382,9 +372,11 @@ class Renderer3D:
         dead_enemy_ids = set(self.enemy_entities.keys()) - current_enemy_ids
         for enemy_id in dead_enemy_ids:
             enemy_data = self.enemy_entities[enemy_id]
-            enemy_data['model'].disable()  # Disable the model
-            enemy_data['health_bar'].disable()  # Disable health bar
             enemy_type = enemy_data.get('enemy_type', 'enemy')
+
+            # Return to pool (or destroy if pool disabled)
+            self.return_to_pool(enemy_data)
+
             del self.enemy_entities[enemy_id]
             log.debug(f"Removed dead {enemy_type}", "renderer")
 
@@ -439,6 +431,227 @@ class Renderer3D:
             item_entity.disable()  # Disable the model
             del self.item_entities[item_id]
             log.debug("Picked up item", "renderer")
+
+    def preload_enemy_models(self, enemy_types: Optional[List[str]] = None):
+        """
+        Pre-create enemy models for the current level to eliminate lag spikes.
+        Creates a pool of reusable models hidden offscreen.
+
+        Args:
+            enemy_types: List of enemy types to preload. If None, preloads all types that spawn on current level.
+        """
+        if not c.ENABLE_ENEMY_POOL:
+            log.info("Enemy pool disabled in constants", "renderer")
+            return
+
+        # Determine which enemy types to preload
+        if enemy_types is None:
+            # Auto-detect based on current level
+            dungeon_level = getattr(self.game, 'current_level', 1)
+
+            # Determine which enemies spawn at this level (based on game logic)
+            # ENEMY_STARTLE and ENEMY_SLIME: levels 1-5
+            # ENEMY_SKELETON: levels 2-14
+            # ENEMY_ORC: levels 4-19
+            # ENEMY_DEMON: levels 6-25
+            # ENEMY_DRAGON: levels 10-25
+            enemy_types = []
+            if dungeon_level <= 5:
+                enemy_types.extend([c.ENEMY_STARTLE, c.ENEMY_SLIME])
+            if 2 <= dungeon_level <= 14:
+                enemy_types.append(c.ENEMY_SKELETON)
+            if 4 <= dungeon_level <= 19:
+                enemy_types.append(c.ENEMY_ORC)
+            if 6 <= dungeon_level:
+                enemy_types.append(c.ENEMY_DEMON)
+            if 10 <= dungeon_level:
+                enemy_types.append(c.ENEMY_DRAGON)
+
+        if not enemy_types:
+            log.info("No enemy types to preload for current level", "renderer")
+            return
+
+        log.info(f"Preloading enemy pool for level {getattr(self.game, 'current_level', 1)}: {enemy_types}", "renderer")
+
+        dungeon_level = getattr(self.game, 'current_level', 1)
+
+        # Clear existing pool
+        self.clear_enemy_pool()
+
+        # Create pool for each enemy type
+        for enemy_type in enemy_types:
+            pool = []
+
+            for i in range(c.ENEMY_POOL_SIZE_PER_TYPE):
+                # Create model offscreen and hidden
+                offscreen_pos = Vec3(0, -100, 0)  # Far below the map
+
+                try:
+                    enemy_model = create_enemy_model_3d(
+                        enemy_type,
+                        offscreen_pos,
+                        dungeon_level=dungeon_level
+                    )
+
+                    # Extract root entity
+                    if hasattr(enemy_model, 'root'):
+                        root_entity = enemy_model.root
+                        creature_obj = enemy_model
+                    else:
+                        root_entity = enemy_model
+                        creature_obj = None
+
+                    # Hide model
+                    root_entity.visible = False
+
+                    # Create health bar (also hidden)
+                    health_bar = create_health_bar_billboard(1.0)
+                    health_bar.parent = root_entity
+                    health_bar.visible = False
+
+                    # Add to pool
+                    pool.append({
+                        'creature': creature_obj,
+                        'model': root_entity,
+                        'health_bar': health_bar,
+                        'enemy_type': enemy_type,
+                        'in_use': False  # Track if this instance is currently being used
+                    })
+
+                except Exception as e:
+                    log.error(f"Failed to preload {enemy_type} #{i}: {e}", "renderer")
+
+            self.enemy_model_pool[enemy_type] = pool
+            log.info(f"Preloaded {len(pool)} instances of {enemy_type}", "renderer")
+
+        self.pool_initialized = True
+        log.info(f"Enemy pool ready with {sum(len(p) for p in self.enemy_model_pool.values())} total models", "renderer")
+
+    def get_from_pool(self, enemy_type: str, position: Vec3, dungeon_level: int):
+        """
+        Get an enemy model from the pool (or create new if pool exhausted).
+
+        Args:
+            enemy_type: Type of enemy to get
+            position: 3D world position for the enemy
+            dungeon_level: Current dungeon level (for fallback creation)
+
+        Returns:
+            Dict with 'creature', 'model', 'health_bar', 'enemy_type' keys
+        """
+        if not c.ENABLE_ENEMY_POOL or enemy_type not in self.enemy_model_pool:
+            # Pool disabled or this type not preloaded - create new
+            return self._create_enemy_fresh(enemy_type, position, dungeon_level)
+
+        # Find an available instance in the pool
+        pool = self.enemy_model_pool[enemy_type]
+        for entry in pool:
+            if not entry['in_use']:
+                # Found available instance - activate it
+                entry['in_use'] = True
+                entry['model'].position = position
+                entry['model'].visible = True
+                entry['health_bar'].visible = True
+
+                # Reset health bar to full
+                update_health_bar(entry['health_bar'], 1.0)
+
+                log.debug(f"Reused {enemy_type} from pool", "renderer")
+                return entry
+
+        # Pool exhausted - create new instance (rare case)
+        log.warning(f"Pool exhausted for {enemy_type}, creating new instance", "renderer")
+        return self._create_enemy_fresh(enemy_type, position, dungeon_level)
+
+    def return_to_pool(self, enemy_data: Dict):
+        """
+        Return an enemy model to the pool for reuse.
+
+        Args:
+            enemy_data: Enemy entity data dict (with 'creature', 'model', 'health_bar', 'enemy_type')
+        """
+        if not c.ENABLE_ENEMY_POOL:
+            # Pool disabled - just destroy the model
+            enemy_data['model'].disable()
+            enemy_data['health_bar'].disable()
+            return
+
+        enemy_type = enemy_data.get('enemy_type')
+
+        # Check if this enemy type has a pool
+        if enemy_type not in self.enemy_model_pool:
+            # No pool for this type - destroy it
+            enemy_data['model'].disable()
+            enemy_data['health_bar'].disable()
+            return
+
+        # Find this instance in the pool
+        pool = self.enemy_model_pool[enemy_type]
+        for entry in pool:
+            if entry['model'] is enemy_data['model']:
+                # Found it - mark as available and hide
+                entry['in_use'] = False
+                entry['model'].visible = False
+                entry['health_bar'].visible = False
+                entry['model'].position = Vec3(0, -100, 0)  # Move offscreen
+                log.debug(f"Returned {enemy_type} to pool", "renderer")
+                return
+
+        # Not in pool (was created fresh due to exhaustion) - destroy it
+        log.debug(f"Destroying non-pooled {enemy_type}", "renderer")
+        enemy_data['model'].disable()
+        enemy_data['health_bar'].disable()
+
+    def _create_enemy_fresh(self, enemy_type: str, position: Vec3, dungeon_level: int) -> Dict:
+        """
+        Create a new enemy model (fallback when pool disabled or exhausted).
+
+        Args:
+            enemy_type: Type of enemy to create
+            position: 3D world position
+            dungeon_level: Current dungeon level
+
+        Returns:
+            Dict with 'creature', 'model', 'health_bar', 'enemy_type' keys
+        """
+        enemy_model = create_enemy_model_3d(
+            enemy_type,
+            position,
+            dungeon_level=dungeon_level
+        )
+
+        # Extract root entity
+        if hasattr(enemy_model, 'root'):
+            root_entity = enemy_model.root
+            creature_obj = enemy_model
+        else:
+            root_entity = enemy_model
+            creature_obj = None
+
+        # Create health bar
+        health_bar = create_health_bar_billboard(1.0)
+        health_bar.parent = root_entity
+
+        return {
+            'creature': creature_obj,
+            'model': root_entity,
+            'health_bar': health_bar,
+            'enemy_type': enemy_type,
+            'in_use': True  # Mark as in use (not pooled)
+        }
+
+    def clear_enemy_pool(self):
+        """Clear and destroy all models in the enemy pool."""
+        for enemy_type, pool in self.enemy_model_pool.items():
+            for entry in pool:
+                if entry['model']:
+                    entry['model'].disable()
+                if entry['health_bar']:
+                    entry['health_bar'].disable()
+
+        self.enemy_model_pool.clear()
+        self.pool_initialized = False
+        log.info("Enemy pool cleared", "renderer")
 
     def render_entities(self):
         """
@@ -829,6 +1042,9 @@ class Renderer3D:
             enemy_data['model'].disable()
             enemy_data['health_bar'].disable()
         self.enemy_entities.clear()
+
+        # Clear enemy pool
+        self.clear_enemy_pool()
 
         # Destroy items
         for item_id, item_entity in self.item_entities.items():
