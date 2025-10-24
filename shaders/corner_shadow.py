@@ -82,11 +82,11 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
     out vec4 fragColor;
 
     const float intensity = {intensity};
-    const float min_brightness = 0.15;  // Ultra-dark at wall edges (15% brightness)
-    const float corner_brightness = 0.08;  // Even darker at corners (8% brightness)
+    const float min_brightness = 0.35;  // Subtle shadow at wall edges (35% brightness)
+    const float corner_brightness = 0.25;  // Slightly darker at corners (25% brightness)
     const float max_brightness = 1.0;   // Full brightness away from walls
-    const float shadow_width = 0.3;     // How far shadow extends from edge (0-0.5)
-    const float falloff_power = 2.5;    // Smooth falloff curve (higher = steeper)
+    const float shadow_width = 0.35;     // How far shadow extends from edge (wider spread)
+    const float falloff_power = 1.8;    // Gentle falloff curve (lower = softer)
 
     void main() {{
         // Sample base texture color
@@ -107,66 +107,71 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
         bool has_east = has_wall_east > 0.5;
         bool has_west = has_wall_west > 0.5;
 
-        // For each wall edge, calculate shadow contribution with smooth falloff
+        // For each wall edge, calculate shadow contribution with smooth S-curve falloff
         // Only darken if wall is present (has_wall_* == 1.0)
 
         // North wall (top edge, v=0)
         if (has_north) {{
-            float edge_factor = clamp(dist_north / shadow_width, 0.0, 1.0);
-            float shadow = pow(edge_factor, falloff_power);  // Smooth falloff
+            float edge_factor = smoothstep(0.0, shadow_width, dist_north);  // S-curve for smooth ease
+            float shadow = pow(edge_factor, falloff_power);  // Gentle falloff
             brightness = min(brightness, min_brightness + shadow * (max_brightness - min_brightness));
         }}
 
         // South wall (bottom edge, v=1)
         if (has_south) {{
-            float edge_factor = clamp(dist_south / shadow_width, 0.0, 1.0);
+            float edge_factor = smoothstep(0.0, shadow_width, dist_south);
             float shadow = pow(edge_factor, falloff_power);
             brightness = min(brightness, min_brightness + shadow * (max_brightness - min_brightness));
         }}
 
         // East wall (right edge, u=1)
         if (has_east) {{
-            float edge_factor = clamp(dist_east / shadow_width, 0.0, 1.0);
+            float edge_factor = smoothstep(0.0, shadow_width, dist_east);
             float shadow = pow(edge_factor, falloff_power);
             brightness = min(brightness, min_brightness + shadow * (max_brightness - min_brightness));
         }}
 
         // West wall (left edge, u=0)
         if (has_west) {{
-            float edge_factor = clamp(dist_west / shadow_width, 0.0, 1.0);
+            float edge_factor = smoothstep(0.0, shadow_width, dist_west);
             float shadow = pow(edge_factor, falloff_power);
             brightness = min(brightness, min_brightness + shadow * (max_brightness - min_brightness));
         }}
 
         // ===== CORNER-CORNER INTERACTIONS =====
         // Apply extra darkening at corners where two walls meet
-        // This creates more realistic ambient occlusion
+        // Uses smooth radial blending instead of min() to avoid harsh diagonal lines
 
         // Northwest corner (north + west walls)
         if (has_north && has_west) {{
-            float corner_dist = min(dist_north, dist_west);
-            float corner_factor = pow(clamp(corner_dist / shadow_width, 0.0, 1.0), falloff_power * 1.5);
+            // Use radial distance for smooth circular falloff (no harsh diagonal)
+            float corner_dist = sqrt(dist_north * dist_north + dist_west * dist_west) / 1.414;  // Normalize by sqrt(2)
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);  // S-curve for smooth transition
+            corner_factor = pow(corner_factor, falloff_power * 1.2);  // Gentler power (1.2 instead of 1.5)
             brightness = min(brightness, corner_brightness + corner_factor * (max_brightness - corner_brightness));
         }}
 
         // Northeast corner (north + east walls)
         if (has_north && has_east) {{
-            float corner_dist = min(dist_north, dist_east);
-            float corner_factor = pow(clamp(corner_dist / shadow_width, 0.0, 1.0), falloff_power * 1.5);
+            float corner_dist = sqrt(dist_north * dist_north + dist_east * dist_east) / 1.414;
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power * 1.2);
             brightness = min(brightness, corner_brightness + corner_factor * (max_brightness - corner_brightness));
         }}
 
         // Southwest corner (south + west walls)
         if (has_south && has_west) {{
-            float corner_dist = min(dist_south, dist_west);
-            float corner_factor = pow(clamp(corner_dist / shadow_width, 0.0, 1.0), falloff_power * 1.5);
+            float corner_dist = sqrt(dist_south * dist_south + dist_west * dist_west) / 1.414;
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power * 1.2);
             brightness = min(brightness, corner_brightness + corner_factor * (max_brightness - corner_brightness));
         }}
 
         // Southeast corner (south + east walls)
         if (has_south && has_east) {{
-            float corner_dist = min(dist_south, dist_east);
-            float corner_factor = pow(clamp(corner_dist / shadow_width, 0.0, 1.0), falloff_power * 1.5);
+            float corner_dist = sqrt(dist_south * dist_south + dist_east * dist_east) / 1.414;
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power * 1.2);
             brightness = min(brightness, corner_brightness + corner_factor * (max_brightness - corner_brightness));
         }}
 
