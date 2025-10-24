@@ -46,12 +46,13 @@ class TargetingSystem:
         # Visual elements
         self.range_circle: Optional[Entity] = None
         self.target_cursor: Optional[Entity] = None
+        self.cursor_outline: Optional[Entity] = None  # Border around cursor
         self.info_text: Optional[Text] = None
         self.error_text: Optional[Text] = None
 
         # Constants
-        self.CURSOR_SIZE = 0.8
-        self.CURSOR_HEIGHT = 0.05  # Slightly above ground
+        self.CURSOR_SIZE = 2.0  # Large for visibility
+        self.CURSOR_HEIGHT = 0.8  # Raised significantly above ground
         self.RANGE_CIRCLE_HEIGHT = 0.02
 
         print("✓ TargetingSystem initialized")
@@ -99,11 +100,14 @@ class TargetingSystem:
         Returns:
             bool: True if ability executed successfully
         """
+        print(f"[TARGETING] confirm_target() called - mode={self.mode}, target_pos={self.target_pos}, is_valid={self.is_valid_target}")
+
         if self.mode != self.MODE_TARGETING or not self.target_pos:
+            print(f"[TARGETING] Rejected: Not in targeting mode or no target position")
             return False
 
         if not self.is_valid_target:
-            print("[TARGETING] Invalid target")
+            print("[TARGETING] Rejected: Invalid target")
             return False
 
         # Execute ability through game (unpack target position tuple)
@@ -136,8 +140,8 @@ class TargetingSystem:
         # Get ability range
         ability_range = self._get_ability_range(self.selected_ability.name)
 
+        # IMPORTANT: NO PARENT - must be in world space, not UI space!
         self.range_circle = Entity(
-            parent=self.parent,
             model='circle',
             color=color.rgba(0.3, 0.6, 1.0, 0.3),  # Blue, semi-transparent
             position=player_3d_pos,
@@ -146,17 +150,31 @@ class TargetingSystem:
             eternal=True
         )
 
-        # Target cursor (will be positioned at mouse position)
+        # Target cursor - using sphere for maximum visibility (always visible from any angle)
+        # NO PARENT - must be in world space!
         self.target_cursor = Entity(
-            parent=self.parent,
-            model='quad',
-            color=color.rgb(0.3, 1.0, 0.3),  # Green (will change to red if invalid)
+            model='sphere',
+            color=color.rgb(1.0, 1.0, 1.0),  # Bright white (solid, no transparency)
             position=(0, 0, 0),
-            scale=(self.CURSOR_SIZE, self.CURSOR_SIZE, 1),
-            rotation_x=90,
+            scale=(self.CURSOR_SIZE * 0.5, self.CURSOR_SIZE * 0.5, self.CURSOR_SIZE * 0.5),  # Sphere scale
             visible=False,  # Hidden until we have a valid target
             eternal=True
         )
+
+        # Cursor outline (ring around sphere for extra visibility)
+        # NO PARENT - must be in world space!
+        self.cursor_outline = Entity(
+            model='circle',
+            color=color.rgb(1.0, 1.0, 1.0),  # Solid white outline
+            position=(0, 0, 0),
+            scale=(self.CURSOR_SIZE * 1.2, self.CURSOR_SIZE * 1.2, 1),  # Larger ring
+            rotation_x=90,  # Flat on ground
+            visible=False,
+            eternal=True
+        )
+
+        print(f"[TARGETING] Created cursor sphere (size={self.CURSOR_SIZE}, height={self.CURSOR_HEIGHT})")
+        print(f"[TARGETING] Created cursor outline ring (scale={self.CURSOR_SIZE * 1.2})")
 
         # Info text (ability name and instructions)
         self.info_text = Text(
@@ -186,6 +204,7 @@ class TargetingSystem:
         elements = [
             self.range_circle,
             self.target_cursor,
+            self.cursor_outline,
             self.info_text,
             self.error_text
         ]
@@ -196,6 +215,7 @@ class TargetingSystem:
 
         self.range_circle = None
         self.target_cursor = None
+        self.cursor_outline = None
         self.info_text = None
         self.error_text = None
 
@@ -213,9 +233,10 @@ class TargetingSystem:
             "Fireball": 8,
             "Frost Nova": 0,  # Self-centered
             "Heal": 0,        # Self-cast
-            "Dash": 5,
+            "Dash": 4,        # Fixed: was 5, but ability has max_distance = 4
             "Shadow Step": 6,
             "Whirlwind": 0,   # Self-centered
+            "Healing Touch": 0,  # Self-cast (added for completeness)
         }
 
         return ability_ranges.get(ability_name, 5)
@@ -268,7 +289,7 @@ class TargetingSystem:
 
         # Offset ray direction based on mouse position
         h_offset = mouse.x * math.tan(fov_rad / 2) * aspect_ratio
-        v_offset = mouse.y * math.tan(fov_rad / 2)
+        v_offset = -mouse.y * math.tan(fov_rad / 2)  # NEGATED: screen Y is inverted from world coordinates
 
         ray_direction = (forward + right * h_offset + up * v_offset).normalized()
 
@@ -367,13 +388,38 @@ class TargetingSystem:
 
             if self.target_cursor:
                 self.target_cursor.position = cursor_3d_pos
+
+                # Debug: Log when cursor is made visible for the first time
+                if not self.target_cursor.visible:
+                    print(f"[TARGETING] Making cursor VISIBLE at 3D position {cursor_3d_pos}")
+
                 self.target_cursor.visible = True
 
-                # Color code cursor (green = valid, red = invalid)
+                # Update outline position (lower than cursor, on ground)
+                if self.cursor_outline:
+                    from graphics3d.utils import world_to_3d_position
+                    outline_pos = world_to_3d_position(grid_x, grid_y, 0.05)  # Just above ground
+                    self.cursor_outline.position = outline_pos
+                    self.cursor_outline.visible = True
+
+                # Color code cursor (green = valid, red = invalid) - USE SOLID COLORS
                 if is_valid:
-                    self.target_cursor.color = color.rgb(0.3, 1.0, 0.3)  # Green
+                    self.target_cursor.color = color.rgb(0.2, 1.0, 0.2)  # Bright solid green
+                    if self.cursor_outline:
+                        self.cursor_outline.color = color.rgb(0.2, 1.0, 0.2)  # Matching green ring
                 else:
-                    self.target_cursor.color = color.rgb(1.0, 0.3, 0.3)  # Red
+                    self.target_cursor.color = color.rgb(1.0, 0.2, 0.2)  # Bright solid red
+                    if self.cursor_outline:
+                        self.cursor_outline.color = color.rgb(1.0, 0.2, 0.2)  # Matching red ring
+
+                # Debug: Log targeting info
+                player_x, player_y = self.game.player.x, self.game.player.y
+                distance = abs(grid_x - player_x) + abs(grid_y - player_y)
+                print(f"[TARGETING] Cursor at grid ({grid_x}, {grid_y}) | "
+                      f"Player at ({player_x}, {player_y}) | "
+                      f"Distance: {distance} | "
+                      f"Valid: {is_valid} | "
+                      f"Error: {error_msg if not is_valid else 'None'}")
 
             # Update error text
             if self.error_text:
@@ -386,6 +432,9 @@ class TargetingSystem:
             # No target under mouse
             if self.target_cursor:
                 self.target_cursor.visible = False
+
+            if self.cursor_outline:
+                self.cursor_outline.visible = False
 
             if self.error_text:
                 self.error_text.visible = False
