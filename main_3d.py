@@ -670,6 +670,11 @@ class GameController(Entity):
 def main_3d():
     """Main entry point for 3D mode"""
 
+    # Suppress Panda3D and Ursina startup logs
+    from panda3d.core import loadPrcFileData
+    loadPrcFileData("", "notify-level error")  # Only show errors, not info/warnings
+    loadPrcFileData("", "default-directnotify-level error")
+
     # Create Ursina app
     app = Ursina(
         title="Claude-Like 3D",
