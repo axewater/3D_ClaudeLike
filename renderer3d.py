@@ -8,6 +8,7 @@ into a 3D visualization while keeping all game logic unchanged.
 from typing import Dict, List, Optional, Tuple
 from ursina import Entity, camera, Vec3, color as ursina_color, DirectionalLight, AmbientLight, PointLight, scene
 import random
+import math
 import constants as c
 from game import Game
 from graphics3d.tiles import create_floor_mesh, create_wall_mesh, create_stairs_mesh, create_ceiling_mesh
@@ -767,6 +768,20 @@ class Renderer3D:
         for enemy_id, enemy_data in self.enemy_entities.items():
             # Get camera position for DNA creatures
             camera_pos = Vec3(camera.position) if camera else None
+
+            # Make enemy face the player
+            if self.game and self.game.player and enemy_data.get('model'):
+                # Get player position in 3D space
+                player_pos = Vec3(self.game.player.x, 0, self.game.player.y)
+                # Get enemy position
+                enemy_pos = enemy_data['model'].position
+                # Calculate direction vector (XZ plane only)
+                direction = player_pos - enemy_pos
+                # Calculate angle in degrees (atan2 gives angle from Z-axis)
+                # Add 180 degrees because creatures' default "forward" is -Z direction
+                angle = math.degrees(math.atan2(direction.x, direction.z)) + 180
+                # Apply rotation to make enemy face player
+                enemy_data['model'].rotation_y = angle
 
             # For DNA creatures, pass the creature object; for legacy, pass the model entity
             animation_target = enemy_data.get('creature') or enemy_data['model']
