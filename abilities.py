@@ -77,7 +77,6 @@ class Fireball(Ability):
                 hit_count += 1
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(self.damage), c.COLOR_FIREBALL_TEXT_RGB)
                 game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FIREBALL_BURST_RGB, count=int(15 * c.PARTICLE_DENSITY), particle_type="circle")
 
                 # Directional impact
@@ -168,7 +167,6 @@ class HealingTouch(Ability):
         actual_heal = user.hp - old_hp
 
         # Create animations (using RGB tuples)
-        game.anim_manager.add_floating_text(user.x, user.y, f"+{actual_heal}", c.COLOR_HEALING_TEXT_RGB)
         game.anim_manager.add_heal_sparkles(user.x, user.y)
 
         return (True, f"Healed {actual_heal} HP!")
@@ -256,7 +254,6 @@ class Whirlwind(Ability):
                 total_damage += damage
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage), c.COLOR_WHIRLWIND_TEXT_RGB)
                 game.anim_manager.add_flash_effect(enemy.x, enemy.y)
 
                 if enemy.hp <= 0:
@@ -330,7 +327,6 @@ class ShadowStep(Ability):
                 # Dark purple/black smoke
                 game.anim_manager.add_trail(trail_x, trail_y, c.COLOR_SHADOW_SMOKE_RGB, "fade")
 
-        game.anim_manager.add_floating_text(target_enemy.x, target_enemy.y, str(damage), c.COLOR_SHADOW_TEXT_RGB, is_crit=True)
         game.anim_manager.add_particle_burst(behind_x, behind_y, c.COLOR_SHADOW_BURST_RGB, count=int(20 * c.PARTICLE_DENSITY), particle_type="star")
         game.anim_manager.add_directional_impact(target_enemy.x, target_enemy.y, behind_x, behind_y,
                                                 c.COLOR_SHADOW_EXPLOSION_RGB, count=int(15 * c.PARTICLE_DENSITY), is_crit=True)

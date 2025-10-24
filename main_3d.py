@@ -85,10 +85,6 @@ class AnimationManager3DProxy(AnimationManagerInterface):
         """Expose particles list for direct append (used by footstep code)"""
         return self._particle_list_wrapper
 
-    def add_floating_text(self, x, y, text, color, is_crit=False):
-        """Color is already RGB tuple (0-1 range)"""
-        self.anim_3d.add_floating_text(x, y, text, color, is_crit)
-
     def add_flash_effect(self, x, y, color=None):
         """Disabled in 3D - the white flash effect looks jarring in first-person"""
         # Blood particles and sound effects still play via separate methods

@@ -401,9 +401,6 @@ class Game:
             impact_color, count=int((20 if (was_backstab or is_crit) else 12) * c.PARTICLE_DENSITY), is_crit=(is_crit or was_backstab)
         )
 
-        self.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage),
-                                           c.COLOR_DAMAGE_TAKEN_RGB if not is_crit else c.COLOR_DAMAGE_CRIT_RGB,
-                                           is_crit=is_crit)
         self.anim_manager.add_flash_effect(enemy.x, enemy.y, c.COLOR_FLASH_RGB)
 
         if enemy_died:
@@ -479,7 +476,6 @@ class Game:
                     c.COLOR_DEATH_RGB, count=int(10 * c.PARTICLE_DENSITY)
                 )
 
-                self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), c.COLOR_DEATH_RGB)
                 self.anim_manager.add_flash_effect(self.player.x, self.player.y, c.COLOR_DAMAGE_TAKEN_RGB)
 
                 if player_died:

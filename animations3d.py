@@ -133,71 +133,6 @@ class DirectionalParticle3D(Particle3D):
         return True
 
 
-class FloatingText3D:
-    """Billboard text that floats upward and fades"""
-
-    def __init__(self, grid_x: int, grid_y: int, text: str, color_rgb: tuple,
-                 is_crit: bool = False):
-        """
-        Create floating damage/heal text
-
-        Args:
-            grid_x, grid_y: Grid position
-            text: Text to display
-            color_rgb: RGB color tuple
-            is_crit: If true, text is larger and lasts longer
-        """
-        self.text = text
-        self.color_rgb = color_rgb
-        self.is_crit = is_crit
-
-        # Position slightly above the grid position
-        pos = world_to_3d_position(grid_x, grid_y, 1.0)
-
-        # Create billboard text
-        scale = 2.0 if is_crit else 1.0
-        self.entity = Text(
-            text=text,
-            position=pos,
-            scale=scale,
-            color=ursina_color.rgb(*color_rgb),
-            billboard=True,
-            origin=(0, 0)
-        )
-
-        # Animation properties
-        self.lifetime = 0.0
-        self.max_lifetime = 1.2 if is_crit else 1.0
-        self.rise_speed = 1.0 if is_crit else 1.5
-        self.drift_x = random.uniform(-0.3, 0.3)
-
-    def update(self, dt: float) -> bool:
-        """Update animation"""
-        self.lifetime += dt
-
-        if self.lifetime >= self.max_lifetime:
-            return False
-
-        # Rise up
-        self.entity.y += self.rise_speed * dt
-        self.entity.x += self.drift_x * dt
-
-        # Fade out in last 30% of lifetime
-        fade_start = self.max_lifetime * 0.7
-        if self.lifetime > fade_start:
-            fade_progress = (self.lifetime - fade_start) / (self.max_lifetime - fade_start)
-            alpha = 1.0 - fade_progress
-            self.entity.color = ursina_color.rgba(*self.color_rgb, alpha)
-
-        return True
-
-    def destroy(self):
-        """Clean up"""
-        if self.entity:
-            destroy(self.entity)
-            self.entity = None
-
-
 class FlashEffect3D:
     """Entity flash/glow effect (overlay on entity)"""
 
@@ -683,7 +618,6 @@ class AnimationManager3D:
         """Initialize animation manager"""
         self.particles: List[Particle3D] = []
         self.directional_particles: List[DirectionalParticle3D] = []
-        self.floating_texts: List[FloatingText3D] = []
         self.flash_effects: List[FlashEffect3D] = []
         self.trails: List[TrailEffect3D] = []
         self.ambient_particles: List[AmbientParticle3D] = []
@@ -691,11 +625,6 @@ class AnimationManager3D:
         self.stairs_glow_effects: List[StairsGlowEffect3D] = []
         self.screen_shake: Optional[ScreenShake3D] = None
         self.level_titles: List[LevelTitleCard3D] = []
-
-    def add_floating_text(self, grid_x: int, grid_y: int, text: str,
-                         color_rgb: tuple, is_crit: bool = False):
-        """Add floating damage/heal text"""
-        self.floating_texts.append(FloatingText3D(grid_x, grid_y, text, color_rgb, is_crit))
 
     def add_flash_effect(self, grid_x: int, grid_y: int, color_rgb: tuple = None):
         """Add hit flash effect"""
@@ -909,7 +838,6 @@ class AnimationManager3D:
         # Update and remove dead particles
         self.particles = [p for p in self.particles if p.update(dt) or not p.destroy()]
         self.directional_particles = [p for p in self.directional_particles if p.update(dt) or not p.destroy()]
-        self.floating_texts = [t for t in self.floating_texts if t.update(dt) or not t.destroy()]
         self.flash_effects = [f for f in self.flash_effects if f.update(dt) or not f.destroy()]
         self.trails = [t for t in self.trails if t.update(dt) or not t.destroy()]
         self.ambient_particles = [p for p in self.ambient_particles if p.update(dt) or not p.destroy()]
@@ -960,8 +888,6 @@ class AnimationManager3D:
             p.destroy()
         for p in self.directional_particles:
             p.destroy()
-        for t in self.floating_texts:
-            t.destroy()
         for f in self.flash_effects:
             f.destroy()
         for t in self.trails:
@@ -978,7 +904,6 @@ class AnimationManager3D:
         # Clear lists
         self.particles.clear()
         self.directional_particles.clear()
-        self.floating_texts.clear()
         self.flash_effects.clear()
         self.trails.clear()
         self.ambient_particles.clear()

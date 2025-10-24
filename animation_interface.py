@@ -23,11 +23,6 @@ class AnimationManagerInterface(ABC):
         pass
 
     @abstractmethod
-    def add_floating_text(self, x: int, y: int, text: str, color: ColorRGB, is_crit: bool = False):
-        """Add floating damage/heal text at grid position"""
-        pass
-
-    @abstractmethod
     def add_flash_effect(self, x: int, y: int, color: ColorRGB = None):
         """Add hit flash effect at grid position"""
         pass
