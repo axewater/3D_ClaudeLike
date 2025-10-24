@@ -33,6 +33,11 @@ def parse_args():
         action='store_true',
         help='Quiet mode - only show errors (equivalent to --log-level error)'
     )
+    parser.add_argument(
+        '--regenerate-textures',
+        action='store_true',
+        help='Force regeneration of cached biome textures (slower startup)'
+    )
     return parser.parse_args()
 
 
@@ -86,7 +91,13 @@ def show_3d_title_screen():
 
 def main():
     """Main entry point for 3D mode"""
+    import os
     args = parse_args()
+
+    # Set texture regeneration flag via environment variable
+    # (checked by graphics3d/tiles.py during import)
+    if args.regenerate_textures:
+        os.environ['REGENERATE_TEXTURES'] = '1'
 
     # Initialize logger FIRST (before any other imports that might log)
     from logger import init_logger, parse_log_level, LogLevel

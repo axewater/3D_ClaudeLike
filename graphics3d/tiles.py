@@ -14,114 +14,149 @@ from shaders import create_corner_shadow_shader, create_toon_normal_shader
 
 # ===== CACHED PROCEDURAL TEXTURES =====
 # Generate these once at module load for performance
-print("Generating procedural biome textures (AAA quality - 1024px, 4 variants per biome)...")
+# Supports disk caching for faster startup on subsequent launches
 
-# Wall: Generate 4 variants for EACH biome with distinct visual styles
+import os
 from textures import RandomSeed
-from textures.organic import generate_moss_stone_texture, generate_moss_overlay
-from textures.bricks import generate_brick_pattern
+from textures.organic import generate_moss_stone_texture, generate_moss_overlay, generate_ceiling_texture
+from textures.bricks import generate_brick_pattern, generate_normal_map_from_brick_texture
+from textures.weathering import add_weathering
 from ursina import Texture
 
-# Wall textures organized by biome
-WALL_TEXTURES = {}
-wall_seeds = [12345, 67890, 24680, 13579]
 
-# Define biome-specific texture parameters
-biome_wall_configs = {
-    c.BIOME_DUNGEON: {'moss_density': 'medium', 'base_darkness': 1.0, 'name': 'Dungeon (mossy stone)'},
-    c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.5, 'name': 'Catacombs (bone-white brick)'},
-    c.BIOME_CAVES: {'moss_density': 'light', 'base_darkness': 1.2, 'name': 'Caves (dark earthy stone)'},
-    c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.5, 'name': 'Hell (charred black brick)'},
-    c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.3, 'name': 'Abyss (alien dark stone)'},
-}
+def generate_all_textures():
+    """
+    Generate all biome textures procedurally.
 
-for biome, config in biome_wall_configs.items():
-    print(f"  - Generating {config['name']} wall variants...")
-    WALL_TEXTURES[biome] = []
-    for i, seed in enumerate(wall_seeds):
-        with RandomSeed(seed):
-            if config['moss_density'] == 'none':
-                # No moss - just weathered brick
-                from textures.weathering import add_weathering
+    Returns:
+        Tuple of (wall_textures, normal_maps, floor_textures, ceiling_textures)
+        and (wall_images, normal_map_images, floor_images, ceiling_images) for caching
+    """
+    print("Generating procedural biome textures (AAA quality - 1024px, 4 variants per biome)...")
+
+    # Seeds for deterministic variation
+    wall_seeds = [12345, 67890, 24680, 13579]
+    floor_seeds = [11111, 22222, 33333, 44444]
+    ceiling_seeds = [55555, 66666, 77777, 88888]
+
+    # Define biome-specific texture parameters
+    biome_wall_configs = {
+        c.BIOME_DUNGEON: {'moss_density': 'medium', 'base_darkness': 1.0, 'name': 'Dungeon (mossy stone)'},
+        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.5, 'name': 'Catacombs (bone-white brick)'},
+        c.BIOME_CAVES: {'moss_density': 'light', 'base_darkness': 1.2, 'name': 'Caves (dark earthy stone)'},
+        c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.5, 'name': 'Hell (charred black brick)'},
+        c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.3, 'name': 'Abyss (alien dark stone)'},
+    }
+
+    biome_floor_configs = {
+        c.BIOME_DUNGEON: {'moss_density': 'light', 'base_darkness': 0.8},
+        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.4},
+        c.BIOME_CAVES: {'moss_density': 'medium', 'base_darkness': 1.0},
+        c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.4},
+        c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.2},
+    }
+
+    biome_ceiling_configs = {
+        c.BIOME_DUNGEON: {'moisture_level': 'medium'},
+        c.BIOME_CATACOMBS: {'moisture_level': 'dry'},
+        c.BIOME_CAVES: {'moisture_level': 'heavy'},
+        c.BIOME_HELL: {'moisture_level': 'dry'},
+        c.BIOME_ABYSS: {'moisture_level': 'dry'},
+    }
+
+    # Generate wall textures
+    wall_textures = {}
+    wall_images = {}  # Store PIL images for caching
+    for biome, config in biome_wall_configs.items():
+        print(f"  - Generating {config['name']} wall variants...")
+        wall_textures[biome] = []
+        wall_images[biome] = []
+        for i, seed in enumerate(wall_seeds):
+            with RandomSeed(seed):
+                if config['moss_density'] == 'none':
+                    brick_pil = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
+                    wall_pil = add_weathering(brick_pil, intensity=1.0)
+                else:
+                    wall_pil = generate_moss_stone_texture(
+                        size=1024,
+                        moss_density=config['moss_density'],
+                        base_darkness=config['base_darkness']
+                    )
+                wall_images[biome].append(wall_pil)
+                wall_textures[biome].append(Texture(wall_pil))
+
+    print(f"  ✓ {len(wall_textures)} biome wall sets generated ({sum(len(v) for v in wall_textures.values())} total textures)")
+
+    # Generate normal maps
+    normal_maps = {}
+    normal_map_images = {}
+    for biome, config in biome_wall_configs.items():
+        normal_maps[biome] = []
+        normal_map_images[biome] = []
+        for i, seed in enumerate(wall_seeds):
+            with RandomSeed(seed):
                 brick_pil = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
-                wall_pil = add_weathering(brick_pil, intensity=1.0)
-            else:
-                wall_pil = generate_moss_stone_texture(
-                    size=1024,
-                    moss_density=config['moss_density'],
-                    base_darkness=config['base_darkness']
-                )
-            WALL_TEXTURES[biome].append(Texture(wall_pil))
+                normal_map_pil = generate_normal_map_from_brick_texture(brick_pil, strength=8.0)
+                normal_map_images[biome].append(normal_map_pil)
+                normal_maps[biome].append(Texture(normal_map_pil))
 
-print(f"  ✓ {len(WALL_TEXTURES)} biome wall sets generated ({sum(len(v) for v in WALL_TEXTURES.values())} total textures)")
+    print(f"  ✓ {len(normal_maps)} biome normal map sets generated ({sum(len(v) for v in normal_maps.values())} total maps)")
 
-# Normal Maps: Generate 4 variants for bump mapping per biome
-# Use brick base ONLY (no moss) since moss doesn't affect surface geometry
-from textures.bricks import generate_normal_map_from_brick_texture
+    # Generate floor textures
+    floor_textures = {}
+    floor_images = {}
+    for biome, config in biome_floor_configs.items():
+        floor_textures[biome] = []
+        floor_images[biome] = []
+        for i, seed in enumerate(floor_seeds):
+            with RandomSeed(seed):
+                floor_brick = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
+                if config['moss_density'] == 'none':
+                    floor_pil = add_weathering(floor_brick, intensity=0.8)
+                else:
+                    floor_pil = generate_moss_overlay(floor_brick, density=config['moss_density'])
+                floor_images[biome].append(floor_pil)
+                floor_textures[biome].append(Texture(floor_pil))
 
-WALL_NORMAL_MAPS = {}
-for biome, config in biome_wall_configs.items():
-    WALL_NORMAL_MAPS[biome] = []
-    for i, seed in enumerate(wall_seeds):
-        with RandomSeed(seed):
-            # Generate brick base WITHOUT moss overlay
-            # Normal maps represent actual geometry depth, not color variation
-            brick_pil = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
-            # EXTREME strength for cartoon effect (8.0 = super exaggerated depth)
-            normal_map_pil = generate_normal_map_from_brick_texture(brick_pil, strength=8.0)
-            WALL_NORMAL_MAPS[biome].append(Texture(normal_map_pil))
+    print(f"  ✓ {len(floor_textures)} biome floor sets generated ({sum(len(v) for v in floor_textures.values())} total textures)")
 
-print(f"  ✓ {len(WALL_NORMAL_MAPS)} biome normal map sets generated ({sum(len(v) for v in WALL_NORMAL_MAPS.values())} total maps)")
+    # Generate ceiling textures
+    ceiling_textures = {}
+    ceiling_images = {}
+    for biome, config in biome_ceiling_configs.items():
+        ceiling_textures[biome] = []
+        ceiling_images[biome] = []
+        for i, seed in enumerate(ceiling_seeds):
+            with RandomSeed(seed):
+                ceiling_pil = generate_ceiling_texture(size=1024, moisture_level=config['moisture_level'])
+                ceiling_images[biome].append(ceiling_pil)
+                ceiling_textures[biome].append(Texture(ceiling_pil))
 
-# Floor: Generate 4 variants for EACH biome
-FLOOR_TEXTURES = {}
-floor_seeds = [11111, 22222, 33333, 44444]
+    print(f"  ✓ {len(ceiling_textures)} biome ceiling sets generated ({sum(len(v) for v in ceiling_textures.values())} total textures)")
 
-biome_floor_configs = {
-    c.BIOME_DUNGEON: {'moss_density': 'light', 'base_darkness': 0.8},
-    c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.4},
-    c.BIOME_CAVES: {'moss_density': 'medium', 'base_darkness': 1.0},
-    c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.4},
-    c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.2},
-}
+    return (wall_textures, normal_maps, floor_textures, ceiling_textures,
+            wall_images, normal_map_images, floor_images, ceiling_images)
 
-for biome, config in biome_floor_configs.items():
-    FLOOR_TEXTURES[biome] = []
-    for i, seed in enumerate(floor_seeds):
-        with RandomSeed(seed):
-            floor_brick = generate_brick_pattern(size=1024, darkness=config['base_darkness'])
-            if config['moss_density'] == 'none':
-                from textures.weathering import add_weathering
-                floor_pil = add_weathering(floor_brick, intensity=0.8)
-            else:
-                floor_pil = generate_moss_overlay(floor_brick, density=config['moss_density'])
-            FLOOR_TEXTURES[biome].append(Texture(floor_pil))
 
-print(f"  ✓ {len(FLOOR_TEXTURES)} biome floor sets generated ({sum(len(v) for v in FLOOR_TEXTURES.values())} total textures)")
+# Load or generate textures based on cache availability
+from graphics3d.texture_cache import cache_exists, load_texture_cache, save_texture_cache
 
-# Ceiling: Generate 4 variants for EACH biome
-from textures.organic import generate_ceiling_texture
-CEILING_TEXTURES = {}
-ceiling_seeds = [55555, 66666, 77777, 88888]
+regenerate_flag = os.environ.get('REGENERATE_TEXTURES', '0') == '1'
 
-biome_ceiling_configs = {
-    c.BIOME_DUNGEON: {'moisture_level': 'medium'},
-    c.BIOME_CATACOMBS: {'moisture_level': 'dry'},
-    c.BIOME_CAVES: {'moisture_level': 'heavy'},
-    c.BIOME_HELL: {'moisture_level': 'dry'},
-    c.BIOME_ABYSS: {'moisture_level': 'dry'},
-}
+if cache_exists() and not regenerate_flag:
+    # Load from cache for fast startup
+    WALL_TEXTURES, WALL_NORMAL_MAPS, FLOOR_TEXTURES, CEILING_TEXTURES = load_texture_cache()
+else:
+    # Generate textures (first launch or forced regeneration)
+    if regenerate_flag:
+        print("--regenerate-textures flag detected, forcing texture regeneration...")
+    (WALL_TEXTURES, WALL_NORMAL_MAPS, FLOOR_TEXTURES, CEILING_TEXTURES,
+     wall_images, normal_map_images, floor_images, ceiling_images) = generate_all_textures()
 
-for biome, config in biome_ceiling_configs.items():
-    CEILING_TEXTURES[biome] = []
-    for i, seed in enumerate(ceiling_seeds):
-        with RandomSeed(seed):
-            ceiling_pil = generate_ceiling_texture(size=1024, moisture_level=config['moisture_level'])
-            CEILING_TEXTURES[biome].append(Texture(ceiling_pil))
+    # Save to cache for next time
+    save_texture_cache(wall_images, normal_map_images, floor_images, ceiling_images)
 
-print(f"  ✓ {len(CEILING_TEXTURES)} biome ceiling sets generated ({sum(len(v) for v in CEILING_TEXTURES.values())} total textures)")
-
-print("✓ Procedural textures generated and cached")
+    print("✓ Procedural textures generated and cached")
 
 # ===== CACHED SHADERS =====
 # Generate shaders once for all tiles

@@ -189,6 +189,9 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         position=(0.12, -1.12, 0.02)
     )
 
+    # Rotate 180 degrees to face forward
+    warrior.rotation_y = 270
+
     return warrior
 
 
