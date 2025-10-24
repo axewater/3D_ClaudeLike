@@ -220,6 +220,9 @@ class Renderer3D:
                     stairs_entity = create_stairs_mesh(x, y, biome, floor_color)
                     tile_entities.append(stairs_entity)
 
+                    # Add glowing particle beam effect for stairs (dungeon exit)
+                    self.animation_manager.add_stairs_glow_effect(x, y)
+
                     # Render ceiling above stairs with wall adjacency info
                     ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color,
                                                         has_wall_north, has_wall_south,

@@ -565,6 +565,117 @@ class LevelTitleCard3D:
             self.entity = None
 
 
+class StairsGlowParticle3D(Particle3D):
+    """Ethereal transparent particle for stairs glow effect"""
+
+    def update(self, dt: float) -> bool:
+        """Update with enhanced transparency"""
+        self.lifetime += dt
+
+        if self.lifetime >= self.max_lifetime:
+            return False
+
+        # Apply velocity (no gravity for stairs particles)
+        self.entity.position += self.velocity * dt
+
+        # Fade out with enhanced transparency (max 40% opacity)
+        progress = self.lifetime / self.max_lifetime
+        alpha = (1.0 - progress) * 0.4  # Scale down to 40% max opacity
+
+        # Update color with alpha
+        self.entity.color = ursina_color.rgba(*self.color_rgb, alpha)
+
+        return True
+
+
+class StairsGlowEffect3D:
+    """Ascending particle beam effect for dungeon exit stairs"""
+
+    def __init__(self, grid_x: int, grid_y: int):
+        """
+        Create a continuous ascending particle beam effect for stairs
+
+        Args:
+            grid_x, grid_y: Grid position of the stairs
+        """
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+        self.spawn_timer = 0.0
+        self.spawn_interval = 0.12  # Spawn particles every 120ms (slower spawn rate)
+        self.particles: List[StairsGlowParticle3D] = []
+
+        # Glow colors (purple/bubble colors - mystical and ethereal)
+        self.glow_colors = [
+            (0.7, 0.5, 0.9),   # Soft purple
+            (0.6, 0.4, 0.8),   # Deep purple
+            (0.8, 0.6, 1.0),   # Light lavender
+            (0.5, 0.7, 0.9),   # Purple-blue (bubble-like)
+        ]
+
+    def update(self, dt: float):
+        """
+        Update effect and spawn new particles
+
+        Args:
+            dt: Delta time since last update
+        """
+        self.spawn_timer += dt
+
+        # Spawn new particles at regular intervals
+        if self.spawn_timer >= self.spawn_interval:
+            self.spawn_timer = 0.0
+            self._spawn_particle()
+
+        # Update existing particles
+        for particle in self.particles[:]:
+            if not particle.update(dt):
+                particle.destroy()
+                self.particles.remove(particle)
+
+    def _spawn_particle(self):
+        """Spawn a single ascending particle"""
+        # Start position (on the stairs surface)
+        base_pos = world_to_3d_position(self.grid_x, self.grid_y, 0.1)
+
+        # Add random horizontal offset for column width
+        offset_x = random.uniform(-0.25, 0.25)
+        offset_z = random.uniform(-0.25, 0.25)
+        pos = Vec3(base_pos[0] + offset_x, base_pos[1], base_pos[2] + offset_z)
+
+        # Upward velocity with slight random sway (slower, more mysterious)
+        velocity = Vec3(
+            random.uniform(-0.08, 0.08),  # Gentle horizontal drift
+            random.uniform(0.6, 0.9),     # Slow upward float
+            random.uniform(-0.08, 0.08)   # Gentle horizontal drift
+        )
+
+        # Random color from glow palette
+        color = random.choice(self.glow_colors)
+
+        # Size and lifetime variations (smaller particles, longer life for slow rise)
+        size = random.uniform(0.03, 0.06)
+        lifetime = random.uniform(2.5, 3.5)
+
+        # Create particle (no gravity, so it floats upward)
+        particle = StairsGlowParticle3D(
+            position=pos,
+            velocity=velocity,
+            color_rgb=color,
+            size=size,
+            lifetime=lifetime,
+            particle_type="circle",
+            apply_gravity=False  # No gravity - pure upward motion
+        )
+
+        self.particles.append(particle)
+
+    def destroy(self):
+        """Clean up all particles"""
+        for particle in self.particles:
+            particle.destroy()
+        self.particles.clear()
+
+
 class AnimationManager3D:
     """Manages all 3D animations and effects"""
 
@@ -577,6 +688,7 @@ class AnimationManager3D:
         self.trails: List[TrailEffect3D] = []
         self.ambient_particles: List[AmbientParticle3D] = []
         self.alert_particles: List[AlertParticle3D] = []
+        self.stairs_glow_effects: List[StairsGlowEffect3D] = []
         self.screen_shake: Optional[ScreenShake3D] = None
         self.level_titles: List[LevelTitleCard3D] = []
 
@@ -777,6 +889,21 @@ class AnimationManager3D:
         """Add level entry title card"""
         self.level_titles.append(LevelTitleCard3D(level_number))
 
+    def add_stairs_glow_effect(self, grid_x: int, grid_y: int):
+        """
+        Add continuous ascending particle beam effect for stairs
+
+        Args:
+            grid_x, grid_y: Grid position of stairs tile
+        """
+        self.stairs_glow_effects.append(StairsGlowEffect3D(grid_x, grid_y))
+
+    def clear_stairs_glow_effects(self):
+        """Clear all stairs glow effects (called when switching levels)"""
+        for effect in self.stairs_glow_effects:
+            effect.destroy()
+        self.stairs_glow_effects.clear()
+
     def update(self, dt: float):
         """Update all animations"""
         # Update and remove dead particles
@@ -788,6 +915,10 @@ class AnimationManager3D:
         self.ambient_particles = [p for p in self.ambient_particles if p.update(dt) or not p.destroy()]
         self.alert_particles = [a for a in self.alert_particles if a.update(dt) or not a.destroy()]
         self.level_titles = [t for t in self.level_titles if t.update(dt) or not t.destroy()]
+
+        # Update stairs glow effects (continuous, never removed)
+        for effect in self.stairs_glow_effects:
+            effect.update(dt)
 
         # Enforce particle count limit for performance
         total_particles = len(self.particles) + len(self.directional_particles)
@@ -841,6 +972,8 @@ class AnimationManager3D:
             a.destroy()
         for t in self.level_titles:
             t.destroy()
+        for e in self.stairs_glow_effects:
+            e.destroy()
 
         # Clear lists
         self.particles.clear()
@@ -851,4 +984,5 @@ class AnimationManager3D:
         self.ambient_particles.clear()
         self.alert_particles.clear()
         self.level_titles.clear()
+        self.stairs_glow_effects.clear()
         self.screen_shake = None
