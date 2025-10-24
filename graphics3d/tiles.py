@@ -383,6 +383,11 @@ def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
             collider=None
         )
         step_tread.shader = CORNER_SHADOW_SHADER
+        # Set shader inputs (no walls for stair geometry, so no edge darkening)
+        step_tread.set_shader_input('has_wall_north', 0.0)
+        step_tread.set_shader_input('has_wall_south', 0.0)
+        step_tread.set_shader_input('has_wall_east', 0.0)
+        step_tread.set_shader_input('has_wall_west', 0.0)
 
         # Left support block (end of step) with floor texture
         left_support = Entity(
@@ -395,6 +400,11 @@ def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
             collider=None
         )
         left_support.shader = CORNER_SHADOW_SHADER
+        # Set shader inputs (no walls for stair geometry, so no edge darkening)
+        left_support.set_shader_input('has_wall_north', 0.0)
+        left_support.set_shader_input('has_wall_south', 0.0)
+        left_support.set_shader_input('has_wall_east', 0.0)
+        left_support.set_shader_input('has_wall_west', 0.0)
 
         # Right support block (end of step) with floor texture
         right_support = Entity(
@@ -407,6 +417,11 @@ def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
             collider=None
         )
         right_support.shader = CORNER_SHADOW_SHADER
+        # Set shader inputs (no walls for stair geometry, so no edge darkening)
+        right_support.set_shader_input('has_wall_north', 0.0)
+        right_support.set_shader_input('has_wall_south', 0.0)
+        right_support.set_shader_input('has_wall_east', 0.0)
+        right_support.set_shader_input('has_wall_west', 0.0)
 
     return stair_group
 
