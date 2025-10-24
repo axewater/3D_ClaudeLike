@@ -38,6 +38,11 @@ def parse_args():
         action='store_true',
         help='Force regeneration of cached biome textures (slower startup)'
     )
+    parser.add_argument(
+        '--regenerate-ability-icons',
+        action='store_true',
+        help='Force regeneration of cached ability icon animations (slower startup)'
+    )
     return parser.parse_args()
 
 
@@ -98,6 +103,11 @@ def main():
     # (checked by graphics3d/tiles.py during import)
     if args.regenerate_textures:
         os.environ['REGENERATE_TEXTURES'] = '1'
+
+    # Set ability icon regeneration flag via environment variable
+    # (checked by ui3d/helmet_hud.py during import)
+    if args.regenerate_ability_icons:
+        os.environ['REGENERATE_ABILITY_ICONS'] = '1'
 
     # Initialize logger FIRST (before any other imports that might log)
     from logger import init_logger, parse_log_level, LogLevel
