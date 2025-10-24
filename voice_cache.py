@@ -22,12 +22,13 @@ except ImportError:
 # Cache directory
 CACHE_ROOT = Path("ursina_cache/voices")
 
-# Voice lines to generate (class names)
+# Voice lines to generate (class names and game events)
 VOICE_LINES = {
     'warrior': 'Warrior',
     'mage': 'Mage',
     'rogue': 'Rogue',
     'ranger': 'Ranger',
+    'dungeon_entrance': 'You will never escape',
 }
 
 

@@ -64,6 +64,9 @@ class Game:
         self.add_message("Welcome to Claude-Like! Descend the dungeon and defeat enemies.", "event")
         self.add_message("Use WASD or Arrow Keys to move. Bump into enemies to attack.", "event")
 
+        # NOTE: Dungeon entrance voice is now played AFTER rendering completes (in main_3d.py)
+        # to avoid overlapping with class selection voice
+
         # Start background music
         self.audio_manager.start_background_music()
 

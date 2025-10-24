@@ -189,6 +189,10 @@ class GameCoordinator(Entity):
             # Store renderer reference in game for attack animations
             game.renderer = renderer
 
+            # Play dungeon entrance voice AFTER rendering is complete
+            # This prevents overlap with the class selection voice
+            game.audio_manager.play_voice('dungeon_entrance', volume=0.9)
+
             # Replace 2D animation manager with 3D proxy
             game.anim_manager = AnimationManager3DProxy(renderer.animation_manager, renderer.enemy_entities)
             log.debug("3D particle system connected", "coordinator")

@@ -706,7 +706,7 @@ class AnimationManager3D:
     def add_particle_burst(self, grid_x: int, grid_y: int, color_rgb: tuple,
                           count: int = 8, particle_type: str = "square"):
         """Create burst of particles"""
-        pos = world_to_3d_position(grid_x, grid_y, 0.5)
+        pos = Vec3(*world_to_3d_position(grid_x, grid_y, 0.5))
 
         for _ in range(count):
             # Random direction
@@ -731,7 +731,7 @@ class AnimationManager3D:
     def add_directional_impact(self, grid_x: int, grid_y: int, from_x: int, from_y: int,
                               color_rgb: tuple, count: int = 10, is_crit: bool = False):
         """Create directional particle spray (away from attacker)"""
-        pos = world_to_3d_position(grid_x, grid_y, 0.5)
+        pos = Vec3(*world_to_3d_position(grid_x, grid_y, 0.5))
 
         # Calculate direction (away from attacker)
         dx = grid_x - from_x
@@ -771,7 +771,7 @@ class AnimationManager3D:
     def add_ability_trail(self, grid_x: int, grid_y: int, color_rgb: tuple,
                          ability_type: str):
         """Add ability-specific trail effect"""
-        pos = world_to_3d_position(grid_x, grid_y, 0.5)
+        pos = Vec3(*world_to_3d_position(grid_x, grid_y, 0.5))
 
         if ability_type == "fireball":
             # Fire particles
@@ -819,7 +819,7 @@ class AnimationManager3D:
 
     def add_death_burst(self, grid_x: int, grid_y: int, enemy_type: str):
         """Create dramatic death particle burst"""
-        pos = world_to_3d_position(grid_x, grid_y, 0.5)
+        pos = Vec3(*world_to_3d_position(grid_x, grid_y, 0.5))
 
         # Different colors/patterns per enemy type
         if enemy_type == c.ENEMY_STARTLE:
