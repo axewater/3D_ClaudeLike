@@ -321,7 +321,7 @@ class StarfishCreature:
         self.eye_stalk_eye = None
         self.eye_stalk_segments = 12
         self.eye_stalk_thickness = 0.15
-        self.eye_size = 0.12
+        self.eye_size = 0.25
 
         # Create toon shader (shared across all parts)
         self.toon_shader = create_toon_shader()

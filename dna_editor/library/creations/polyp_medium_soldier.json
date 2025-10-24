@@ -4,7 +4,7 @@
   "parameters": {
     "num_spheres": 3,
     "base_sphere_size": 0.94,
-    "polyp_color": [
+    "spine_color": [
       0.29411764705882354,
       0.4549019607843137,
       0.29411764705882354

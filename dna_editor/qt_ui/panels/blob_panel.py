@@ -206,15 +206,15 @@ class BlobPanel(BaseCreaturePanel):
     def get_state(self):
         """Get current state."""
         return {
-            'blob_branch_depth': self._blob_branch_depth,
-            'blob_branch_count': self._blob_branch_count,
+            'branch_depth': self._blob_branch_depth,
+            'branch_count': self._blob_branch_count,
             'cube_size_min': self._cube_size_min,
             'cube_size_max': self._cube_size_max,
             'cube_spacing': self._cube_spacing,
             'blob_color': self._blob_color,
-            'blob_transparency': self._blob_transparency,
+            'transparency': self._blob_transparency,
             'jiggle_speed': self._jiggle_speed,
-            'blob_pulse_amount': self._blob_pulse_amount,
+            'pulse_amount': self._blob_pulse_amount,
         }
 
     def set_state(self, state):
@@ -222,15 +222,15 @@ class BlobPanel(BaseCreaturePanel):
         self._updating = True
 
         # Blob parameters
-        self._blob_branch_depth = state.get('blob_branch_depth', 2)
-        self._blob_branch_count = state.get('blob_branch_count', 2)
+        self._blob_branch_depth = state.get('branch_depth', 2)
+        self._blob_branch_count = state.get('branch_count', 2)
         self._cube_size_min = state.get('cube_size_min', 0.3)
         self._cube_size_max = state.get('cube_size_max', 0.8)
         self._cube_spacing = state.get('cube_spacing', 1.2)
         self._blob_color = state.get('blob_color', (0.2, 0.8, 0.4))
-        self._blob_transparency = state.get('blob_transparency', 0.7)
+        self._blob_transparency = state.get('transparency', 0.7)
         self._jiggle_speed = state.get('jiggle_speed', 2.0)
-        self._blob_pulse_amount = state.get('blob_pulse_amount', 0.1)
+        self._blob_pulse_amount = state.get('pulse_amount', 0.1)
 
         # Update UI
         self.blob_branch_depth_spin.setValue(self._blob_branch_depth)

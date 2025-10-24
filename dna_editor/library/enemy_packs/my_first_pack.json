@@ -88,9 +88,9 @@
             0.8,
             0.4
           ],
-          "blob_transparency": 0.45,
+          "transparency": 0.45,
           "jiggle_speed": 3.58,
-          "blob_pulse_amount": 0.2
+          "pulse_amount": 0.2
         },
         "creation_name": "Blob Smallz"
       },
@@ -111,9 +111,9 @@
             0.36470588235294116,
             0.15294117647058825
           ],
-          "blob_transparency": 0.45,
+          "transparency": 0.45,
           "jiggle_speed": 3.58,
-          "blob_pulse_amount": 0.2
+          "pulse_amount": 0.2
         },
         "creation_name": "Blob Medium Mud"
       },
@@ -134,9 +134,9 @@
             0.27450980392156865,
             0.050980392156862744
           ],
-          "blob_transparency": 0.81,
+          "transparency": 0.81,
           "jiggle_speed": 3.58,
-          "blob_pulse_amount": 0.2
+          "pulse_amount": 0.2
         },
         "creation_name": "Blob large vulcan"
       }
@@ -151,7 +151,7 @@
         "parameters": {
           "num_spheres": 3,
           "base_sphere_size": 0.4,
-          "polyp_color": [
+          "spine_color": [
             0.30196078431372547,
             0.3333333333333333,
             0.33725490196078434
@@ -174,7 +174,7 @@
         "parameters": {
           "num_spheres": 3,
           "base_sphere_size": 0.94,
-          "polyp_color": [
+          "spine_color": [
             0.29411764705882354,
             0.4549019607843137,
             0.29411764705882354
@@ -197,7 +197,7 @@
         "parameters": {
           "num_spheres": 5,
           "base_sphere_size": 0.4,
-          "polyp_color": [
+          "spine_color": [
             0.1568627450980392,
             0.9176470588235294,
             0.058823529411764705

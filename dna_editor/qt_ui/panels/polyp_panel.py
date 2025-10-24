@@ -154,10 +154,16 @@ class PolypPanel(BaseCreaturePanel):
         return {
             'num_spheres': self._num_spheres,
             'base_sphere_size': self._base_sphere_size,
-            'polyp_color': self._polyp_color,
+            'spine_color': self._polyp_color,
             'curve_intensity': self._curve_intensity,
-            'polyp_tentacles_per_sphere': self._polyp_tentacles_per_sphere,
-            'polyp_segments': self._polyp_segments,
+            'tentacles_per_sphere': self._polyp_tentacles_per_sphere,
+            'segments_per_tentacle': self._polyp_segments,
+            # Add defaults for parameters not in UI
+            'algorithm': 'bezier',
+            'thickness_base': 0.2,
+            'taper_factor': 0.6,
+            'anim_speed': 2.0,
+            'pulse_amount': 0.08,
         }
 
     def set_state(self, state):
@@ -167,10 +173,10 @@ class PolypPanel(BaseCreaturePanel):
         # Polyp parameters
         self._num_spheres = state.get('num_spheres', 4)
         self._base_sphere_size = state.get('base_sphere_size', 0.8)
-        self._polyp_color = state.get('polyp_color', (0.6, 0.3, 0.7))
+        self._polyp_color = state.get('spine_color', (0.6, 0.3, 0.7))
         self._curve_intensity = state.get('curve_intensity', 0.4)
-        self._polyp_tentacles_per_sphere = state.get('polyp_tentacles_per_sphere', 6)
-        self._polyp_segments = state.get('polyp_segments', 12)
+        self._polyp_tentacles_per_sphere = state.get('tentacles_per_sphere', 6)
+        self._polyp_segments = state.get('segments_per_tentacle', 12)
 
         # Update UI
         self.num_spheres_spin.setValue(self._num_spheres)

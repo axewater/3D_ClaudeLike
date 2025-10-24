@@ -12,8 +12,8 @@
       0.27450980392156865,
       0.050980392156862744
     ],
-    "blob_transparency": 0.81,
+    "transparency": 0.81,
     "jiggle_speed": 3.58,
-    "blob_pulse_amount": 0.2
+    "pulse_amount": 0.2
   }
 }

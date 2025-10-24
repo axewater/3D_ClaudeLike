@@ -192,8 +192,8 @@ class StarfishPanel(BaseCreaturePanel):
             'arm_base_thickness': self._arm_base_thickness,
             'starfish_color': self._starfish_color,
             'curl_factor': self._curl_factor,
-            'starfish_anim_speed': self._starfish_anim_speed,
-            'starfish_pulse_amount': self._starfish_pulse,
+            'anim_speed': self._starfish_anim_speed,
+            'pulse_amount': self._starfish_pulse,
         }
 
     def set_state(self, state):
@@ -207,8 +207,8 @@ class StarfishPanel(BaseCreaturePanel):
         self._arm_base_thickness = state.get('arm_base_thickness', 0.4)
         self._starfish_color = state.get('starfish_color', (0.9, 0.5, 0.3))
         self._curl_factor = state.get('curl_factor', 0.3)
-        self._starfish_anim_speed = state.get('starfish_anim_speed', 1.5)
-        self._starfish_pulse = state.get('starfish_pulse_amount', 0.06)
+        self._starfish_anim_speed = state.get('anim_speed', 1.5)
+        self._starfish_pulse = state.get('pulse_amount', 0.06)
 
         # Update UI
         self.num_arms_spin.setValue(self._num_arms)

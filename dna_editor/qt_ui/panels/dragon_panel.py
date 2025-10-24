@@ -370,24 +370,26 @@ class DragonPanel(BaseCreaturePanel):
     def get_state(self):
         """Get current state."""
         return {
-            'dragon_segments': self._dragon_segments,
-            'dragon_thickness': self._dragon_thickness,
-            'dragon_taper': self._dragon_taper,
-            'dragon_head_scale': self._dragon_head_scale,
-            'dragon_body_color': self._dragon_body_color,
-            'dragon_head_color': self._dragon_head_color,
-            'dragon_weave_amplitude': self._dragon_weave_amplitude,
-            'dragon_bob_amplitude': self._dragon_bob_amplitude,
-            'dragon_anim_speed': self._dragon_anim_speed,
-            'dragon_num_eyes': self._dragon_num_eyes,
-            'dragon_eye_size': self._dragon_eye_size,
-            'dragon_eyeball_color': self._dragon_eyeball_color,
-            'dragon_pupil_color': self._dragon_pupil_color,
-            'dragon_mouth_size': self._dragon_mouth_size,
-            'dragon_mouth_color': self._dragon_mouth_color,
-            'dragon_num_whiskers_per_side': self._dragon_num_whiskers_per_side,
-            'dragon_whisker_segments': self._dragon_whisker_segments,
-            'dragon_whisker_thickness': self._dragon_whisker_thickness,
+            'num_segments': self._dragon_segments,
+            'segment_thickness': self._dragon_thickness,
+            'taper_factor': self._dragon_taper,
+            'head_scale': self._dragon_head_scale,
+            'body_color': self._dragon_body_color,
+            'head_color': self._dragon_head_color,
+            'weave_amplitude': self._dragon_weave_amplitude,
+            'bob_amplitude': self._dragon_bob_amplitude,
+            'anim_speed': self._dragon_anim_speed,
+            'num_eyes': self._dragon_num_eyes,
+            'eye_size': self._dragon_eye_size,
+            'eyeball_color': self._dragon_eyeball_color,
+            'pupil_color': self._dragon_pupil_color,
+            'mouth_size': self._dragon_mouth_size,
+            'mouth_color': self._dragon_mouth_color,
+            'num_whiskers_per_side': self._dragon_num_whiskers_per_side,
+            'whisker_segments': self._dragon_whisker_segments,
+            'whisker_thickness': self._dragon_whisker_thickness,
+            # Add default for parameter not in UI
+            'spine_spike_color': (100, 20, 20),
         }
 
     def set_state(self, state):
@@ -395,24 +397,24 @@ class DragonPanel(BaseCreaturePanel):
         self._updating = True
 
         # Dragon parameters
-        self._dragon_segments = state.get('dragon_segments', 15)
-        self._dragon_thickness = state.get('dragon_thickness', 0.3)
-        self._dragon_taper = state.get('dragon_taper', 0.6)
-        self._dragon_head_scale = state.get('dragon_head_scale', 3.0)
-        self._dragon_body_color = state.get('dragon_body_color', (200, 40, 40))
-        self._dragon_head_color = state.get('dragon_head_color', (255, 200, 50))
-        self._dragon_weave_amplitude = state.get('dragon_weave_amplitude', 0.5)
-        self._dragon_bob_amplitude = state.get('dragon_bob_amplitude', 0.3)
-        self._dragon_anim_speed = state.get('dragon_anim_speed', 1.5)
-        self._dragon_num_eyes = state.get('dragon_num_eyes', 2)
-        self._dragon_eye_size = state.get('dragon_eye_size', 0.15)
-        self._dragon_eyeball_color = state.get('dragon_eyeball_color', (255, 200, 50))
-        self._dragon_pupil_color = state.get('dragon_pupil_color', (20, 0, 0))
-        self._dragon_mouth_size = state.get('dragon_mouth_size', 0.25)
-        self._dragon_mouth_color = state.get('dragon_mouth_color', (20, 0, 0))
-        self._dragon_num_whiskers_per_side = state.get('dragon_num_whiskers_per_side', 2)
-        self._dragon_whisker_segments = state.get('dragon_whisker_segments', 4)
-        self._dragon_whisker_thickness = state.get('dragon_whisker_thickness', 0.05)
+        self._dragon_segments = state.get('num_segments', 15)
+        self._dragon_thickness = state.get('segment_thickness', 0.3)
+        self._dragon_taper = state.get('taper_factor', 0.6)
+        self._dragon_head_scale = state.get('head_scale', 3.0)
+        self._dragon_body_color = state.get('body_color', (200, 40, 40))
+        self._dragon_head_color = state.get('head_color', (255, 200, 50))
+        self._dragon_weave_amplitude = state.get('weave_amplitude', 0.5)
+        self._dragon_bob_amplitude = state.get('bob_amplitude', 0.3)
+        self._dragon_anim_speed = state.get('anim_speed', 1.5)
+        self._dragon_num_eyes = state.get('num_eyes', 2)
+        self._dragon_eye_size = state.get('eye_size', 0.15)
+        self._dragon_eyeball_color = state.get('eyeball_color', (255, 200, 50))
+        self._dragon_pupil_color = state.get('pupil_color', (20, 0, 0))
+        self._dragon_mouth_size = state.get('mouth_size', 0.25)
+        self._dragon_mouth_color = state.get('mouth_color', (20, 0, 0))
+        self._dragon_num_whiskers_per_side = state.get('num_whiskers_per_side', 2)
+        self._dragon_whisker_segments = state.get('whisker_segments', 4)
+        self._dragon_whisker_thickness = state.get('whisker_thickness', 0.05)
 
         # Update UI
         self.dragon_segments_spin.setValue(self._dragon_segments)
