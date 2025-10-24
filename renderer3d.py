@@ -43,7 +43,9 @@ class Renderer3D:
         self.tile_visibility_cache: Dict[Tuple[int, int], str] = {}  # (x, y) -> last visibility state
         self.fog_entities: Dict[Tuple[int, int], Entity] = {}  # (x, y) -> fog plane entity
         self.player_entity: Optional[Entity] = None
+        self.player_shadow: Optional[Entity] = None  # Soft contact shadow beneath player
         self.enemy_entities: Dict[int, Entity] = {}  # enemy id -> Entity
+        self.enemy_shadows: Dict[int, Entity] = {}  # enemy id -> shadow Entity
         self.item_entities: Dict[int, Entity] = {}   # item id -> Entity
 
         # Enemy model pool (for performance - eliminates lag spikes)
@@ -96,14 +98,22 @@ class Renderer3D:
 
     def setup_lighting(self):
         """Set up basic 3D lighting with fog of war ambiance"""
-        # Ambient light (general illumination) - IMPROVED for better visibility
-        self.ambient_light = AmbientLight(color=(0.4, 0.4, 0.45, 1))
+        # Get current biome (default to dungeon if no game/dungeon yet)
+        biome = c.BIOME_DUNGEON
+        if self.game and self.game.dungeon:
+            biome = self.game.dungeon.biome
 
-        # Directional light (sun/moon) - IMPROVED for better depth perception
+        # Get biome-specific lighting colors
+        biome_lighting = c.BIOME_LIGHTING.get(biome, c.BIOME_LIGHTING[c.BIOME_DUNGEON])
+
+        # Ambient light (general illumination) - biome-specific color
+        self.ambient_light = AmbientLight(color=biome_lighting["ambient"])
+
+        # Directional light (sun/moon) - biome-specific color
         self.sun_light = DirectionalLight(
             position=(10, 20, 10),
             rotation=(45, 45, 0),
-            color=(0.6, 0.6, 0.65, 1)  # Brighter blue-gray light
+            color=biome_lighting["directional"]
         )
 
         # Point light following player (torch effect) - BRIGHTER for better illumination
@@ -116,12 +126,30 @@ class Renderer3D:
         scene.fog_color = ursina_color.rgb(0.1, 0.1, 0.15)  # Dark blue-gray
         scene.fog_density = (8, 20)  # Start at 8 units, full fog at 20 units
 
-        log.debug("Lighting configured with improved visibility (ambient: 0.4, directional: 0.6)", "renderer")
+        log.debug(f"Lighting configured for {biome} biome (ambient: {biome_lighting['ambient'][:3]}, directional: {biome_lighting['directional'][:3]})", "renderer")
         log.debug("Atmospheric fog enabled (density: 8-20 units)", "renderer")
 
         # NOTE: Auto shader generation DISABLED - using custom toon shader for walls
         # Walls use custom toon shader with exaggerated normal mapping for cartoon effect
         log.debug("Custom toon shader will be applied to walls", "renderer")
+
+    def update_lighting_for_biome(self):
+        """Update lighting colors when biome changes (new level)"""
+        if not self.game or not self.game.dungeon:
+            return
+
+        biome = self.game.dungeon.biome
+        biome_lighting = c.BIOME_LIGHTING.get(biome, c.BIOME_LIGHTING[c.BIOME_DUNGEON])
+
+        # Update ambient light color
+        if self.ambient_light:
+            self.ambient_light.color = biome_lighting["ambient"]
+
+        # Update directional light color
+        if self.sun_light:
+            self.sun_light.color = biome_lighting["directional"]
+
+        log.info(f"Lighting updated for {biome} biome", "renderer")
 
     def render_dungeon(self):
         """
@@ -244,6 +272,9 @@ class Renderer3D:
         # Preload enemy models for this level (eliminates lag spikes)
         self.preload_enemy_models()
 
+        # Update lighting to match biome
+        self.update_lighting_for_biome()
+
         # Summarize dungeon generation in one line (INFO level for important events)
         if self.game.player:
             log.info(f"Level {self.game.current_level} generated - {self.game.dungeon.width}x{self.game.dungeon.height} {self.game.dungeon.biome} dungeon ({len(self.dungeon_entities)} tiles)", "game")
@@ -301,9 +332,34 @@ class Renderer3D:
             # Position camera immediately after creating player
             self.update_camera()
             log.debug(f"Camera positioned at {camera.position}", "renderer")
+
+            # Create soft contact shadow beneath player
+            shadow_pos = world_to_3d_position(
+                self.game.player.x,
+                self.game.player.y,
+                0.01  # Slightly above floor to prevent z-fighting
+            )
+            self.player_shadow = Entity(
+                model='circle',
+                scale=0.7,  # Slightly larger than player for soft edge
+                color=ursina_color.rgba(0, 0, 0, 0.4),  # Semi-transparent black
+                position=shadow_pos,
+                rotation_x=90,  # Flat on ground
+                collider=None
+            )
+            log.debug("Created player contact shadow", "renderer")
         else:
             # Update position
             self.player_entity.position = pos
+
+            # Update shadow position
+            if self.player_shadow:
+                shadow_pos = world_to_3d_position(
+                    self.game.player.x,
+                    self.game.player.y,
+                    0.01
+                )
+                self.player_shadow.position = shadow_pos
 
         # Update player light position
         if self.player_light:
@@ -329,6 +385,9 @@ class Renderer3D:
                 if enemy_id in self.enemy_entities:
                     self.enemy_entities[enemy_id]['model'].visible = False
                     self.enemy_entities[enemy_id]['health_bar'].visible = False
+                    # Hide shadow too
+                    if enemy_id in self.enemy_shadows:
+                        self.enemy_shadows[enemy_id].visible = False
                 continue
 
             # Enemy is visible
@@ -356,6 +415,18 @@ class Renderer3D:
                 # Store references
                 self.enemy_entities[enemy_id] = enemy_data
 
+                # Create soft contact shadow beneath enemy
+                shadow_pos = world_to_3d_position(enemy.x, enemy.y, 0.01)
+                enemy_shadow = Entity(
+                    model='circle',
+                    scale=0.6,  # Slightly smaller than player
+                    color=ursina_color.rgba(0, 0, 0, 0.35),  # Slightly lighter than player shadow
+                    position=shadow_pos,
+                    rotation_x=90,
+                    collider=None
+                )
+                self.enemy_shadows[enemy_id] = enemy_shadow
+
                 log.debug(f"Created {enemy.enemy_type} at ({enemy.x}, {enemy.y})", "renderer")
             else:
                 # Update existing enemy position
@@ -363,6 +434,12 @@ class Renderer3D:
                 enemy_data['model'].position = pos
                 enemy_data['model'].visible = True  # Make visible if was hidden
                 enemy_data['health_bar'].visible = True
+
+                # Update shadow position and visibility
+                if enemy_id in self.enemy_shadows:
+                    shadow_pos = world_to_3d_position(enemy.x, enemy.y, 0.01)
+                    self.enemy_shadows[enemy_id].position = shadow_pos
+                    self.enemy_shadows[enemy_id].visible = True
 
                 # Update health bar
                 hp_pct = enemy.hp / enemy.max_hp
@@ -376,6 +453,11 @@ class Renderer3D:
 
             # Return to pool (or destroy if pool disabled)
             self.return_to_pool(enemy_data)
+
+            # Clean up shadow
+            if enemy_id in self.enemy_shadows:
+                self.enemy_shadows[enemy_id].disable()
+                del self.enemy_shadows[enemy_id]
 
             del self.enemy_entities[enemy_id]
             log.debug(f"Removed dead {enemy_type}", "renderer")
@@ -1030,11 +1112,21 @@ class Renderer3D:
             self.player_entity.disable()
             self.player_entity = None
 
+        # Destroy player shadow
+        if self.player_shadow:
+            self.player_shadow.disable()
+            self.player_shadow = None
+
         # Destroy enemies
         for enemy_id, enemy_data in self.enemy_entities.items():
             enemy_data['model'].disable()
             enemy_data['health_bar'].disable()
         self.enemy_entities.clear()
+
+        # Destroy enemy shadows
+        for enemy_id, shadow in self.enemy_shadows.items():
+            shadow.disable()
+        self.enemy_shadows.clear()
 
         # Clear enemy pool
         self.clear_enemy_pool()

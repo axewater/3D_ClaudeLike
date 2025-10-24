@@ -357,6 +357,31 @@ BIOME_COLORS_RGB = {
     },
 }
 
+# Biome-specific lighting colors (RGBA tuples for ambient and directional lights)
+# These create distinct atmospheric moods for each dungeon environment
+BIOME_LIGHTING = {
+    BIOME_DUNGEON: {
+        "ambient": (0.4, 0.4, 0.45, 1),     # Blue-gray - cold stone dungeon
+        "directional": (0.6, 0.6, 0.65, 1),  # Slightly brighter blue-gray
+    },
+    BIOME_CATACOMBS: {
+        "ambient": (0.5, 0.5, 0.48, 1),     # Pale bone-white - desaturated, brighter
+        "directional": (0.65, 0.65, 0.6, 1), # Warm bone-white with slight yellow
+    },
+    BIOME_CAVES: {
+        "ambient": (0.3, 0.4, 0.35, 1),     # Green-brown earthy - mossy dampness
+        "directional": (0.5, 0.6, 0.5, 1),   # Greenish natural light
+    },
+    BIOME_HELL: {
+        "ambient": (0.5, 0.3, 0.2, 1),      # Red-orange volcanic - fire glow
+        "directional": (0.7, 0.4, 0.3, 1),   # Bright orange-red lava light
+    },
+    BIOME_ABYSS: {
+        "ambient": (0.35, 0.3, 0.45, 1),    # Deep purple void - alien/ethereal
+        "directional": (0.6, 0.5, 0.7, 1),   # Brighter purple otherworldly light
+    },
+}
+
 # Class colors (RGB tuples)
 COLOR_CLASS_WARRIOR_RGB = (0.706, 0.235, 0.157)  # (180, 60, 40)
 COLOR_CLASS_MAGE_RGB = (0.392, 0.588, 1.0)  # (100, 150, 255)
