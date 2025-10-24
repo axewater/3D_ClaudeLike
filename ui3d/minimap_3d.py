@@ -89,11 +89,11 @@ class MiniMap3D:
         """Create minimap UI elements"""
         # Calculate position based on settings
         if c.MINIMAP_POSITION == "top_right":
-            pos_x = 0.75 - (self.map_width * 0.001)  # Adjust for minimap size
-            pos_y = 0.35
+            pos_x = 0.70 - (self.map_width * 0.001)  # Adjust for minimap size
+            pos_y = 0.30
         else:  # bottom_right
-            pos_x = 0.60  # Positioned right of center
-            pos_y = -0.30  # Higher position, above quick stats
+            pos_x = 0.50  # Positioned right of center, adjusted for larger size
+            pos_y = -0.25  # Higher position, above quick stats, adjusted for larger size
 
         # Calculate panel size in normalized screen coords
         panel_width = self.map_width * 0.001 + 0.04  # Add padding

@@ -451,8 +451,8 @@ FOG_EDGE_ONLY = False            # Show fog on all unexplored tiles (True = only
 # Minimap settings
 MINIMAP_ENABLED = True  # Enable/disable minimap
 MINIMAP_MODE = "full"  # "full" (entire dungeon) or "radar" (nearby area only)
-MINIMAP_SIZE_FULL = (200, 120)  # Width x Height for full map view
-MINIMAP_SIZE_RADAR = (150, 150)  # Size for radar mode
+MINIMAP_SIZE_FULL = (300, 180)  # Width x Height for full map view (50% larger)
+MINIMAP_SIZE_RADAR = (225, 225)  # Size for radar mode (50% larger)
 MINIMAP_RADAR_RANGE = 15  # Tiles visible in radar mode
 MINIMAP_POSITION = "bottom_right"  # "top_right" or "bottom_right"
 MINIMAP_OPACITY = 0.90  # Background panel opacity
