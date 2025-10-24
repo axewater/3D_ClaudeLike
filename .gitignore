@@ -9,6 +9,15 @@ __pycache__/
 # Documentation archives
 docs_archive_*/
 
+# Windows-specific files
+Thumbs.db
+*.db
+
+# Debug/test output files
+output/
+screenshot.png
+stairs.png
+
 # 3D assets and cache (if any are added later)
 *.bam
 *.egg
