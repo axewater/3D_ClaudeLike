@@ -548,6 +548,14 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
                 dna = generate_starfish_dna(dungeon_level, color_rgb)
             creature = StarfishCreature(**dna)
 
+            # Calculate proper Y offset so leg feet don't float above floor
+            # Starfish has spider-like legs that extend downward from central body
+            # Use get_bottom_extent() to find lowest point (foot tip)
+            absolute_bottom_y = creature.get_bottom_extent()
+
+            # Offset so absolute_bottom_y aligns with floor (position.y, typically 0)
+            starfish_y_offset = -absolute_bottom_y
+
         # Set creature position and scale
         if creature:
             # Scale by enemy difficulty (smaller = early-game, larger = late-game)
@@ -562,9 +570,11 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
             creature.root.scale = enemy_scales.get(enemy_type, 0.5)
 
             # Calculate Y offset based on creature type
-            # Polyp creatures need custom offset due to their vertical spine structure
+            # Polyp and starfish need custom offsets to align bottom with floor
             if creature_type == 'polyp':
                 y_offset = polyp_y_offset
+            elif creature_type == 'starfish':
+                y_offset = starfish_y_offset
             else:
                 y_offset = 0.5  # Default offset for other creatures
 

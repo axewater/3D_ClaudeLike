@@ -13,25 +13,25 @@ from ..shaders import create_toon_shader
 
 
 class StarfishArm:
-    """Single articulated arm made of connected spheres."""
+    """Single multi-jointed spider leg with rigid segments and visible joints."""
 
     def __init__(self, central_body_position, arm_index, total_arms,
                  arm_segments, base_thickness, central_body_size, base_color,
                  parent, toon_shader=None, curl_factor=0.3):
         """
-        Create a starfish arm.
+        Create a spider-like leg.
 
         Args:
             central_body_position: Vec3 position of central body
-            arm_index: Index of this arm (0 to total_arms-1)
-            total_arms: Total number of arms on starfish
-            arm_segments: Number of segments in this arm
-            base_thickness: Thickness of arm at base (scaled down by golden ratio)
+            arm_index: Index of this leg (0 to total_arms-1)
+            total_arms: Total number of legs on starfish
+            arm_segments: Number of segments in this leg (affects leg proportions)
+            base_thickness: Thickness of leg at base
             central_body_size: Size of central body (for anchor positioning)
-            base_color: RGB tuple for arm color
+            base_color: RGB tuple for leg color
             parent: Parent entity (scene root)
             toon_shader: Optional toon shader to apply
-            curl_factor: How much arm curves (0-1, higher = more curl)
+            curl_factor: Affects leg reach/extension (0-1, higher = longer reach)
         """
         self.central_body_position = central_body_position
         self.arm_index = arm_index
@@ -39,142 +39,142 @@ class StarfishArm:
         self.arm_segments = arm_segments
         self.base_color = base_color
         self.curl_factor = curl_factor
-        self.spheres = []
-        self.connector_tubes = []
-        self.curve_points = []
 
-        # Calculate arm angle in radial pattern (360 / total_arms degrees per arm)
+        # Leg components
+        self.leg_segments = []  # Cylinder segments (femur, tibia, tarsus)
+        self.joints = []  # Joint spheres (hip, knee, ankle)
+        self.joint_positions = []  # Calculated joint positions
+
+        # Calculate leg angle in radial pattern (360 / total_arms degrees per leg)
         self.angle = (arm_index / total_arms) * math.pi * 2
 
         # Random phase offset for animation variation
         self.animation_phase_offset = random.random() * math.pi * 2
 
-        # Generate arm curve using Bezier
-        self._generate_arm_curve(central_body_size, base_thickness, parent, toon_shader)
+        # Generate spider leg using mathematical joint positioning
+        self._generate_spider_leg(central_body_size, base_thickness, parent, toon_shader)
 
-    def _generate_arm_curve(self, central_body_size, base_thickness, parent, toon_shader):
-        """Generate arm as chain of spheres using Bezier curve."""
-        # Calculate arm direction based on radial angle
+    def _generate_spider_leg(self, central_body_size, base_thickness, parent, toon_shader):
+        """Generate multi-jointed spider leg using mathematical positioning."""
+        # Calculate leg direction based on radial angle
         direction_x = math.cos(self.angle)
         direction_z = math.sin(self.angle)
 
-        # Anchor point on central body surface
-        anchor_offset = (central_body_size / 2) * 0.9
-        anchor = self.central_body_position + Vec3(
-            direction_x * anchor_offset,
-            0,
-            direction_z * anchor_offset
-        )
+        # === CALCULATE LEG PATH ===
+        # Total leg reach influenced by curl_factor
+        leg_reach = 1.2 + (self.curl_factor * 0.5)
+        leg_height = 2.0 + (self.curl_factor * 0.4)  # Total vertical drop
 
-        # Target point (arm tip) - extends outward with curl
-        arm_length = 2.0  # Total arm length
-        # Apply curl: higher curl_factor means tip curls more (lower Y)
-        tip_y_offset = -0.3 - (self.curl_factor * 0.5)
-        target = self.central_body_position + Vec3(
-            direction_x * arm_length,
-            tip_y_offset,
-            direction_z * arm_length
-        )
+        # === GENERATE JOINT POSITIONS ===
+        # Create arm_segments joints distributed along the leg path
+        # Leg path: starts at body, extends outward and downward
+        self.joint_positions = []
 
-        # Generate Bezier curve for arm shape (smooth outward curve)
-        # Use curl_factor to control curvature
-        control_strength = 0.3 + (self.curl_factor * 0.2)
-        self.curve_points = bezier_curve(
-            anchor, target, self.arm_segments,
-            control_strength=control_strength
-        )
+        hip_offset = (central_body_size / 2) * 0.9
 
-        # Create spheres at curve points
         for i in range(self.arm_segments):
-            position = self.curve_points[i]
+            # Progress along leg (0.0 at hip, 1.0 at foot)
+            t = i / max(self.arm_segments - 1, 1)
 
-            # Size decreases by golden ratio toward tip
-            size = base_thickness / (GOLDEN_RATIO ** i)
-            size = max(size, 0.1)  # Minimum size
+            # Outward distance: starts at hip, extends to leg_reach
+            outward = hip_offset + (leg_reach * t)
 
-            # Color variation (darker toward tip)
-            color_factor = 1.0 - (i / self.arm_segments) * 0.3
-            sphere_color = (
-                self.base_color[0] * color_factor,
-                self.base_color[1] * color_factor,
-                self.base_color[2] * color_factor
+            # Downward curve: slight outward arc then straight down
+            # Early segments (femur/thigh): gentle downward slope
+            # Later segments (tibia/foot): steeper downward
+            if t < 0.4:
+                # Upper leg: gentle slope
+                down = (leg_height * t * 0.3)
+            else:
+                # Lower leg: steeper drop
+                down = (leg_height * 0.3 * 0.4) + (leg_height * (t - 0.4) * 1.3)
+
+            joint_pos = self.central_body_position + Vec3(
+                direction_x * outward,
+                -down,
+                direction_z * outward
             )
+            self.joint_positions.append(joint_pos)
 
-            # Create sphere entity
-            sphere_params = {
+        # === CREATE LEG SEGMENTS ===
+        # Connect consecutive joints with thin cylinders
+        for i in range(len(self.joint_positions) - 1):
+            start_joint = self.joint_positions[i]
+            end_joint = self.joint_positions[i + 1]
+
+            # Thickness decreases along leg (thinner toward foot)
+            segment_t = i / max(len(self.joint_positions) - 2, 1)
+            thickness = base_thickness * (0.25 - segment_t * 0.1)  # MUCH thinner: 0.25 → 0.15
+            thickness = max(thickness, 0.05)
+
+            # Color darkens slightly along leg
+            color_factor = 1.0 - (segment_t * 0.2)
+            segment_color = tuple(c * color_factor for c in self.base_color)
+
+            self._create_leg_segment(start_joint, end_joint, thickness, segment_color, parent, toon_shader)
+
+        # === CREATE JOINT SPHERES ===
+        # Joints cover the connections between segments (hide any gaps)
+        for i, joint_pos in enumerate(self.joint_positions):
+            # Joint size matches segment thickness at this position
+            joint_t = i / max(len(self.joint_positions) - 1, 1)
+            joint_size = base_thickness * (0.3 - joint_t * 0.12)  # Slightly larger than segments to cover gaps
+            joint_size = max(joint_size, 0.06)
+
+            # Joints are darker than leg segments
+            joint_color = tuple(c * 0.7 for c in self.base_color)
+
+            joint_params = {
                 'model': 'sphere',
-                'color': color.rgb(*sphere_color),
-                'scale': size,
-                'position': position,
+                'color': color.rgb(*joint_color),
+                'scale': joint_size,
+                'position': joint_pos,
                 'parent': parent
             }
 
             if toon_shader is not None:
-                sphere_params['shader'] = toon_shader
+                joint_params['shader'] = toon_shader
 
-            sphere = Entity(**sphere_params)
-            sphere.base_position = position  # Store for animation
-            sphere.segment_index = i
-            self.spheres.append(sphere)
+            joint = Entity(**joint_params)
+            joint.base_position = joint_pos
+            joint.joint_index = i
+            self.joints.append(joint)
 
-            # Create connector tube to previous sphere
-            if i > 0:
-                self._create_connector_tube(
-                    self.spheres[i - 1], sphere,
-                    sphere_color, parent, toon_shader
-                )
+    def _create_leg_segment(self, start_pos, end_pos, thickness, segment_color, parent, toon_shader):
+        """Create cylindrical leg segment between two joints."""
+        # Calculate segment position, rotation, and length
+        midpoint = (start_pos + end_pos) / 2
+        length = (end_pos - start_pos).length()
 
-    def _create_connector_tube(self, sphere1, sphere2, tube_color, parent, toon_shader):
-        """Create tube connecting two spheres."""
-        # Calculate tube position, rotation, and length
-        midpoint = (sphere1.position + sphere2.position) / 2
-        length = (sphere2.position - sphere1.position).length()
-
-        # Tube radius (average of both sphere sizes)
-        avg_size = (sphere1.scale_x + sphere2.scale_x) / 2
-        tube_radius = avg_size * 0.3
-
-        # Create tube entity (using cube stretched along Y axis)
-        tube_params = {
+        # Create cylinder entity (using cube stretched along Y axis)
+        segment_params = {
             'model': 'cube',
-            'color': color.rgb(*tube_color),
+            'color': color.rgb(*segment_color),
             'position': midpoint,
-            'scale': (tube_radius, length / 2, tube_radius),
+            'scale': (thickness, length / 2, thickness),
             'parent': parent
         }
 
         if toon_shader is not None:
-            tube_params['shader'] = toon_shader
+            segment_params['shader'] = toon_shader
 
-        tube = Entity(**tube_params)
+        segment = Entity(**segment_params)
 
-        # Orient tube from sphere1 to sphere2
-        tube.look_at(sphere1, axis=Vec3.up)
+        # Orient segment from start to end
+        segment.look_at(start_pos, axis=Vec3.up)
 
-        # Store base transform for animation
-        tube.base_position = midpoint
-        tube.sphere1 = sphere1
-        tube.sphere2 = sphere2
+        # Store base transform for potential animation
+        segment.base_position = midpoint
+        segment.base_scale = segment.scale
+        segment.start_joint = start_pos
+        segment.end_joint = end_pos
 
-        self.connector_tubes.append(tube)
-
-    def _update_connector_tube_transform(self, tube):
-        """Update connector tube position to follow animated spheres."""
-        # Recalculate midpoint
-        midpoint = (tube.sphere1.position + tube.sphere2.position) / 2
-        tube.position = midpoint
-
-        # Recalculate length
-        length = (tube.sphere2.position - tube.sphere1.position).length()
-        tube.scale_y = length / 2
-
-        # Update rotation
-        tube.look_at(tube.sphere1, axis=Vec3.up)
+        self.leg_segments.append(segment)
 
     def update_animation(self, time, anim_speed, pulse_amount,
                         is_attacking=False, attack_progress=0.0, camera_position=None):
         """
-        Update arm animation.
+        Update leg animation.
 
         Args:
             time: Current animation time
@@ -185,116 +185,73 @@ class StarfishArm:
             camera_position: Camera position for attack targeting
         """
         if is_attacking and attack_progress < 1.0:
-            # Attack animation: curl inward → snap outward
+            # Attack animation: lift legs then stomp down
             if attack_progress < 0.3:
-                # Curl inward phase (0.0 - 0.3)
+                # Lift phase (0.0 - 0.3)
                 phase_t = attack_progress / 0.3
                 ease_t = phase_t * phase_t  # Ease-in quad
 
-                # Pull spheres inward toward central body
-                for sphere in self.spheres:
-                    i = sphere.segment_index
-                    segment_t = i / max(self.arm_segments, 1)
+                # Lift all joints upward slightly
+                lift_amount = ease_t * 0.3
 
-                    # Inward pull increases toward tip
-                    pull_strength = ease_t * segment_t * 0.4
-                    direction_to_center = (self.central_body_position - sphere.base_position).normalized()
-                    offset = direction_to_center * pull_strength
+                for joint in self.joints:
+                    joint.position = joint.base_position + Vec3(0, lift_amount, 0)
 
-                    sphere.position = sphere.base_position + offset
+            elif attack_progress < 0.5:
+                # Stomp down phase (0.3 - 0.5)
+                phase_t = (attack_progress - 0.3) / 0.2
+                ease_t = 1.0 - (1.0 - phase_t) ** 3  # Ease-out cubic (fast stomp)
 
-            elif attack_progress < 0.7:
-                # Snap outward phase (0.3 - 0.7)
-                phase_t = (attack_progress - 0.3) / 0.4
-                ease_t = 1.0 - (1.0 - phase_t) ** 3  # Ease-out cubic
+                # Return to base with slight overshoot
+                lift_amount = 0.3 * (1.0 - ease_t)
+                overshoot = -0.1 * ease_t * (1.0 - ease_t) * 4  # Bounce effect
 
-                # Calculate outward direction (away from center)
-                direction_x = math.cos(self.angle)
-                direction_z = math.sin(self.angle)
-                outward_direction = Vec3(direction_x, 0, direction_z)
-
-                for sphere in self.spheres:
-                    i = sphere.segment_index
-                    segment_t = i / max(self.arm_segments, 1)
-
-                    # Outward snap increases toward tip
-                    snap_strength = ease_t * segment_t * 0.8
-                    offset = outward_direction * snap_strength
-
-                    sphere.position = sphere.base_position + offset
+                for joint in self.joints:
+                    joint.position = joint.base_position + Vec3(0, lift_amount + overshoot, 0)
 
             else:
-                # Return phase (0.7 - 1.0)
-                phase_t = (attack_progress - 0.7) / 0.3
+                # Settle phase (0.5 - 1.0) - return to rest
+                phase_t = (attack_progress - 0.5) / 0.5
                 ease_t = 1.0 - (1.0 - phase_t) ** 2  # Ease-out quad
 
-                # Return to base positions
-                for sphere in self.spheres:
-                    i = sphere.segment_index
-                    segment_t = i / max(self.arm_segments, 1)
-
-                    # Interpolate back to base
-                    direction_x = math.cos(self.angle)
-                    direction_z = math.sin(self.angle)
-                    outward_direction = Vec3(direction_x, 0, direction_z)
-                    snap_offset = outward_direction * segment_t * 0.8
-                    current_offset = snap_offset * (1.0 - ease_t)
-
-                    sphere.position = sphere.base_position + current_offset
+                # Interpolate back to base positions
+                for joint in self.joints:
+                    # Any remaining offset gradually returns to zero
+                    joint.position = joint.base_position
 
         else:
-            # Idle animation: wave undulation along arm
-            for sphere in self.spheres:
-                i = sphere.segment_index
-                segment_t = i / max(self.arm_segments, 1)
-
-                # Wave motion with phase offset for variation
-                phase = time * anim_speed + self.animation_phase_offset + i * 0.4
-
-                # Multi-frequency wave (like tentacles)
-                wave_offset_y = (
-                    math.sin(phase) * 0.6 +
-                    math.sin(phase * 1.5) * 0.3 +
-                    math.cos(phase * 0.8) * 0.1
-                ) * pulse_amount * segment_t * 2.0
-
-                # Slight lateral sway
-                wave_offset_x = math.sin(phase * 0.7) * pulse_amount * segment_t * 0.5
-                wave_offset_z = math.cos(phase * 0.7) * pulse_amount * segment_t * 0.5
-
-                # Apply animation offset
-                sphere.position = sphere.base_position + Vec3(wave_offset_x, wave_offset_y, wave_offset_z)
-
-        # Update all connector tubes to follow spheres
-        for tube in self.connector_tubes:
-            self._update_connector_tube_transform(tube)
+            # Idle: STATIC - legs remain rigid (no waving animation)
+            # Legs stay at base positions for creepy spider look
+            for joint in self.joints:
+                joint.position = joint.base_position
 
     def destroy(self):
-        """Cleanup arm entities."""
-        for sphere in self.spheres:
-            destroy(sphere)
-        for tube in self.connector_tubes:
-            destroy(tube)
-        self.spheres.clear()
-        self.connector_tubes.clear()
+        """Cleanup leg entities."""
+        for segment in self.leg_segments:
+            destroy(segment)
+        for joint in self.joints:
+            destroy(joint)
+        self.leg_segments.clear()
+        self.joints.clear()
+        self.joint_positions.clear()
 
 
 class StarfishCreature:
-    """Creature with radial symmetry and articulated arms."""
+    """Spider-like creature with radial symmetry and multi-jointed legs."""
 
     def __init__(self, num_arms=5, arm_segments=6, central_body_size=0.8,
                  arm_base_thickness=0.4, starfish_color=(0.9, 0.5, 0.3),
                  curl_factor=0.3, anim_speed=1.5, pulse_amount=0.06):
         """
-        Create a starfish creature.
+        Create a starfish creature with spider-like legs.
 
         Args:
-            num_arms: Number of arms (5-8)
-            arm_segments: Segments per arm (4-10)
+            num_arms: Number of legs (4-8)
+            arm_segments: Affects leg proportions (4-10)
             central_body_size: Size of central body sphere (0.4-1.5)
-            arm_base_thickness: Base thickness of arms (0.2-0.6)
+            arm_base_thickness: Base thickness of legs (0.2-0.6)
             starfish_color: Base color (RGB tuple 0-1)
-            curl_factor: Arm curvature amount (0-0.8)
+            curl_factor: Leg reach/extension amount (0-0.8)
             anim_speed: Animation speed
             pulse_amount: Pulse intensity
         """
@@ -457,6 +414,34 @@ class StarfishCreature:
                 parent=self.root,
                 toon_shader=self.toon_shader
             )
+
+    def get_bottom_extent(self):
+        """
+        Calculate the lowest Y coordinate of the creature (foot tip position).
+
+        Returns:
+            float: Absolute Y position of the lowest point (foot tips)
+        """
+        # Foot tip calculation based on leg joint positions
+        # This mirrors the calculation in StarfishArm._generate_spider_leg()
+
+        # Calculate total leg height (vertical drop from hip to foot)
+        leg_height = 2.0 + (self.curl_factor * 0.4)
+
+        # The last joint (foot tip) is at t=1.0 on the leg path
+        # Calculate its downward position using the same formula
+        t = 1.0  # Foot tip is at the end
+
+        # Upper leg portion (t < 0.4): gentle slope
+        down_upper = leg_height * 0.4 * 0.3
+
+        # Lower leg portion (t >= 0.4): steeper drop
+        down_lower = leg_height * (t - 0.4) * 1.3
+
+        foot_down = down_upper + down_lower
+
+        # Return negative Y (since foot extends downward from center at Y=0)
+        return -foot_down
 
     def rebuild(self, num_arms, arm_segments, central_body_size, arm_base_thickness,
                 starfish_color, curl_factor, anim_speed, pulse_amount):
