@@ -154,9 +154,9 @@ class TargetingSystem:
         # NO PARENT - must be in world space!
         self.target_cursor = Entity(
             model='sphere',
-            color=color.rgb(1.0, 1.0, 1.0),  # Bright white (solid, no transparency)
+            color=color.rgba(1.0, 1.0, 1.0, 0.25),  # Bright white, 75% transparent (25% opaque)
             position=(0, 0, 0),
-            scale=(self.CURSOR_SIZE * 0.5, self.CURSOR_SIZE * 0.5, self.CURSOR_SIZE * 0.5),  # Sphere scale
+            scale=(self.CURSOR_SIZE * 0.25, self.CURSOR_SIZE * 0.25, self.CURSOR_SIZE * 0.25),  # 50% smaller sphere
             visible=False,  # Hidden until we have a valid target
             eternal=True
         )
@@ -165,16 +165,16 @@ class TargetingSystem:
         # NO PARENT - must be in world space!
         self.cursor_outline = Entity(
             model='circle',
-            color=color.rgb(1.0, 1.0, 1.0),  # Solid white outline
+            color=color.rgba(1.0, 1.0, 1.0, 0.25),  # White outline, 75% transparent
             position=(0, 0, 0),
-            scale=(self.CURSOR_SIZE * 1.2, self.CURSOR_SIZE * 1.2, 1),  # Larger ring
+            scale=(self.CURSOR_SIZE * 0.6, self.CURSOR_SIZE * 0.6, 1),  # Scaled down proportionally (50% of 1.2)
             rotation_x=90,  # Flat on ground
             visible=False,
             eternal=True
         )
 
-        print(f"[TARGETING] Created cursor sphere (size={self.CURSOR_SIZE}, height={self.CURSOR_HEIGHT})")
-        print(f"[TARGETING] Created cursor outline ring (scale={self.CURSOR_SIZE * 1.2})")
+        print(f"[TARGETING] Created cursor sphere (size={self.CURSOR_SIZE * 0.25}, height={self.CURSOR_HEIGHT})")
+        print(f"[TARGETING] Created cursor outline ring (scale={self.CURSOR_SIZE * 0.6})")
 
         # Info text (ability name and instructions)
         self.info_text = Text(
@@ -402,15 +402,15 @@ class TargetingSystem:
                     self.cursor_outline.position = outline_pos
                     self.cursor_outline.visible = True
 
-                # Color code cursor (green = valid, red = invalid) - USE SOLID COLORS
+                # Color code cursor (green = valid, red = invalid) - 75% transparent
                 if is_valid:
-                    self.target_cursor.color = color.rgb(0.2, 1.0, 0.2)  # Bright solid green
+                    self.target_cursor.color = color.rgba(0.2, 1.0, 0.2, 0.25)  # Bright green, 75% transparent
                     if self.cursor_outline:
-                        self.cursor_outline.color = color.rgb(0.2, 1.0, 0.2)  # Matching green ring
+                        self.cursor_outline.color = color.rgba(0.2, 1.0, 0.2, 0.25)  # Matching green ring
                 else:
-                    self.target_cursor.color = color.rgb(1.0, 0.2, 0.2)  # Bright solid red
+                    self.target_cursor.color = color.rgba(1.0, 0.2, 0.2, 0.25)  # Bright red, 75% transparent
                     if self.cursor_outline:
-                        self.cursor_outline.color = color.rgb(1.0, 0.2, 0.2)  # Matching red ring
+                        self.cursor_outline.color = color.rgba(1.0, 0.2, 0.2, 0.25)  # Matching red ring
 
                 # Debug: Log targeting info
                 player_x, player_y = self.game.player.x, self.game.player.y
