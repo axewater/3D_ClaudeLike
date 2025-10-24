@@ -136,6 +136,9 @@ class Renderer3D:
             fog_entity.disable()
         self.fog_entities.clear()
 
+        # Clear old stairs glow effects from previous level
+        self.animation_manager.clear_stairs_glow_effects()
+
         if not self.game.dungeon:
             return
 

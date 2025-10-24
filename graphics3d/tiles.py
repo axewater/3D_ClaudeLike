@@ -42,7 +42,7 @@ def generate_all_textures():
     # Define biome-specific texture parameters
     biome_wall_configs = {
         c.BIOME_DUNGEON: {'moss_density': 'medium', 'base_darkness': 1.0, 'name': 'Dungeon (mossy stone)'},
-        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.5, 'name': 'Catacombs (bone-white brick)'},
+        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 1.3, 'name': 'Catacombs (bone-white brick)'},
         c.BIOME_CAVES: {'moss_density': 'light', 'base_darkness': 1.2, 'name': 'Caves (dark earthy stone)'},
         c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.5, 'name': 'Hell (charred black brick)'},
         c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.3, 'name': 'Abyss (alien dark stone)'},
@@ -50,7 +50,7 @@ def generate_all_textures():
 
     biome_floor_configs = {
         c.BIOME_DUNGEON: {'moss_density': 'light', 'base_darkness': 0.8},
-        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 0.4},
+        c.BIOME_CATACOMBS: {'moss_density': 'none', 'base_darkness': 1.1},
         c.BIOME_CAVES: {'moss_density': 'medium', 'base_darkness': 1.0},
         c.BIOME_HELL: {'moss_density': 'none', 'base_darkness': 1.4},
         c.BIOME_ABYSS: {'moss_density': 'none', 'base_darkness': 1.2},
