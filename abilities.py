@@ -78,11 +78,11 @@ class Fireball(Ability):
 
                 # Create animations (using RGB tuples)
                 game.anim_manager.add_floating_text(enemy.x, enemy.y, str(self.damage), c.COLOR_FIREBALL_TEXT_RGB)
-                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FIREBALL_BURST_RGB, count=15, particle_type="circle")
+                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FIREBALL_BURST_RGB, count=int(15 * c.PARTICLE_DENSITY), particle_type="circle")
 
                 # Directional impact
                 game.anim_manager.add_directional_impact(enemy.x, enemy.y, user.x, user.y,
-                                                        c.COLOR_FIREBALL_EXPLOSION_RGB, count=12)
+                                                        c.COLOR_FIREBALL_EXPLOSION_RGB, count=int(12 * c.PARTICLE_DENSITY))
 
                 if enemy.hp <= 0:
                     game.anim_manager.add_death_burst(enemy.x, enemy.y, enemy.enemy_type)
@@ -141,8 +141,8 @@ class Dash(Ability):
                 trail_y = int(old_y + dy * t)
                 game.anim_manager.add_ability_trail(trail_x, trail_y, c.COLOR_DASH_TRAIL_RGB, "dash")
 
-        game.anim_manager.add_particle_burst(old_x, old_y, c.COLOR_DASH_BURST_RGB, count=12, particle_type="star")
-        game.anim_manager.add_particle_burst(tx, ty, c.COLOR_DASH_BURST_RGB, count=12, particle_type="star")
+        game.anim_manager.add_particle_burst(old_x, old_y, c.COLOR_DASH_BURST_RGB, count=int(12 * c.PARTICLE_DENSITY), particle_type="star")
+        game.anim_manager.add_particle_burst(tx, ty, c.COLOR_DASH_BURST_RGB, count=int(12 * c.PARTICLE_DENSITY), particle_type="star")
 
         return (True, "Dashed!")
 
@@ -211,7 +211,7 @@ class FrostNova(Ability):
                 frozen_count += 1
 
                 # Create animations (using RGB tuples)
-                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FROST_BURST_RGB, count=12, particle_type="star")
+                game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FROST_BURST_RGB, count=int(12 * c.PARTICLE_DENSITY), particle_type="star")
                 game.anim_manager.add_flash_effect(enemy.x, enemy.y, c.COLOR_FROST_FLASH_RGB)
 
         return (True, f"Froze {frozen_count} enemies for {self.freeze_duration} turns!")
@@ -241,7 +241,7 @@ class Whirlwind(Ability):
                         game.anim_manager.add_trail(slash_x, slash_y, c.COLOR_WHIRLWIND_TRAIL_RGB, "fade")
                         # Add directional particles for spinning effect
                         game.anim_manager.add_directional_impact(slash_x, slash_y, user.x, user.y,
-                                                                c.COLOR_WHIRLWIND_BURST_RGB, count=6)
+                                                                c.COLOR_WHIRLWIND_BURST_RGB, count=int(6 * c.PARTICLE_DENSITY))
 
         # Attack all adjacent enemies
         hit_count = 0
@@ -331,9 +331,9 @@ class ShadowStep(Ability):
                 game.anim_manager.add_trail(trail_x, trail_y, c.COLOR_SHADOW_SMOKE_RGB, "fade")
 
         game.anim_manager.add_floating_text(target_enemy.x, target_enemy.y, str(damage), c.COLOR_SHADOW_TEXT_RGB, is_crit=True)
-        game.anim_manager.add_particle_burst(behind_x, behind_y, c.COLOR_SHADOW_BURST_RGB, count=20, particle_type="star")
+        game.anim_manager.add_particle_burst(behind_x, behind_y, c.COLOR_SHADOW_BURST_RGB, count=int(20 * c.PARTICLE_DENSITY), particle_type="star")
         game.anim_manager.add_directional_impact(target_enemy.x, target_enemy.y, behind_x, behind_y,
-                                                c.COLOR_SHADOW_EXPLOSION_RGB, count=15, is_crit=True)
+                                                c.COLOR_SHADOW_EXPLOSION_RGB, count=int(15 * c.PARTICLE_DENSITY), is_crit=True)
 
         if target_enemy.hp <= 0:
             game.anim_manager.add_death_burst(target_enemy.x, target_enemy.y, target_enemy.enemy_type)

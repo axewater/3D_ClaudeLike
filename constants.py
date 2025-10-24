@@ -440,6 +440,8 @@ EXPLORED_TILE_ALPHA = 0.3  # Darkness factor for explored tiles (30% brightness)
 
 # 3D performance settings
 MAX_PARTICLES = 100  # Maximum active particles (performance limit)
+PARTICLE_DENSITY = 0.5  # Particle spawn multiplier (0.5 = 50%, 0.75 = 75%, 1.0 = 100% density)
+                        # Lower values reduce blood/impact particles for better performance
 UI_UPDATE_THROTTLE = 0.05  # Minimum seconds between UI updates (20 FPS update rate)
 ENABLE_AMBIENT_PARTICLES_3D = False  # Disable fog/cloud particles in 3D mode (can't see outside dungeon in first-person)
 

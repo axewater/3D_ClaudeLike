@@ -398,7 +398,7 @@ class Game:
         self.anim_manager.add_directional_impact(
             enemy.x, enemy.y,
             self.player.x, self.player.y,
-            impact_color, count=20 if (was_backstab or is_crit) else 12, is_crit=(is_crit or was_backstab)
+            impact_color, count=int((20 if (was_backstab or is_crit) else 12) * c.PARTICLE_DENSITY), is_crit=(is_crit or was_backstab)
         )
 
         self.anim_manager.add_floating_text(enemy.x, enemy.y, str(damage),
@@ -476,7 +476,7 @@ class Game:
                 self.anim_manager.add_directional_impact(
                     self.player.x, self.player.y,
                     enemy.x, enemy.y,
-                    c.COLOR_DEATH_RGB, count=10
+                    c.COLOR_DEATH_RGB, count=int(10 * c.PARTICLE_DENSITY)
                 )
 
                 self.anim_manager.add_floating_text(self.player.x, self.player.y, str(damage), c.COLOR_DEATH_RGB)
@@ -520,7 +520,7 @@ class Game:
                     self.audio_manager.play_coin()
                     # Add particle burst for treasure
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        c.COLOR_GOLD_SPARKLE_RGB, count=12, particle_type="star")
+                                                        c.COLOR_GOLD_SPARKLE_RGB, count=int(12 * c.PARTICLE_DENSITY), particle_type="star")
                 else:
                     # Use rarity-based event type for loot
                     if item.rarity in [c.RARITY_LEGENDARY, c.RARITY_EPIC]:
@@ -531,7 +531,7 @@ class Game:
                         msg_type = "loot"
 
                     self.anim_manager.add_particle_burst(self.player.x, self.player.y,
-                                                        c.COLOR_GOLD_SPARKLE_RGB, count=6, particle_type="star")
+                                                        c.COLOR_GOLD_SPARKLE_RGB, count=int(6 * c.PARTICLE_DENSITY), particle_type="star")
                     # Play item pickup sound based on rarity
                     self.audio_manager.play_item_pickup(item.rarity)
                     # Play equip sound

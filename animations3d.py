@@ -824,19 +824,19 @@ class AnimationManager3D:
         # Different colors/patterns per enemy type
         if enemy_type == c.ENEMY_STARTLE:
             color = (0.4, 0.86, 0.31)
-            count = 20
+            count = int(20 * c.PARTICLE_DENSITY)
             particle_type = "circle"
         elif enemy_type == c.ENEMY_SKELETON:
             color = (0.86, 0.86, 0.86)
-            count = 25
+            count = int(25 * c.PARTICLE_DENSITY)
             particle_type = "square"
         elif enemy_type == c.ENEMY_DRAGON:
             color = (1.0, 0.59, 0.0)
-            count = 40
+            count = int(40 * c.PARTICLE_DENSITY)
             particle_type = "star"
         else:
             color = (0.8, 0.8, 0.8)
-            count = 15
+            count = int(15 * c.PARTICLE_DENSITY)
             particle_type = "circle"
 
         # Create burst
@@ -862,7 +862,7 @@ class AnimationManager3D:
     def add_heal_sparkles(self, grid_x: int, grid_y: int):
         """Create healing sparkle effect"""
         heal_color = (0.4, 1.0, 0.4)
-        self.add_particle_burst(grid_x, grid_y, heal_color, count=8, particle_type="star")
+        self.add_particle_burst(grid_x, grid_y, heal_color, count=int(8 * c.PARTICLE_DENSITY), particle_type="star")
 
     def add_screen_shake(self, intensity: float = 5.0, duration: float = 0.2):
         """Add screen shake effect"""
