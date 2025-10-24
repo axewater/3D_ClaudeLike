@@ -5,6 +5,8 @@ StarfishCreature model - radial symmetry creature with articulated arms.
 from ursina import Entity, Vec3, color, destroy
 import math
 import random
+from .tentacle import Tentacle
+from .eye import Eye
 from ..core.curves import bezier_curve
 from ..core.constants import GOLDEN_RATIO, GOLDEN_ANGLE
 from ..shaders import create_toon_shader
@@ -314,6 +316,13 @@ class StarfishCreature:
         self.is_attacking = False
         self.attack_start_time = 0
 
+        # Eye stalk (tentacle with eye at tip)
+        self.eye_stalk = None
+        self.eye_stalk_eye = None
+        self.eye_stalk_segments = 12
+        self.eye_stalk_thickness = 0.15
+        self.eye_size = 0.12
+
         # Create toon shader (shared across all parts)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
@@ -374,6 +383,80 @@ class StarfishCreature:
             )
 
             self.arms.append(arm)
+
+        # Create eye stalk (upward tentacle with eye)
+        self._create_eye_stalk()
+
+    def _create_eye_stalk(self):
+        """Create upward-pointing tentacle with eye at tip from center of body."""
+        # Destroy existing eye stalk if it exists
+        if self.eye_stalk is not None:
+            self.eye_stalk.destroy()
+            self.eye_stalk = None
+        if self.eye_stalk_eye is not None:
+            self.eye_stalk_eye.destroy()
+            self.eye_stalk_eye = None
+
+        # Anchor point: exact center of central body
+        central_position = Vec3(0, 0, 0)
+        anchor_point = central_position
+
+        # Target point: curve upward then forward (periscope/question-mark shape)
+        # Eye stalk height based on central body size (about 1.5x body radius)
+        stalk_height = self.central_body_size * 1.5
+        forward_bend = stalk_height * 0.5  # Bend forward 50% of height
+        # Forward is negative Z direction
+        target_point = central_position + Vec3(0, stalk_height, -forward_bend)
+
+        # Calculate alternate/complementary color from main body
+        # Use color inversion with slight adjustment for visual appeal
+        r, g, b = self.starfish_color
+        stalk_color = (
+            1.0 - r * 0.7,  # Partial inversion
+            1.0 - g * 0.7,
+            1.0 - b * 0.7
+        )
+
+        # Create tentacle using Fourier algorithm for organic sway
+        # Use fewer waves and lower amplitude for subtle "looking around" motion
+        algorithm_params = {
+            'num_waves': 2,
+            'amplitude': 0.1
+        }
+
+        self.eye_stalk = Tentacle(
+            parent=self.root,
+            anchor=anchor_point,
+            target=target_point,
+            segments=self.eye_stalk_segments,
+            algorithm='fourier',
+            color_rgb=stalk_color,
+            algorithm_params=algorithm_params,
+            thickness_base=self.eye_stalk_thickness,
+            taper_factor=0.7,  # Strong taper toward tip
+            branch_depth=0,  # No branches
+            branch_count=0,
+            current_depth=0,
+            toon_shader=self.toon_shader
+        )
+
+        # Create eye at tentacle tip
+        if len(self.eye_stalk.segments) > 0:
+            tip_segment = self.eye_stalk.segments[-1]
+            tip_position = tip_segment.position
+
+            # Eye colors: use lighter/contrasting colors
+            eyeball_color = (0.95, 0.95, 0.85)  # Off-white
+            pupil_color = (0.1, 0.05, 0.15)  # Dark purple
+
+            self.eye_stalk_eye = Eye(
+                position=tip_position,
+                size=self.eye_size,
+                eyeball_color=eyeball_color,
+                pupil_color=pupil_color,
+                parent=self.root,
+                toon_shader=self.toon_shader
+            )
 
     def rebuild(self, num_arms, arm_segments, central_body_size, arm_base_thickness,
                 starfish_color, curl_factor, anim_speed, pulse_amount):
@@ -452,10 +535,46 @@ class StarfishCreature:
                 camera_position=camera_position
             )
 
+        # Animate eye stalk tentacle
+        if self.eye_stalk is not None:
+            # Animate tentacle with idle motion (no attack animation for eye stalk)
+            self.eye_stalk.update_animation(
+                time=time,
+                anim_speed=self.anim_speed * 0.8,  # Slightly slower for subtle motion
+                wave_amplitude=0.08  # Gentle sway
+            )
+
+            # Update eye position to follow tentacle tip (like medusa pattern)
+            if self.eye_stalk_eye is not None and len(self.eye_stalk.segments) > 0:
+                # Get tip segment position
+                tip_segment = self.eye_stalk.segments[-1]
+                tip_position = tip_segment.position
+
+                # Eye always looks forward (negative Z direction)
+                forward_direction = Vec3(0, 0, -1)
+
+                # Update eyeball position to tip
+                self.eye_stalk_eye.eyeball.position = tip_position
+
+                # Calculate pupil offset in forward direction
+                pupil_offset = forward_direction * (self.eye_stalk_eye.base_size * 0.5)
+                self.eye_stalk_eye.pupil.position = tip_position + pupil_offset
+
+                # Update base positions for animation
+                self.eye_stalk_eye.eyeball_base_position = tip_position
+                self.eye_stalk_eye.pupil_base_position = tip_position + pupil_offset
+
+                # Animate eye (blinking)
+                self.eye_stalk_eye.update_animation(time)
+
     def destroy(self):
         """Cleanup all entities."""
         for arm in self.arms:
             arm.destroy()
         if hasattr(self, 'central_body'):
             destroy(self.central_body)
+        if self.eye_stalk is not None:
+            self.eye_stalk.destroy()
+        if self.eye_stalk_eye is not None:
+            self.eye_stalk_eye.destroy()
         destroy(self.root)
