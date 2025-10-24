@@ -391,6 +391,9 @@ class ClassSelection3D(Entity):
         """Start game with selected class"""
         self.audio.play_ui_select()
 
+        # Play voice line for selected class
+        self.audio.play_voice(self.current_class, volume=1.0)
+
         print(f"[ClassSelection] Starting game with {self.current_class}")
 
         # Notify screen manager

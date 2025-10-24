@@ -7,6 +7,7 @@ import numpy as np
 import random
 from typing import Dict, Optional
 from logger import get_logger
+import voice_cache
 
 log = get_logger()
 
@@ -131,6 +132,9 @@ class AudioManager:
         # Sound cache
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
 
+        # Voice cache (TTS voice lines)
+        self.voices: Dict[str, pygame.mixer.Sound] = {}
+
         # Music state
         self.current_music_intensity = 0.0  # 0.0 = calm, 1.0 = combat
         self.music_ducking = 1.0  # Multiplier for music volume
@@ -142,6 +146,9 @@ class AudioManager:
 
         # Generate all sounds
         self._generate_sounds()
+
+        # Load voice cache
+        self._load_voices()
 
     def _generate_sounds(self):
         """Generate all procedural game sounds"""
@@ -469,6 +476,18 @@ class AudioManager:
 
         print(f"✓ Generated {len(self.sounds)} procedural sound effects")
 
+    def _load_voices(self):
+        """Load voice lines from cache (generates if needed)"""
+        try:
+            self.voices = voice_cache.ensure_voice_cache()
+            if self.voices:
+                print(f"✓ Loaded {len(self.voices)} voice lines")
+            else:
+                print("⚠ No voice lines loaded (pyttsx3 may not be available)")
+        except Exception as e:
+            print(f"⚠ Failed to load voice cache: {e}")
+            self.voices = {}
+
     def _generate_ambient_music(self):
         """Generate ambient background music loop with melody and rhythm"""
         synth = SoundSynthesizer()
@@ -705,6 +724,24 @@ class AudioManager:
     def play_letter_impact(self):
         """Play letter landing impact sound"""
         self.play_sound('letter_impact', volume=0.6, pitch_variation=0.15)
+
+    def play_voice(self, voice_key: str, volume: float = 1.0):
+        """
+        Play a voice line (TTS speech)
+
+        Args:
+            voice_key: Key for the voice line (e.g., 'warrior', 'mage', 'rogue', 'ranger')
+            volume: Volume multiplier (0.0 to 1.0)
+        """
+        if not self.enabled or voice_key not in self.voices:
+            return
+
+        voice = self.voices[voice_key]
+        final_volume = volume * self.sfx_volume
+
+        # Set volume and play
+        voice.set_volume(final_volume)
+        voice.play()
 
     def start_background_music(self):
         """Start playing background music"""
