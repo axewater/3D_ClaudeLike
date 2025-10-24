@@ -447,7 +447,7 @@ class StarfishCreature:
 
             # Eye colors: use lighter/contrasting colors
             eyeball_color = (0.95, 0.95, 0.85)  # Off-white
-            pupil_color = (0.1, 0.05, 0.15)  # Dark purple
+            pupil_color = (0.0, 0.0, 0.0)  # Black
 
             self.eye_stalk_eye = Eye(
                 position=tip_position,
