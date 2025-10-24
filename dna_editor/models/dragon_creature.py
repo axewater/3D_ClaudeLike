@@ -1118,10 +1118,6 @@ class DragonCreature:
         self.is_attacking = True
         self.attack_start_time = 0
 
-    def start_attack_2(self, camera_position):
-        """Start attack 2 animation (same as attack 1 for dragon)."""
-        self.start_attack(camera_position)
-
     def update_animation(self, time, camera_position=None):
         """
         Update dragon animation with weaving/bobbing motion.

@@ -72,16 +72,10 @@ class TentacleCreature:
         self.eyeball_color = eyeball_color
         self.pupil_color = pupil_color
 
-        # Attack animation state (Attack 1 - All tentacles)
+        # Attack animation state
         self.is_attacking = False
         self.attack_start_time = 0
         self.attack_camera_position = None
-
-        # Attack 2 animation state (Single tentacle slash)
-        self.is_attacking_2 = False
-        self.attack_2_start_time = 0
-        self.attack_2_camera_position = None
-        self.attacking_tentacle_index = -1  # Which tentacle is slashing
 
         # Exploration animation state (coordinated tentacle reaching)
         self.exploration_target = Vec3(0, -2, 0)  # Current shared goal position
@@ -258,7 +252,7 @@ class TentacleCreature:
 
     def start_attack(self, camera_position):
         """
-        Start attack animation (Attack 1 - all tentacles).
+        Start attack animation.
 
         Args:
             camera_position: Vec3 position of camera (attack target)
@@ -267,34 +261,17 @@ class TentacleCreature:
         self.attack_start_time = 0  # Will be set on first update
         self.attack_camera_position = camera_position
 
-    def start_attack_2(self, camera_position):
-        """
-        Start attack 2 animation (single tentacle slash - more subtle).
-
-        Args:
-            camera_position: Vec3 position of camera (attack target)
-        """
-        import random
-        self.is_attacking_2 = True
-        self.attack_2_start_time = 0  # Will be set on first update
-        self.attack_2_camera_position = camera_position
-        # Randomly select one tentacle to attack
-        if len(self.tentacles) > 0:
-            self.attacking_tentacle_index = random.randint(0, len(self.tentacles) - 1)
-        else:
-            self.attacking_tentacle_index = -1
-
     def update_animation(self, time, camera_position=None):
         """Update creature animations."""
         # Import attack and exploration constants
         from ..core.constants import (
-            ATTACK_DURATION, ATTACK_2_DURATION,
+            ATTACK_DURATION,
             EXPLORATION_REACH_DURATION, EXPLORATION_RETURN_DURATION, EXPLORATION_IDLE_GAP,
             EXPLORATION_TENTACLE_RATIO, EXPLORATION_TARGET_MIN_RADIUS, EXPLORATION_TARGET_MAX_RADIUS
         )
         import random
 
-        # Handle Attack 1 state (all tentacles)
+        # Handle attack state
         if self.is_attacking:
             # Initialize attack start time on first frame
             if self.attack_start_time == 0:
@@ -307,23 +284,9 @@ class TentacleCreature:
                 self.attack_start_time = 0
                 self.attack_camera_position = None
 
-        # Handle Attack 2 state (single tentacle slash)
-        if self.is_attacking_2:
-            # Initialize attack 2 start time on first frame
-            if self.attack_2_start_time == 0:
-                self.attack_2_start_time = time
-
-            # Check if attack 2 is complete
-            attack_2_elapsed = time - self.attack_2_start_time
-            if attack_2_elapsed >= ATTACK_2_DURATION:
-                self.is_attacking_2 = False
-                self.attack_2_start_time = 0
-                self.attack_2_camera_position = None
-                self.attacking_tentacle_index = -1
-
-        # Handle exploration state (only when not attacking with either attack type)
+        # Handle exploration state (only when not attacking)
         reach_progress = 0.0
-        if not self.is_attacking and not self.is_attacking_2:
+        if not self.is_attacking:
             # Initialize exploration phase start time on first frame
             if self.exploration_phase_start_time == 0:
                 self.exploration_phase_start_time = time
@@ -398,22 +361,12 @@ class TentacleCreature:
             is_reaching = idx in self.reaching_tentacle_indices
 
             if self.is_attacking:
-                # Attack 1: All tentacles attack together
+                # All tentacles attack together
                 tentacle.update_animation(
                     time, self.anim_speed, self.wave_amplitude,
                     is_attacking=True,
                     attack_start_time=self.attack_start_time,
                     camera_position=self.attack_camera_position or camera_position
-                )
-            elif self.is_attacking_2:
-                # Attack 2: Only selected tentacle attacks
-                is_selected = (idx == self.attacking_tentacle_index)
-                tentacle.update_animation(
-                    time, self.anim_speed, self.wave_amplitude,
-                    is_attacking_2=True,
-                    is_selected_for_attack_2=is_selected,
-                    attack_2_start_time=self.attack_2_start_time,
-                    camera_position=self.attack_2_camera_position or camera_position
                 )
             else:
                 # Normal idle animation (with optional exploration reaching)

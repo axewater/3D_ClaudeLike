@@ -219,7 +219,6 @@ class Tentacle:
 
     def update_animation(self, time, anim_speed=2.0, wave_amplitude=0.05,
                          is_attacking=False, attack_start_time=0, camera_position=None,
-                         is_attacking_2=False, is_selected_for_attack_2=False, attack_2_start_time=0,
                          is_reaching=False, reach_target=None, reach_state='idle', reach_progress=0.0):
         """
         Animate tentacle with wave motion, attack animation, or exploration reaching.
@@ -228,27 +227,17 @@ class Tentacle:
             time: Current animation time
             anim_speed: Speed of wave motion
             wave_amplitude: Base amplitude of wave motion
-            is_attacking: Whether tentacle is in attack mode (Attack 1 - all tentacles)
+            is_attacking: Whether tentacle is in attack mode
             attack_start_time: Time when attack started
-            is_attacking_2: Whether creature is in Attack 2 mode (single tentacle)
-            is_selected_for_attack_2: Whether THIS tentacle is the attacking one for Attack 2
-            attack_2_start_time: Time when Attack 2 started
             camera_position: Camera position for targeting (Vec3)
             is_reaching: Whether tentacle is reaching for exploration target
             reach_target: Vec3 exploration target position
             reach_state: 'idle', 'reaching', or 'returning'
             reach_progress: Progress through current reach phase (0-1)
         """
-        # If Attack 1, use whip attack animation
+        # If attacking, use whip attack animation
         if is_attacking and camera_position is not None:
             self._apply_attack_animation(time, attack_start_time, camera_position, anim_speed, wave_amplitude)
-            # Apply constraints to keep tentacle anchored and segments connected
-            self._apply_segment_constraints()
-            return
-
-        # If Attack 2, only the selected tentacle slashes (others idle)
-        if is_attacking_2 and is_selected_for_attack_2 and camera_position is not None:
-            self._apply_single_tentacle_slash(time, attack_2_start_time, camera_position, anim_speed, wave_amplitude)
             # Apply constraints to keep tentacle anchored and segments connected
             self._apply_segment_constraints()
             return
@@ -399,7 +388,6 @@ class Tentacle:
             child.update_animation(
                 time, anim_speed, wave_amplitude,
                 is_attacking, attack_start_time, camera_position,
-                is_attacking_2, is_selected_for_attack_2, attack_2_start_time,
                 is_reaching, reach_target, reach_state, reach_progress
             )
 
@@ -576,179 +564,7 @@ class Tentacle:
                 time, anim_speed, wave_amplitude,
                 is_attacking=True,
                 attack_start_time=attack_start_time,
-                camera_position=camera_position,
-                is_attacking_2=False,
-                is_selected_for_attack_2=False,
-                attack_2_start_time=0
-            )
-
-    def _apply_single_tentacle_slash(self, time, attack_start_time, camera_position, anim_speed, wave_amplitude):
-        """
-        Apply single tentacle slash animation (Attack 2 - more subtle).
-
-        Simpler than whip attack:
-        - Only 3 phases (wind-up, slash, return)
-        - Direct slash motion (no exponential acceleration)
-        - Minimal curl (no helical spiral)
-        - No distance-based stretching
-        - Shorter duration (0.6s vs 1.2s)
-        """
-        from ..core.constants import (
-            ATTACK_2_DURATION, ATTACK_2_WIND_UP_END, ATTACK_2_SLASH_END, ATTACK_2_RETURN_END,
-            ATTACK_2_SPEED, ATTACK_2_AMPLITUDE, ATTACK_2_CURL_INTENSITY,
-            WIND_UP_DISTANCE
-        )
-
-        # Scale attack constants with creature's animation parameters
-        scaled_slash_speed = ATTACK_2_SPEED * (anim_speed / 2.0)
-        scaled_slash_amplitude = ATTACK_2_AMPLITUDE * (wave_amplitude / 0.05)
-
-        # Calculate attack elapsed time (normalized 0-1)
-        attack_elapsed = time - attack_start_time
-        attack_t = min(attack_elapsed / ATTACK_2_DURATION, 1.0)
-
-        # Calculate direction and distance from anchor to camera
-        anchor_to_camera = camera_position - self.anchor
-        distance_to_camera = anchor_to_camera.length()
-        direction_to_camera = anchor_to_camera.normalized() if distance_to_camera > 0.001 else Vec3(0, 0, -1)
-
-        # Calculate upward direction for wind-up (lift tentacle up like raising an arm)
-        up_direction = Vec3(0, 1, 0)
-
-        # Determine attack phase and calculate phase-specific motion
-        if attack_t < ATTACK_2_WIND_UP_END / ATTACK_2_DURATION:
-            # Phase 1: Wind-up - LIFT UP dramatically (like raising arm to strike)
-            phase_t = attack_t / (ATTACK_2_WIND_UP_END / ATTACK_2_DURATION)
-            # Smooth ease-in with extra snap at end
-            ease_t = phase_t * phase_t * (3 - 2 * phase_t)
-
-            # Pull back slightly AND lift up significantly
-            pullback = -direction_to_camera * WIND_UP_DISTANCE * ease_t
-            lift_up = up_direction * 1.2 * ease_t  # Lift 1.2 units upward
-            base_offset = pullback + lift_up
-            slash_intensity = 0.2
-
-        elif attack_t < ATTACK_2_SLASH_END / ATTACK_2_DURATION:
-            # Phase 2: SLASH - Really lash out toward camera aggressively
-            phase_t = (attack_t - ATTACK_2_WIND_UP_END / ATTACK_2_DURATION) / ((ATTACK_2_SLASH_END - ATTACK_2_WIND_UP_END) / ATTACK_2_DURATION)
-            # Explosive ease-out (fast start, slow end)
-            ease_t = 1.0 - (1.0 - phase_t) ** 3
-
-            # Much more aggressive slash distance
-            slash_distance = 2.0  # Increased from 1.2 to 2.0
-
-            # Start position: up and back
-            wind_up_offset = -direction_to_camera * WIND_UP_DISTANCE + up_direction * 1.2
-
-            # End position: far forward toward camera and down (slashing arc)
-            slash_offset = direction_to_camera * slash_distance + up_direction * (-0.3 * ease_t)  # Arc downward as it slashes
-
-            base_offset = wind_up_offset + slash_offset * ease_t
-            slash_intensity = 2.5 * ease_t  # Increased from 1.5 to 2.5
-
-        else:
-            # Phase 3: Return (quick return to idle)
-            phase_t = (attack_t - ATTACK_2_SLASH_END / ATTACK_2_DURATION) / ((ATTACK_2_RETURN_END - ATTACK_2_SLASH_END) / ATTACK_2_DURATION)
-            # Fast ease-out
-            ease_t = 1.0 - (1.0 - phase_t) ** 2
-            slash_distance = 2.0
-            # Return from full extension
-            remaining_offset = direction_to_camera * slash_distance - direction_to_camera * WIND_UP_DISTANCE + up_direction * (-0.3)
-            base_offset = remaining_offset * (1.0 - ease_t)
-            slash_intensity = 0.0
-
-        # Create perpendicular vectors for slash motion
-        up = Vec3(0, 1, 0)
-        if abs(direction_to_camera.y) > 0.99:
-            up = Vec3(1, 0, 0)
-        right = direction_to_camera.cross(up).normalized()
-        up = right.cross(direction_to_camera).normalized()
-
-        # Animate segments with simple wave and minimal curl
-        for segment in self.segments:
-            i = segment.segment_index
-            n = segment.total_segments
-
-            # Normalized segment position (0 at base, 1 at tip)
-            segment_t = i / max(n, 1)
-
-            # Simple traveling wave (no exponential growth)
-            wave_phase = scaled_slash_speed * attack_elapsed - (i * 0.5)
-            amplitude = scaled_slash_amplitude * slash_intensity * segment_t  # Linear increase toward tip
-            slash_offset_x = amplitude * math.sin(wave_phase)
-            slash_offset_y = amplitude * math.cos(wave_phase * 1.2)
-
-            # Minimal curl (much less than whip attack)
-            curl_radius = ATTACK_2_CURL_INTENSITY * segment_t
-            curl_angle = scaled_slash_speed * 0.5 * attack_elapsed + segment_t * math.pi
-            curl_offset_x = curl_radius * math.cos(curl_angle) * slash_intensity
-            curl_offset_y = curl_radius * math.sin(curl_angle) * slash_intensity
-
-            # Combine all offsets
-            perp_scale = math.sqrt(segment_t) if segment_t > 0 else 0
-            total_offset = (
-                base_offset * segment_t +  # Base slash motion
-                right * (slash_offset_x + curl_offset_x) * perp_scale +
-                up * (slash_offset_y + curl_offset_y) * perp_scale
-            )
-
-            # Apply to segment with blend from idle animation
-            idle_offset_x = math.sin(time * anim_speed + i * 0.3) * wave_amplitude * (i / n)
-            idle_offset_y = math.cos(time * anim_speed * 1.3 + i * 0.3) * wave_amplitude * (i / n)
-            idle_offset = Vec3(idle_offset_x, idle_offset_y, 0)
-
-            # Blend attack and idle (attack dominates during slash, blend back during return)
-            blend_factor = 1.0 if attack_t < 0.7 else (1.0 - (attack_t - 0.7) / 0.3)
-            final_offset = total_offset * blend_factor + idle_offset * (1.0 - blend_factor)
-
-            segment.position = segment.base_position + final_offset
-
-        # Animate shadow spheres (same motion as segments)
-        for shadow in self.shadow_spheres:
-            i = shadow.segment_index
-            n = len(self.segments)
-            segment_t = i / max(n, 1)
-
-            # Apply same wave
-            wave_phase = scaled_slash_speed * attack_elapsed - (i * 0.5)
-            amplitude = scaled_slash_amplitude * slash_intensity * segment_t
-            slash_offset_x = amplitude * math.sin(wave_phase)
-            slash_offset_y = amplitude * math.cos(wave_phase * 1.2)
-
-            # Apply same curl
-            curl_radius = ATTACK_2_CURL_INTENSITY * segment_t
-            curl_angle = scaled_slash_speed * 0.5 * attack_elapsed + segment_t * math.pi
-            curl_offset_x = curl_radius * math.cos(curl_angle) * slash_intensity
-            curl_offset_y = curl_radius * math.sin(curl_angle) * slash_intensity
-
-            # Combine offsets
-            perp_scale = math.sqrt(segment_t) if segment_t > 0 else 0
-            total_offset = (
-                base_offset * segment_t +
-                right * (slash_offset_x + curl_offset_x) * perp_scale +
-                up * (slash_offset_y + curl_offset_y) * perp_scale
-            )
-
-            # Blend with idle
-            idle_offset_x = math.sin(time * anim_speed + i * 0.3) * wave_amplitude * (i / n)
-            idle_offset_y = math.cos(time * anim_speed * 1.3 + i * 0.3) * wave_amplitude * (i / n)
-            idle_offset = Vec3(idle_offset_x, idle_offset_y, 0)
-
-            blend_factor = 1.0 if attack_t < 0.7 else (1.0 - (attack_t - 0.7) / 0.3)
-            final_offset = total_offset * blend_factor + idle_offset * (1.0 - blend_factor)
-
-            shadow.position = shadow.base_position + final_offset
-
-        # Animate child branches (pass attack 2 state through recursively)
-        for child in self.children:
-            child.update_animation(
-                time, anim_speed, wave_amplitude,
-                is_attacking=False,
-                attack_start_time=0,
-                camera_position=camera_position,
-                is_attacking_2=True,
-                is_selected_for_attack_2=True,
-                attack_2_start_time=attack_start_time
+                camera_position=camera_position
             )
 
     def _apply_segment_constraints(self):

@@ -431,16 +431,6 @@ class BlobCreature:
         self.is_attacking = True
         self.attack_start_time = 0  # Will be set on first update
 
-    def start_attack_2(self, camera_position):
-        """
-        Start attack 2 animation (same as attack 1 for blob).
-
-        Args:
-            camera_position: Vec3 position of camera
-        """
-        # Blob only has one attack type, so both attacks do the same thing
-        self.start_attack(camera_position)
-
     def update_animation(self, time, camera_position=None):
         """
         Update blob animation with cascade attack.

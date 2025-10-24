@@ -343,15 +343,6 @@ SEGMENT_STRETCH_MAX = 1.8  # Maximum distance multiplier (180% of original spaci
 SEGMENT_COMPRESS_MIN = 0.4  # Minimum distance multiplier (40% of original spacing)
 CONSTRAINT_ITERATIONS = 2  # Number of constraint solver passes (more = stiffer)
 
-# Attack 2 Animation (Single Tentacle Slash - More Subtle)
-ATTACK_2_DURATION = 0.6  # Total duration (half of Attack 1 - faster)
-ATTACK_2_WIND_UP_END = 0.1  # Brief wind-up phase
-ATTACK_2_SLASH_END = 0.35  # Slash phase ends
-ATTACK_2_RETURN_END = 0.6  # Return phase ends
-ATTACK_2_AMPLITUDE = 0.4  # Wave amplitude (less than WHIP_AMPLITUDE)
-ATTACK_2_SPEED = 12.0  # Wave speed (faster but simpler)
-ATTACK_2_CURL_INTENSITY = 0.15  # Minimal curl (less than CURL_INTENSITY)
-
 # Exploration Animation (Coordinated Tentacle Reaching)
 EXPLORATION_REACH_DURATION = 4.0  # Seconds to reach target (smooth ease-out)
 EXPLORATION_RETURN_DURATION = 0.5  # Seconds to spring back (fast return)

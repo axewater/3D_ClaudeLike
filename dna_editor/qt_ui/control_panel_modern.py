@@ -26,7 +26,6 @@ class ModernControlPanel(QWidget):
     redo_requested = pyqtSignal()
     export_requested = pyqtSignal()
     attack_requested = pyqtSignal()
-    attack_2_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -338,8 +337,8 @@ class ModernControlPanel(QWidget):
 
         layout.addStretch()
 
-        # Attack buttons
-        self.attack_btn = QPushButton("⚡ ATTACK 1 ⚡")
+        # Attack button
+        self.attack_btn = QPushButton("⚡ ATTACK ⚡")
         self.attack_btn.setMinimumHeight(55)
         self.attack_btn.setStyleSheet("""
             QPushButton {
@@ -356,24 +355,6 @@ class ModernControlPanel(QWidget):
         """)
         self.attack_btn.clicked.connect(self.attack_requested.emit)
         layout.addWidget(self.attack_btn)
-
-        self.attack_2_btn = QPushButton("⚔ ATTACK 2 ⚔")
-        self.attack_2_btn.setMinimumHeight(55)
-        self.attack_2_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                           stop:0 #ea580c, stop:1 #f59e0b);
-                border: 2px solid #fb923c;
-                font-weight: bold;
-                font-size: 14pt;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                           stop:0 #f97316, stop:1 #fbbf24);
-            }
-        """)
-        self.attack_2_btn.clicked.connect(self.attack_2_requested.emit)
-        layout.addWidget(self.attack_2_btn)
 
         # Undo/Redo/Export
         self.undo_btn = QPushButton("Undo")

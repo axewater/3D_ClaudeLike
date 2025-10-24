@@ -207,15 +207,6 @@ class MedusaCreature:
         self.attack_start_time = 0  # Will be set on first update
         self.attack_camera_position = camera_position
 
-    def start_attack_2(self, camera_position):
-        """
-        Start attack 2 animation (same as attack 1 for medusa).
-
-        Args:
-            camera_position: Vec3 position of camera (attack target)
-        """
-        self.start_attack(camera_position)
-
     def update_animation(self, time, camera_position=None):
         """Update creature animations."""
         # Handle attack state

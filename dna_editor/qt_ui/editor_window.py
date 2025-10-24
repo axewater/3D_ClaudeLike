@@ -235,7 +235,6 @@ class EditorWindow(QMainWindow):
         self.control_panel.redo_requested.connect(self._on_redo)
         self.control_panel.export_requested.connect(self._on_export)
         self.control_panel.attack_requested.connect(self._on_attack)
-        self.control_panel.attack_2_requested.connect(self._on_attack_2)
 
         # Wrap control panel in scroll area
         scroll_area = QScrollArea()
@@ -512,12 +511,8 @@ class EditorWindow(QMainWindow):
         self.redo_action.setEnabled(can_redo)
 
     def _on_attack(self):
-        """Handle Attack 1 button press (all tentacles whip attack)."""
+        """Handle Attack button press."""
         self.renderer.trigger_attack()
-
-    def _on_attack_2(self):
-        """Handle Attack 2 button press (single tentacle slash)."""
-        self.renderer.trigger_attack_2()
 
     def _on_save_to_library(self):
         """Handle save to library - prompts for name and saves creation."""
