@@ -539,8 +539,6 @@ class UrsinaRenderer:
                     # Check if physics is enabled
                     if hasattr(self.creature, 'physics_enabled') and self.creature.physics_enabled:
                         # Run physics simulation
-                        from ..core.constants import DROP_DURATION
-
                         # Log first frame and occasional updates
                         if not hasattr(self, '_physics_frame_count'):
                             self._physics_frame_count = 0
