@@ -74,7 +74,7 @@ def create_rogue_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         color=color.rgb(70/255, 70/255, 75/255),
         scale=(0.12, 0.45, 0.12),
         position=(-0.28, -0.05, 0),
-        rotation=(0, 0, -20)  # Slightly angled
+        rotation=(0, 0, 20)  # Tilted inward towards shoulder
     )
 
     # Left hand (gripping dagger)
@@ -111,7 +111,7 @@ def create_rogue_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         color=color.rgb(70/255, 70/255, 75/255),
         scale=(0.12, 0.45, 0.12),
         position=(0.28, -0.05, 0),
-        rotation=(0, 0, 20)  # Slightly angled
+        rotation=(0, 0, -20)  # Tilted inward towards shoulder
     )
 
     # Right hand (gripping dagger)
