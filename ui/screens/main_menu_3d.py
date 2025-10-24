@@ -46,8 +46,6 @@ class MainMenu3D(Entity):
         # Initially hidden
         self.enabled = False
 
-        print("✓ MainMenu3D initialized")
-
     def _init_stars(self):
         """Initialize star tunnel with 800-1000 stars in cylindrical distribution"""
         num_stars = random.randint(800, 1000)
@@ -152,7 +150,6 @@ class MainMenu3D(Entity):
     def _on_new_game(self):
         """Handle New Game button click"""
         self.audio.play_ui_select()
-        print("[MainMenu] New Game clicked")
 
         from ui.screens.screen_manager_3d import ScreenState
         self.screen_manager.change_screen(ScreenState.CLASS_SELECTION)
@@ -160,7 +157,6 @@ class MainMenu3D(Entity):
     def _on_how_to_play(self):
         """Handle How to Play button click"""
         self.audio.play_ui_select()
-        print("[MainMenu] How to Play clicked")
 
         if not self.showing_how_to_play:
             self._show_how_to_play_panel()
@@ -170,7 +166,6 @@ class MainMenu3D(Entity):
     def _show_how_to_play_panel(self):
         """Show How to Play information panel"""
         self.showing_how_to_play = True
-        print("[MainMenu] Showing How to Play panel")
 
         # Hide main menu buttons while panel is open
         for button in self.buttons:
@@ -305,14 +300,11 @@ class MainMenu3D(Entity):
             close_button
         ] + instruction_entities
 
-        print(f"[MainMenu] How to Play panel created with {len(self.how_to_play_panel)} entities")
-        print(f"[MainMenu] Title position: {title.position}")
 
     def _hide_how_to_play_panel(self):
         """Hide How to Play panel"""
         if self.how_to_play_panel:
             from ursina import destroy
-            print(f"[MainMenu] Hiding How to Play panel ({len(self.how_to_play_panel)} entities)")
             for entity in self.how_to_play_panel:
                 entity.enabled = False
                 # Destroy to prevent memory leak
@@ -332,7 +324,6 @@ class MainMenu3D(Entity):
     def _on_settings(self):
         """Handle Settings button click"""
         self.audio.play_ui_select()
-        print("[MainMenu] Settings clicked")
 
         from ui.screens.screen_manager_3d import ScreenState
         self.screen_manager.change_screen(ScreenState.SETTINGS)
@@ -340,7 +331,6 @@ class MainMenu3D(Entity):
     def _on_quit(self):
         """Handle Quit button click"""
         self.audio.play_ui_select()
-        print("[MainMenu] Quit clicked")
         self.screen_manager.quit_game()
 
     def update(self):
@@ -386,7 +376,6 @@ class MainMenu3D(Entity):
         camera.position = Vec3(0, 0, 0)
         camera.rotation = Vec3(0, 0, 0)
 
-        print("[MainMenu] Main menu shown")
 
     def hide(self):
         """Hide the main menu"""
@@ -400,4 +389,3 @@ class MainMenu3D(Entity):
         if self.showing_how_to_play:
             self._hide_how_to_play_panel()
 
-        print("[MainMenu] Main menu hidden")

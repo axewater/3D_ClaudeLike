@@ -53,7 +53,6 @@ def load_enemy_pack(pack_name: str = "my_first_pack.json") -> EnemyPack:
         pack_path = Path(__file__).parent.parent.parent / 'dna_editor' / 'library' / 'enemy_packs' / pack_name
         if pack_path.exists():
             pack = EnemyPack.load_from_file(pack_path)
-            print(f"✓ Loaded enemy pack: {pack.pack_name} from {pack_name}")
             return pack
         else:
             print(f"⚠ Enemy pack not found: {pack_path}")
@@ -484,13 +483,11 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
                                 creature_type = cached['creature_type']
                                 dna = cached['dna_parameters']
                                 use_pack = True
-                                print(f"✓ Loaded {enemy_type} level {dungeon_level} from cache ({creature_type})")
                         else:
                             # No cache - generate from pack parameters
                             pack_params = get_interpolated_parameters_for_level(mappings, dungeon_level)
                             dna = pack_params
                             use_pack = True
-                            print(f"✓ Using enemy pack for {enemy_type} level {dungeon_level} ({creature_type})")
 
                             # Save to cache for next time (if enabled)
                             if c.ENABLE_ENEMY_CACHE and c.PRELOAD_ENEMY_CACHE:
@@ -605,9 +602,6 @@ def create_dna_creature(enemy_type: str, position: Vec3, dungeon_level: int = 1)
 
             # Position creature so bottom aligns with floor
             creature.root.position = Vec3(position.x, position.y + y_offset, position.z)
-
-            complexity = dna.get('num_tentacles') or dna.get('num_segments') or dna.get('branch_depth') or '?'
-            print(f"✓ DNA: Created {creature_type} for {enemy_type} (lvl {dungeon_level}, complexity: {complexity})")
 
         return creature
 

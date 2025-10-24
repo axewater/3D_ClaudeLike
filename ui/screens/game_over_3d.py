@@ -52,8 +52,6 @@ class GameOverScreen3D(Entity):
         # Initially hidden
         self.enabled = False
 
-        print("✓ GameOverScreen3D initialized")
-
     def _create_ui(self):
         """Create UI overlay elements"""
         # Background tint (dark with red glow) - RGBA tuple

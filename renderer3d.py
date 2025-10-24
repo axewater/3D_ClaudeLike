@@ -441,7 +441,6 @@ class Renderer3D:
             enemy_types: List of enemy types to preload. If None, preloads all types that spawn on current level.
         """
         if not c.ENABLE_ENEMY_POOL:
-            log.info("Enemy pool disabled in constants", "renderer")
             return
 
         # Determine which enemy types to preload
@@ -468,10 +467,7 @@ class Renderer3D:
                 enemy_types.append(c.ENEMY_DRAGON)
 
         if not enemy_types:
-            log.info("No enemy types to preload for current level", "renderer")
             return
-
-        log.info(f"Preloading enemy pool for level {getattr(self.game, 'current_level', 1)}: {enemy_types}", "renderer")
 
         dungeon_level = getattr(self.game, 'current_level', 1)
 
@@ -522,10 +518,8 @@ class Renderer3D:
                     log.error(f"Failed to preload {enemy_type} #{i}: {e}", "renderer")
 
             self.enemy_model_pool[enemy_type] = pool
-            log.info(f"Preloaded {len(pool)} instances of {enemy_type}", "renderer")
 
         self.pool_initialized = True
-        log.info(f"Enemy pool ready with {sum(len(p) for p in self.enemy_model_pool.values())} total models", "renderer")
 
     def get_from_pool(self, enemy_type: str, position: Vec3, dungeon_level: int):
         """
@@ -651,7 +645,6 @@ class Renderer3D:
 
         self.enemy_model_pool.clear()
         self.pool_initialized = False
-        log.info("Enemy pool cleared", "renderer")
 
     def render_entities(self):
         """

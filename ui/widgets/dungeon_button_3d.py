@@ -70,7 +70,6 @@ class DungeonButton(Button):
         self.press_offset = 0.0
         self.was_hovered = False
 
-        print(f"[DungeonButton] Created '{text}' - bg color: {self.color_bg}, text color: {self.color_text}")
 
     def update(self):
         """Update hover animations (Button handles input automatically)"""

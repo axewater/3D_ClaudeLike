@@ -36,8 +36,6 @@ class PauseMenu3D(Entity):
         # Initially hidden
         self.enabled = False
 
-        print("✓ PauseMenu3D initialized")
-
     def _create_ui(self):
         """Create UI overlay elements"""
         # Semi-transparent dark overlay - RGBA tuple

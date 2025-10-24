@@ -80,7 +80,6 @@ class ClassSelection3D(Entity):
         # Initially hidden
         self.enabled = False
 
-        print(f"✓ ClassSelection3D initialized")
 
     def _setup_lighting(self):
         """Set up lighting for character display"""
@@ -316,8 +315,6 @@ class ClassSelection3D(Entity):
 
         self.class_models[class_type] = model
 
-        print(f"✓ Created model for {class_type} at position {model.position} with scale 0.3125")
-
     def _update_ui_for_class(self):
         """Update UI text and colors for current class"""
         # Get class data
@@ -372,7 +369,6 @@ class ClassSelection3D(Entity):
         self.is_dragging = False
         self.auto_rotate = True
         self.idle_timer = 0.0
-        print(f"[ClassSelection] Selected: {self.current_class}")
 
     def _previous_class(self):
         """Navigate to previous class"""
@@ -385,7 +381,6 @@ class ClassSelection3D(Entity):
         self.is_dragging = False
         self.auto_rotate = True
         self.idle_timer = 0.0
-        print(f"[ClassSelection] Selected: {self.current_class}")
 
     def _start_game(self):
         """Start game with selected class"""
@@ -393,8 +388,6 @@ class ClassSelection3D(Entity):
 
         # Play voice line for selected class
         self.audio.play_voice(self.current_class, volume=1.0)
-
-        print(f"[ClassSelection] Starting game with {self.current_class}")
 
         # Notify screen manager
         self.screen_manager.start_game_with_class(self.current_class)
@@ -492,11 +485,6 @@ class ClassSelection3D(Entity):
         model_look_at_pos = Vec3(0, self.model_display_height, -self.camera_distance)
         camera.look_at(model_look_at_pos)
 
-        print(f"[ClassSelection] Screen shown")
-        print(f"  Camera at: {camera.position}")
-        print(f"  Looking at: {model_look_at_pos}")
-        print(f"  Camera rotation: {camera.rotation}")
-
     def hide(self):
         """Hide the class selection screen"""
         self.enabled = False
@@ -518,4 +506,3 @@ class ClassSelection3D(Entity):
             if model:
                 model.enabled = False
 
-        print("[ClassSelection] Screen hidden")

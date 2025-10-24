@@ -55,8 +55,6 @@ class ScreenManager3D:
         # Fade overlay for transitions
         self.fade_overlay = None
 
-        print("✓ ScreenManager3D initialized")
-
     def change_screen(self, new_state: ScreenState, callback: Optional[Callable] = None):
         """
         Change to a new screen with fade transition.
@@ -66,10 +64,7 @@ class ScreenManager3D:
             callback: Optional function to call after transition completes
         """
         if self.transitioning:
-            print(f"[ScreenManager] Already transitioning, ignoring request to {new_state}")
             return
-
-        print(f"[ScreenManager] Changing screen: {self.current_state} → {new_state}")
 
         # Special handling for pause (overlay, not transition)
         if new_state == ScreenState.PAUSE:
@@ -116,7 +111,6 @@ class ScreenManager3D:
         if self.transition_progress >= 1.0 and not self.screen_switched:
             self._switch_to_new_screen(self._target_state)
             self.screen_switched = True
-            print(f"[ScreenManager] Screen switched → {self.current_state}")
 
         # Complete transition when fade in is done (progress >= 2.0)
         if self.transition_progress >= 2.0:
@@ -131,8 +125,6 @@ class ScreenManager3D:
             if self.transition_callback:
                 self.transition_callback()
                 self.transition_callback = None
-
-            print(f"[ScreenManager] Transition complete → {self.current_state}")
 
         # Update fade overlay alpha
         if self.transition_progress < 1.0:
@@ -264,12 +256,10 @@ class ScreenManager3D:
             if hasattr(self.game_controller, 'ui_manager') and self.game_controller.ui_manager:
                 self.game_controller.ui_manager.set_visibility(False)
 
-        print(f"[ScreenManager] Paused (previous state: {self.previous_state})")
 
     def resume_from_pause(self):
         """Resume from pause menu"""
         if self.current_state != ScreenState.PAUSE:
-            print("[ScreenManager] Not paused, cannot resume")
             return
 
         if self.pause_menu:
@@ -286,12 +276,10 @@ class ScreenManager3D:
         self.current_state = self.previous_state
         self.previous_state = None
 
-        print(f"[ScreenManager] Resumed to {self.current_state}")
 
     def set_game_controller(self, controller):
         """Set the game controller instance (called from main_3d.py)"""
         self.game_controller = controller
-        print("[ScreenManager] Game controller registered")
 
     def show_victory(self, stats: dict):
         """Show victory screen with stats"""
@@ -307,11 +295,9 @@ class ScreenManager3D:
 
     def start_game_with_class(self, class_type: str):
         """Start game with selected class (called from class selection)"""
-        print(f"[ScreenManager] Starting game with class: {class_type}")
         self.selected_class = class_type
 
     def quit_game(self):
         """Quit the application"""
-        print("[ScreenManager] Quitting game")
         from ursina import application
         application.quit()

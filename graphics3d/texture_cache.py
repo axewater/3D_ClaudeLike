@@ -116,7 +116,6 @@ def save_texture_cache(
             cache_path = get_cache_filename('ceilings', biome, i)
             img.save(cache_path, 'PNG')
 
-    print(f"✓ Texture cache saved to {CACHE_ROOT} (80 textures)")
 
 
 def load_texture_cache() -> tuple:
@@ -127,8 +126,6 @@ def load_texture_cache() -> tuple:
         Tuple of (wall_textures, normal_maps, floor_textures, ceiling_textures)
         Each is a Dict[biome -> List[Texture]] ready for use in tiles.py
     """
-    print("Loading texture cache from disk...")
-
     # Load wall textures
     wall_textures = {}
     for biome in BIOME_NAMES.keys():
@@ -164,7 +161,5 @@ def load_texture_cache() -> tuple:
             cache_path = get_cache_filename('ceilings', biome, i)
             pil_image = Image.open(cache_path)
             ceiling_textures[biome].append(Texture(pil_image))
-
-    print(f"✓ Texture cache loaded from {CACHE_ROOT} (80 textures)")
 
     return wall_textures, normal_maps, floor_textures, ceiling_textures

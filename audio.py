@@ -474,16 +474,10 @@ class AudioManager:
         )
         self.sounds['letter_impact'] = synth.array_to_sound(impact)
 
-        print(f"✓ Generated {len(self.sounds)} procedural sound effects")
-
     def _load_voices(self):
         """Load voice lines from cache (generates if needed)"""
         try:
             self.voices = voice_cache.ensure_voice_cache()
-            if self.voices:
-                print(f"✓ Loaded {len(self.voices)} voice lines")
-            else:
-                print("⚠ No voice lines loaded (pyttsx3 may not be available)")
         except Exception as e:
             print(f"⚠ Failed to load voice cache: {e}")
             self.voices = {}
@@ -650,11 +644,35 @@ class AudioManager:
                        position=position, player_position=player_position)
 
     def play_enemy_death(self, enemy_type: str, position: tuple = None, player_position: tuple = None):
-        """Play enemy death sound"""
-        sound_name = f'enemy_death_{enemy_type}'
-        if sound_name in self.sounds:
-            self.play_sound(sound_name, volume=0.9, pitch_variation=0.1,
-                           position=position, player_position=player_position)
+        """
+        Play enemy death sound - tries voice-based scream first, falls back to procedural.
+
+        Args:
+            enemy_type: Type of enemy (startle, slime, skeleton, orc, demon, dragon)
+            position: World position of enemy (x, y)
+            player_position: Player position for positional audio (x, y)
+        """
+        # Try voice-based death scream first
+        scream_key = f'death_scream_{enemy_type}'
+        if scream_key in self.voices:
+            # Calculate volume based on distance (positional audio)
+            final_volume = 0.9 * self.sfx_volume
+            if position and player_position:
+                distance = abs(position[0] - player_position[0]) + abs(position[1] - player_position[1])
+                # Volume falls off with distance (max range 10 tiles)
+                distance_factor = max(0, 1.0 - (distance / 10.0))
+                final_volume *= distance_factor
+
+            # Play voice-based scream
+            voice = self.voices[scream_key]
+            voice.set_volume(final_volume)
+            voice.play()
+        else:
+            # Fallback to procedural death sound
+            sound_name = f'enemy_death_{enemy_type}'
+            if sound_name in self.sounds:
+                self.play_sound(sound_name, volume=0.9, pitch_variation=0.1,
+                               position=position, player_position=player_position)
 
     def play_ability_sound(self, ability_name: str):
         """Play ability sound effect"""

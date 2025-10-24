@@ -114,7 +114,6 @@ def save_icon_cache(ability_frames_images: Dict[str, List[Image.Image]]):
             frame_image.save(cache_file, format='PNG')
             total_saved += 1
 
-    print(f"✓ Saved {total_saved} ability icon frames to cache: {CACHE_DIR}")
 
 
 def load_icon_cache() -> Dict[str, List[Texture]]:
@@ -146,8 +145,6 @@ def load_icon_cache() -> Dict[str, List[Texture]]:
             textures.append(texture)
 
         ability_textures[ability_name] = textures
-
-    print(f"✓ Loaded {len(ABILITY_NAMES) * FRAMES_PER_ABILITY} ability icon frames from cache")
 
     return ability_textures
 

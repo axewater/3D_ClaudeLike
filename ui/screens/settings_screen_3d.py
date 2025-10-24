@@ -44,8 +44,6 @@ class Settings3D(Entity):
         # Initially hidden
         self.enabled = False
 
-        print("✓ Settings3D initialized")
-
     def _create_ui(self):
         """Create UI overlay elements"""
         # Background overlay (semi-transparent dark) - furthest back

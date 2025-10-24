@@ -54,8 +54,6 @@ class VictoryScreen3D(Entity):
         # Play victory sound
         self.audio.play_ui_select()
 
-        print("✓ VictoryScreen3D initialized")
-
     def _create_ui(self):
         """Create UI overlay elements"""
         # Background tint (dark with golden glow) - RGBA tuple
