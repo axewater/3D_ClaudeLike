@@ -124,7 +124,7 @@ class Renderer3D:
         )
 
         # Atmospheric fog for depth and mystery - REDUCED for better visibility
-        scene.fog_color = ursina_color.rgb(0.1, 0.1, 0.15)  # Dark blue-gray
+        scene.fog_color = ursina_color.rgb(0, 0, 0)  # Pure black
         scene.fog_density = (8, 20)  # Start at 8 units, full fog at 20 units
 
         log.debug(f"Lighting configured for {biome} biome (ambient: {biome_lighting['ambient'][:3]}, directional: {biome_lighting['directional'][:3]})", "renderer")

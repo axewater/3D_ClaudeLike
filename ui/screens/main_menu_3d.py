@@ -1,13 +1,11 @@
 """
 3D Main Menu Screen
 
-Main menu with star tunnel background and navigation options.
+Main menu with navigation options.
 Uses Ursina for 3D rendering and UI.
 """
 
-from ursina import Entity, camera, color, Text, Button, Vec3, time as ursina_time
-import math
-import random
+from ursina import Entity, camera, color, Text, Button, Vec3
 import constants as c
 from audio import get_audio_manager
 from ui.widgets.dungeon_button_3d import DungeonButton
@@ -15,7 +13,7 @@ from ui.widgets.dungeon_button_3d import DungeonButton
 
 class MainMenu3D(Entity):
     """
-    3D main menu screen with animated star tunnel background.
+    3D main menu screen.
 
     Options:
     - New Game -> Class Selection
@@ -29,10 +27,6 @@ class MainMenu3D(Entity):
         self.screen_manager = screen_manager
         self.audio = get_audio_manager()
 
-        # Star tunnel state
-        self.stars = []
-        self.time_elapsed = 0.0
-
         # UI elements
         self.ui_elements = []
         self.buttons = []
@@ -40,38 +34,10 @@ class MainMenu3D(Entity):
         self.showing_how_to_play = False
 
         # Initialize
-        self._init_stars()
         self._create_ui()
 
         # Initially hidden
         self.enabled = False
-
-    def _init_stars(self):
-        """Initialize star tunnel with 800-1000 stars in cylindrical distribution"""
-        num_stars = random.randint(800, 1000)
-
-        for _ in range(num_stars):
-            # Cylindrical distribution for tunnel effect
-            angle = random.uniform(0, 2 * math.pi)
-            radius = random.uniform(0, 18)  # Max radius from center
-
-            x = radius * math.cos(angle)
-            y = radius * math.sin(angle)
-            z = random.uniform(-60, -5)  # Depth range
-
-            # Rotation angle for spiral effect
-            rotation_angle = random.uniform(0, 360)
-
-            # Speed varies per star
-            speed = random.uniform(0.8, 1.5)
-
-            self.stars.append({
-                'x': x, 'y': y, 'z': z,
-                'angle': rotation_angle,
-                'speed': speed,
-                'base_x': x,  # Remember original radius position
-                'base_y': y
-            })
 
     def _create_ui(self):
         """Create UI overlay elements"""
@@ -334,35 +300,9 @@ class MainMenu3D(Entity):
         self.screen_manager.quit_game()
 
     def update(self):
-        """Update star tunnel animation"""
+        """Update method (currently unused but required by Ursina Entity)"""
         if not self.enabled:
             return
-
-        dt = ursina_time.dt
-        self.time_elapsed += dt
-
-        # Update star tunnel - move toward camera and rotate
-        for star in self.stars:
-            # Move toward camera
-            star['z'] += dt * star['speed'] * 25
-
-            # Rotate around Z-axis for spiral effect
-            star['angle'] += dt * 30  # Degrees per second
-
-            # Respawn star at back when it reaches camera
-            if star['z'] > -1:
-                star['z'] = -60
-                # Randomize position slightly on respawn
-                angle = random.uniform(0, 2 * math.pi)
-                radius = random.uniform(0, 18)
-                star['base_x'] = radius * math.cos(angle)
-                star['base_y'] = radius * math.sin(angle)
-                star['angle'] = random.uniform(0, 360)
-                star['speed'] = random.uniform(0.8, 1.5)
-
-    def render_stars(self):
-        """Render star tunnel (called by screen manager in paintGL equivalent)"""
-        pass
 
     def show(self):
         """Show the main menu"""
