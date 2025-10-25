@@ -380,14 +380,33 @@ class AlertParticle3D:
         self.lifetime = 0.0
         self.max_lifetime = 1.0
 
-        # Create "!" text billboard
-        self.entity = Text(
-            text="!",
+        # Create custom "!" symbol from primitives (text scaling unreliable)
+        # Container entity for animation
+        self.entity = Entity(
             position=(0, 2.5, 0),  # Above enemy
-            scale=6.0,
+            parent=enemy_entity
+        )
+
+        # Vertical bar (tall thin rectangle)
+        self.bar = Entity(
+            model='cube',
             color=ursina_color.rgb(1, 1, 0),  # Bright yellow
+            scale=(0.175, 0.6, 0.175),  # Thin width/depth, tall height (50% of original)
+            position=(0, 0.25, 0),  # Offset up from container (raised to avoid clipping)
+            parent=self.entity,
             billboard=True,
-            parent=enemy_entity  # Attach to enemy
+            unlit=True  # Emissive glow
+        )
+
+        # Dot (small sphere at bottom)
+        self.dot = Entity(
+            model='sphere',
+            color=ursina_color.rgb(1, 1, 0),  # Bright yellow
+            scale=0.175,  # Match bar thickness (50% of original)
+            position=(0, -0.3, 0),  # Below the bar
+            parent=self.entity,
+            billboard=True,
+            unlit=True  # Emissive glow
         )
 
     def update(self, dt: float) -> bool:
@@ -397,14 +416,30 @@ class AlertParticle3D:
         if self.lifetime >= self.max_lifetime:
             return False
 
-        # Bounce animation
+        # Bounce animation with rumble effect
         bounce = abs(math.sin(self.lifetime * 8.0)) * 0.3
+
+        # Add rumble/shake to x and z for dramatic effect
+        rumble_intensity = 0.15
+        rumble_x = random.uniform(-rumble_intensity, rumble_intensity)
+        rumble_z = random.uniform(-rumble_intensity, rumble_intensity)
+
         self.entity.y = 2.5 + bounce
+        self.entity.x = rumble_x
+        self.entity.z = rumble_z
 
         return True
 
     def destroy(self):
-        """Clean up"""
+        """Clean up all entities"""
+        # Destroy child entities first
+        if hasattr(self, 'bar') and self.bar:
+            destroy(self.bar)
+            self.bar = None
+        if hasattr(self, 'dot') and self.dot:
+            destroy(self.dot)
+            self.dot = None
+        # Destroy container
         if self.entity:
             destroy(self.entity)
             self.entity = None
@@ -523,6 +558,82 @@ class StairsGlowParticle3D(Particle3D):
         return True
 
 
+class GlitterParticle3D(Particle3D):
+    """Twinkling glitter particle for stairs sparkle effect with tornado spiral motion"""
+
+    def __init__(self, position: Vec3, velocity: Vec3, color_rgb: tuple,
+                 size: float = 0.035, lifetime: float = 2.0, center_pos: Vec3 = None):
+        """
+        Create a glitter particle with twinkling effect and tornado spiral
+
+        Args:
+            position: Starting 3D position
+            velocity: Velocity vector (x, y, z)
+            color_rgb: RGB color tuple (0-1 range)
+            size: Particle size in world units
+            lifetime: How long particle lasts (seconds)
+            center_pos: Center position for orbital tornado rotation
+        """
+        super().__init__(position, velocity, color_rgb, size, lifetime,
+                        particle_type="star", apply_gravity=False)
+
+        # Twinkle properties (ULTRA FAST for sparkly effect)
+        self.base_size = size
+        self.twinkle_speed = random.uniform(20.0, 35.0)  # VERY fast twinkling
+        self.twinkle_phase = random.uniform(0, 6.28)  # Random starting phase
+        self.rotation_speed = random.uniform(120, 300)  # Faster self-rotation for sparkle
+
+        # Tornado spiral orbital rotation properties
+        self.center_pos = Vec3(center_pos) if center_pos else Vec3(position)
+        self.orbital_speed = random.uniform(1.2, 2.5)  # Radians per second (tornado rotation)
+        self.orbit_angle = random.uniform(0, 6.28)  # Starting angle in orbit
+
+        # Calculate initial radius from center
+        dx = position.x - self.center_pos.x
+        dz = position.z - self.center_pos.z
+        self.orbit_radius = math.sqrt(dx * dx + dz * dz)
+
+    def update(self, dt: float) -> bool:
+        """Update with twinkling, rotation, and tornado spiral effects"""
+        self.lifetime += dt
+
+        if self.lifetime >= self.max_lifetime:
+            return False
+
+        # Apply upward velocity (vertical motion)
+        self.entity.position.y += self.velocity.y * dt
+
+        # Apply tornado spiral orbital rotation around center point
+        self.orbit_angle += self.orbital_speed * dt
+        # Calculate new X and Z based on circular orbit (helix/tornado motion)
+        self.entity.position.x = self.center_pos.x + math.cos(self.orbit_angle) * self.orbit_radius
+        self.entity.position.z = self.center_pos.z + math.sin(self.orbit_angle) * self.orbit_radius
+        # Update center Y position to follow upward motion
+        self.center_pos.y += self.velocity.y * dt
+
+        # Apply self-rotation for sparkle effect (particle spinning on own axis)
+        self.entity.rotation_z += self.rotation_speed * dt
+
+        # Ultra-sparkly twinkle effect: dramatic pulse size using sine wave
+        self.twinkle_phase += dt * self.twinkle_speed
+        twinkle = (math.sin(self.twinkle_phase) + 1.0) / 2.0  # 0.0 to 1.0
+        size_multiplier = 0.25 + (twinkle * 0.3)  # Size varies 25%-55% (MUCH SMALLER!)
+
+        # Fade out in last 30% of lifetime
+        progress = self.lifetime / self.max_lifetime
+        if progress > 0.7:
+            fade_progress = (progress - 0.7) / 0.3
+            alpha = (1.0 - fade_progress) * 0.9  # Fade from 90% to 0% (brighter for glow)
+        else:
+            alpha = 0.9  # Even brighter for ultra-glow visibility
+
+        # Apply size and alpha
+        self.entity.scale = self.base_size * size_multiplier
+        self.entity.color = ursina_color.rgba(*self.color_rgb, alpha)
+
+        return True
+
+
 class StairsGlowEffect3D:
     """Ascending particle beam effect for dungeon exit stairs"""
 
@@ -547,6 +658,20 @@ class StairsGlowEffect3D:
             (0.5, 0.7, 0.9),   # Purple-blue (bubble-like)
         ]
 
+        # Second particle stream: glitter sparkles
+        self.glitter_spawn_timer = 0.0
+        self.glitter_spawn_interval = 0.25  # Spawn glitter every 250ms (less frequent)
+        self.glitter_particles: List[GlitterParticle3D] = []
+
+        # Ultra-bright glitter colors (0-255 RGB scale for maximum glow!)
+        # Using ursina_color.rgb() which expects 0-255 integer values
+        self.glitter_colors = [
+            (255, 215, 0),    # Ultra-bright gold
+            (255, 255, 255),  # Maximum white glow
+            (255, 255, 200),  # Bright warm yellow glow
+            (245, 245, 255),  # Bright silver shimmer
+        ]
+
     def update(self, dt: float):
         """
         Update effect and spawn new particles
@@ -554,18 +679,33 @@ class StairsGlowEffect3D:
         Args:
             dt: Delta time since last update
         """
+        # Update main particle stream (purple glow)
         self.spawn_timer += dt
 
-        # Spawn new particles at regular intervals
+        # Spawn new glow particles at regular intervals
         if self.spawn_timer >= self.spawn_interval:
             self.spawn_timer = 0.0
             self._spawn_particle()
 
-        # Update existing particles
+        # Update existing glow particles
         for particle in self.particles[:]:
             if not particle.update(dt):
                 particle.destroy()
                 self.particles.remove(particle)
+
+        # Update glitter particle stream (gold/white sparkles)
+        self.glitter_spawn_timer += dt
+
+        # Spawn new glitter particles at regular intervals
+        if self.glitter_spawn_timer >= self.glitter_spawn_interval:
+            self.glitter_spawn_timer = 0.0
+            self._spawn_glitter_particle()
+
+        # Update existing glitter particles
+        for particle in self.glitter_particles[:]:
+            if not particle.update(dt):
+                particle.destroy()
+                self.glitter_particles.remove(particle)
 
     def _spawn_particle(self):
         """Spawn a single ascending particle"""
@@ -604,11 +744,53 @@ class StairsGlowEffect3D:
 
         self.particles.append(particle)
 
+    def _spawn_glitter_particle(self):
+        """Spawn a single twinkling glitter particle with tornado spiral motion"""
+        # Start position (on the stairs surface, slightly higher for visibility)
+        base_pos = world_to_3d_position(self.grid_x, self.grid_y, 0.15)
+        # Center position for tornado spiral rotation
+        center_pos = Vec3(base_pos[0], base_pos[1], base_pos[2])
+
+        # Add random horizontal offset for sparkle spread (initial radius from center)
+        offset_x = random.uniform(-0.3, 0.3)
+        offset_z = random.uniform(-0.3, 0.3)
+        pos = Vec3(base_pos[0] + offset_x, base_pos[1], base_pos[2] + offset_z)
+
+        # Pure upward velocity (tornado orbital rotation handles horizontal motion)
+        velocity = Vec3(
+            0.0,                          # No horizontal drift - orbital rotation does this
+            random.uniform(0.8, 1.2),     # Faster upward motion for dramatic rise
+            0.0                           # No horizontal drift - orbital rotation does this
+        )
+
+        # Random ultra-bright color from glitter palette
+        color = random.choice(self.glitter_colors)
+
+        # Size and lifetime variations (smaller particles for delicate sparkle)
+        size = random.uniform(0.02, 0.05)
+        lifetime = random.uniform(1.5, 2.5)
+
+        # Create glitter particle (with tornado spiral, twinkling, and ultra-glow)
+        particle = GlitterParticle3D(
+            position=pos,
+            velocity=velocity,
+            color_rgb=color,
+            size=size,
+            lifetime=lifetime,
+            center_pos=center_pos  # Enable tornado spiral motion
+        )
+
+        self.glitter_particles.append(particle)
+
     def destroy(self):
         """Clean up all particles"""
         for particle in self.particles:
             particle.destroy()
         self.particles.clear()
+
+        for particle in self.glitter_particles:
+            particle.destroy()
+        self.glitter_particles.clear()
 
 
 class AnimationManager3D:
