@@ -73,10 +73,16 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
     #version 140
 
     uniform sampler2D p3d_Texture0;
+    // Cardinal direction walls (N/S/E/W)
     uniform float has_wall_north;  // 1.0 if wall at +Y (top edge), 0.0 otherwise
     uniform float has_wall_south;  // 1.0 if wall at -Y (bottom edge), 0.0 otherwise
     uniform float has_wall_east;   // 1.0 if wall at +X (right edge), 0.0 otherwise
     uniform float has_wall_west;   // 1.0 if wall at -X (left edge), 0.0 otherwise
+    // Diagonal direction walls (NE/NW/SE/SW) for convex corners
+    uniform float has_wall_ne;     // 1.0 if wall at (+X, -Y) (northeast diagonal), 0.0 otherwise
+    uniform float has_wall_nw;     // 1.0 if wall at (-X, -Y) (northwest diagonal), 0.0 otherwise
+    uniform float has_wall_se;     // 1.0 if wall at (+X, +Y) (southeast diagonal), 0.0 otherwise
+    uniform float has_wall_sw;     // 1.0 if wall at (-X, +Y) (southwest diagonal), 0.0 otherwise
 
     in vec2 texcoord;
     out vec4 fragColor;
@@ -106,6 +112,10 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
         bool has_south = has_wall_south > 0.5;
         bool has_east = has_wall_east > 0.5;
         bool has_west = has_wall_west > 0.5;
+        bool has_ne = has_wall_ne > 0.5;
+        bool has_nw = has_wall_nw > 0.5;
+        bool has_se = has_wall_se > 0.5;
+        bool has_sw = has_wall_sw > 0.5;
 
         // For each wall edge, calculate shadow contribution with smooth S-curve falloff
         // Only darken if wall is present (has_wall_* == 1.0)
@@ -173,6 +183,44 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
             float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
             corner_factor = pow(corner_factor, falloff_power * 1.2);
             brightness = min(brightness, corner_brightness + corner_factor * (max_brightness - corner_brightness));
+        }}
+
+        // ===== CONVEX CORNER SHADOWS (OUTWARD-FACING CORNERS) =====
+        // Apply shadows at diagonal walls where NO adjacent cardinal walls exist
+        // Use max() of two edge distances to create L-shaped shadow that blends with wall edges
+        // (e.g., if wall is at NE diagonal, shadow appears in NE corner of this tile)
+
+        // NE diagonal wall -> shadow in NE corner (this corner touches the protruding wall)
+        if (has_ne && !has_north && !has_east) {{
+            // Use max distance to create L-shaped shadow matching wall edge shadows
+            float corner_dist = max(dist_north, dist_east);
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power);  // Same falloff as edges
+            brightness = min(brightness, min_brightness + corner_factor * (max_brightness - min_brightness));
+        }}
+
+        // NW diagonal wall -> shadow in NW corner (this corner touches the protruding wall)
+        if (has_nw && !has_north && !has_west) {{
+            float corner_dist = max(dist_north, dist_west);
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power);  // Same falloff as edges
+            brightness = min(brightness, min_brightness + corner_factor * (max_brightness - min_brightness));
+        }}
+
+        // SE diagonal wall -> shadow in SE corner (this corner touches the protruding wall)
+        if (has_se && !has_south && !has_east) {{
+            float corner_dist = max(dist_south, dist_east);
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power);  // Same falloff as edges
+            brightness = min(brightness, min_brightness + corner_factor * (max_brightness - min_brightness));
+        }}
+
+        // SW diagonal wall -> shadow in SW corner (this corner touches the protruding wall)
+        if (has_sw && !has_south && !has_west) {{
+            float corner_dist = max(dist_south, dist_west);
+            float corner_factor = smoothstep(0.0, shadow_width, corner_dist);
+            corner_factor = pow(corner_factor, falloff_power);  // Same falloff as edges
+            brightness = min(brightness, min_brightness + corner_factor * (max_brightness - min_brightness));
         }}
 
         // Apply darkening to RGB channels only (preserve alpha)

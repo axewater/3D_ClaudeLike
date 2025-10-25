@@ -195,16 +195,26 @@ class Renderer3D:
                     has_wall_east = self.game.dungeon.get_tile(x + 1, y) == c.TILE_WALL
                     has_wall_west = self.game.dungeon.get_tile(x - 1, y) == c.TILE_WALL
 
+                    # Check diagonal tiles for convex corner detection (outward-facing corners)
+                    has_wall_ne = self.game.dungeon.get_tile(x + 1, y - 1) == c.TILE_WALL
+                    has_wall_nw = self.game.dungeon.get_tile(x - 1, y - 1) == c.TILE_WALL
+                    has_wall_se = self.game.dungeon.get_tile(x + 1, y + 1) == c.TILE_WALL
+                    has_wall_sw = self.game.dungeon.get_tile(x - 1, y + 1) == c.TILE_WALL
+
                     # Render floor with wall adjacency info
                     entity = create_floor_mesh(x, y, biome, floor_color,
                                               has_wall_north, has_wall_south,
-                                              has_wall_east, has_wall_west)
+                                              has_wall_east, has_wall_west,
+                                              has_wall_ne, has_wall_nw,
+                                              has_wall_se, has_wall_sw)
                     tile_entities.append(entity)
 
                     # Render ceiling above floor with wall adjacency info
                     ceiling_entity = create_ceiling_mesh(x, y, biome, wall_color,
                                                         has_wall_north, has_wall_south,
-                                                        has_wall_east, has_wall_west)
+                                                        has_wall_east, has_wall_west,
+                                                        has_wall_ne, has_wall_nw,
+                                                        has_wall_se, has_wall_sw)
                     tile_entities.append(ceiling_entity)
 
                 elif tile == c.TILE_WALL:
@@ -217,6 +227,12 @@ class Renderer3D:
                     has_wall_south = self.game.dungeon.get_tile(x, y + 1) == c.TILE_WALL
                     has_wall_east = self.game.dungeon.get_tile(x + 1, y) == c.TILE_WALL
                     has_wall_west = self.game.dungeon.get_tile(x - 1, y) == c.TILE_WALL
+
+                    # Check diagonal tiles for convex corner detection (outward-facing corners)
+                    has_wall_ne = self.game.dungeon.get_tile(x + 1, y - 1) == c.TILE_WALL
+                    has_wall_nw = self.game.dungeon.get_tile(x - 1, y - 1) == c.TILE_WALL
+                    has_wall_se = self.game.dungeon.get_tile(x + 1, y + 1) == c.TILE_WALL
+                    has_wall_sw = self.game.dungeon.get_tile(x - 1, y + 1) == c.TILE_WALL
 
                     # Create partial floor on back half (stairs take front half)
                     # This fills the black void where stairs don't reach
@@ -245,11 +261,15 @@ class Renderer3D:
                         collider=None
                     )
                     partial_floor.shader = CORNER_SHADOW_SHADER
-                    # Pass wall adjacency info to shader
+                    # Pass wall adjacency info to shader (cardinal + diagonal)
                     partial_floor.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
                     partial_floor.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
                     partial_floor.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
                     partial_floor.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
+                    partial_floor.set_shader_input('has_wall_ne', 1.0 if has_wall_ne else 0.0)
+                    partial_floor.set_shader_input('has_wall_nw', 1.0 if has_wall_nw else 0.0)
+                    partial_floor.set_shader_input('has_wall_se', 1.0 if has_wall_se else 0.0)
+                    partial_floor.set_shader_input('has_wall_sw', 1.0 if has_wall_sw else 0.0)
                     tile_entities.append(partial_floor)
 
                     # Create descending staircase with biome floor texture

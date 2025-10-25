@@ -179,7 +179,9 @@ print("✓ Toon shader created (4 bands, rim lighting, comic book outlines enabl
 
 def create_floor_mesh(x: int, y: int, biome: str, biome_color,
                       has_wall_north: bool = False, has_wall_south: bool = False,
-                      has_wall_east: bool = False, has_wall_west: bool = False):
+                      has_wall_east: bool = False, has_wall_west: bool = False,
+                      has_wall_ne: bool = False, has_wall_nw: bool = False,
+                      has_wall_se: bool = False, has_wall_sw: bool = False):
     """
     Create a 3D floor tile mesh with procedural biome-specific texture
 
@@ -195,6 +197,10 @@ def create_floor_mesh(x: int, y: int, biome: str, biome_color,
         has_wall_south: True if there's a wall at y+1 (south/front edge)
         has_wall_east: True if there's a wall at x+1 (east/right edge)
         has_wall_west: True if there's a wall at x-1 (west/left edge)
+        has_wall_ne: True if there's a wall at (x+1, y-1) (northeast diagonal)
+        has_wall_nw: True if there's a wall at (x-1, y-1) (northwest diagonal)
+        has_wall_se: True if there's a wall at (x+1, y+1) (southeast diagonal)
+        has_wall_sw: True if there's a wall at (x-1, y+1) (southwest diagonal)
 
     Returns:
         Ursina Entity representing the floor tile
@@ -236,10 +242,16 @@ def create_floor_mesh(x: int, y: int, biome: str, biome_color,
     floor_entity.shader = CORNER_SHADOW_SHADER
 
     # Pass wall adjacency info to shader (only darken edges where walls exist)
+    # Cardinal directions (N/S/E/W)
     floor_entity.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
     floor_entity.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
     floor_entity.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
     floor_entity.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
+    # Diagonal directions (NE/NW/SE/SW) for convex corner detection
+    floor_entity.set_shader_input('has_wall_ne', 1.0 if has_wall_ne else 0.0)
+    floor_entity.set_shader_input('has_wall_nw', 1.0 if has_wall_nw else 0.0)
+    floor_entity.set_shader_input('has_wall_se', 1.0 if has_wall_se else 0.0)
+    floor_entity.set_shader_input('has_wall_sw', 1.0 if has_wall_sw else 0.0)
 
     return floor_entity
 
@@ -428,7 +440,9 @@ def create_stairs_mesh(x: int, y: int, biome: str, biome_color):
 
 def create_ceiling_mesh(x: int, y: int, biome: str, biome_color,
                         has_wall_north: bool = False, has_wall_south: bool = False,
-                        has_wall_east: bool = False, has_wall_west: bool = False):
+                        has_wall_east: bool = False, has_wall_west: bool = False,
+                        has_wall_ne: bool = False, has_wall_nw: bool = False,
+                        has_wall_se: bool = False, has_wall_sw: bool = False):
     """
     Create a 3D ceiling tile mesh with procedural biome-specific texture
 
@@ -444,6 +458,10 @@ def create_ceiling_mesh(x: int, y: int, biome: str, biome_color,
         has_wall_south: True if there's a wall at y+1 (south/front edge)
         has_wall_east: True if there's a wall at x+1 (east/right edge)
         has_wall_west: True if there's a wall at x-1 (west/left edge)
+        has_wall_ne: True if there's a wall at (x+1, y-1) (northeast diagonal)
+        has_wall_nw: True if there's a wall at (x-1, y-1) (northwest diagonal)
+        has_wall_se: True if there's a wall at (x+1, y+1) (southeast diagonal)
+        has_wall_sw: True if there's a wall at (x-1, y+1) (southwest diagonal)
 
     Returns:
         Ursina Entity representing the ceiling tile
@@ -487,9 +505,15 @@ def create_ceiling_mesh(x: int, y: int, biome: str, biome_color,
     ceiling_entity.shader = CORNER_SHADOW_SHADER
 
     # Pass wall adjacency info to shader (only darken edges where walls exist)
+    # Cardinal directions (N/S/E/W)
     ceiling_entity.set_shader_input('has_wall_north', 1.0 if has_wall_north else 0.0)
     ceiling_entity.set_shader_input('has_wall_south', 1.0 if has_wall_south else 0.0)
     ceiling_entity.set_shader_input('has_wall_east', 1.0 if has_wall_east else 0.0)
     ceiling_entity.set_shader_input('has_wall_west', 1.0 if has_wall_west else 0.0)
+    # Diagonal directions (NE/NW/SE/SW) for convex corner detection
+    ceiling_entity.set_shader_input('has_wall_ne', 1.0 if has_wall_ne else 0.0)
+    ceiling_entity.set_shader_input('has_wall_nw', 1.0 if has_wall_nw else 0.0)
+    ceiling_entity.set_shader_input('has_wall_se', 1.0 if has_wall_se else 0.0)
+    ceiling_entity.set_shader_input('has_wall_sw', 1.0 if has_wall_sw else 0.0)
 
     return ceiling_entity
