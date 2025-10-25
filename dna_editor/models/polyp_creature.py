@@ -11,14 +11,14 @@ from ..core.constants import (
     GOLDEN_RATIO, GOLDEN_ANGLE,
     DEFAULT_TENTACLE_COLOR, DEFAULT_ALGORITHM
 )
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class PolypSphere:
     """Single sphere in the polyp chain with tentacles."""
 
     def __init__(self, position, size, base_color, parent, toon_shader=None,
-                 sphere_index=0, parent_sphere=None):
+                 toon_shader_lite=None, sphere_index=0, parent_sphere=None):
         """
         Create a polyp sphere.
 
@@ -27,7 +27,8 @@ class PolypSphere:
             size: Sphere radius
             base_color: RGB tuple (0-1)
             parent: Parent entity (scene root)
-            toon_shader: Optional toon shader to apply
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
             sphere_index: Index in chain (0 = root)
             parent_sphere: Reference to parent PolypSphere (None for root)
         """
@@ -37,10 +38,12 @@ class PolypSphere:
         self.base_color = base_color
         self.sphere_index = sphere_index
         self.parent_sphere = parent_sphere
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
         self.tentacles = []
         self.connector_tube = None
 
-        # Create sphere entity with toon shader
+        # Create sphere entity with appropriate shader
         sphere_color = color.rgb(*base_color)
         entity_params = {
             'model': 'sphere',
@@ -50,16 +53,20 @@ class PolypSphere:
             'parent': parent
         }
 
-        if toon_shader is not None:
+        # Choose shader based on size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(size, toon_shader, toon_shader_lite)
+            entity_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             entity_params['shader'] = toon_shader
 
         self.entity = Entity(**entity_params)
 
         # Create connector tube if this sphere has a parent
         if parent_sphere is not None:
-            self._create_connector_tube(parent, base_color, toon_shader)
+            self._create_connector_tube(parent, base_color)
 
-    def _create_connector_tube(self, scene_parent, base_color, toon_shader):
+    def _create_connector_tube(self, scene_parent, base_color):
         """Create tube connecting this sphere to its parent sphere."""
         # Calculate tube radius (average of both sphere sizes)
         avg_size = (self.size + self.parent_sphere.size) / 2
@@ -72,7 +79,7 @@ class PolypSphere:
         # Create tube color (same as sphere)
         tube_color = color.rgb(*base_color)
 
-        # Create tube entity
+        # Create tube entity with appropriate shader
         tube_params = {
             'model': 'cube',
             'color': tube_color,
@@ -81,8 +88,12 @@ class PolypSphere:
             'parent': scene_parent
         }
 
-        if toon_shader is not None:
-            tube_params['shader'] = toon_shader
+        # Choose shader based on tube size (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(tube_radius, self.toon_shader, self.toon_shader_lite)
+            tube_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
+            tube_params['shader'] = self.toon_shader
 
         self.connector_tube = Entity(**tube_params)
 
@@ -107,7 +118,7 @@ class PolypSphere:
 
     def create_tentacles(self, num_tentacles, segments_per_tentacle, algorithm,
                         algorithm_params, thickness_base, taper_factor,
-                        scene_parent, toon_shader):
+                        scene_parent, toon_shader, toon_shader_lite):
         """
         Create tentacles attached to this sphere's lower hemisphere.
 
@@ -119,7 +130,8 @@ class PolypSphere:
             thickness_base: Base tentacle thickness
             taper_factor: Tentacle taper factor
             scene_parent: Parent entity for tentacles
-            toon_shader: Toon shader instance
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
         """
         # Clear existing tentacles
         for tentacle in self.tentacles:
@@ -166,7 +178,7 @@ class PolypSphere:
                 max(0.0, b - hue_offset * 0.2)
             )
 
-            # Create tentacle
+            # Create tentacle with shared shaders
             tentacle = Tentacle(
                 parent=scene_parent,
                 anchor=anchor,
@@ -180,7 +192,8 @@ class PolypSphere:
                 branch_depth=0,  # No branching for polyp tentacles
                 branch_count=0,
                 current_depth=0,
-                toon_shader=toon_shader
+                toon_shader=toon_shader,
+                toon_shader_lite=toon_shader_lite
             )
 
             self.tentacles.append(tentacle)
@@ -320,10 +333,14 @@ class PolypCreature:
         self.is_attacking = False
         self.attack_start_time = 0
 
-        # Create toon shader (shared across all parts)
+        # Create toon shaders (shared across all parts)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in PolypCreature, using default rendering")
+
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in PolypCreature, will use full shader")
 
         # Generate creature
         self._generate_spine()
@@ -369,7 +386,7 @@ class PolypCreature:
                 self.spine_color[2] * color_factor
             )
 
-            # Create sphere
+            # Create sphere with shared shaders
             parent_sphere = self.spheres[i - 1] if i > 0 else None
             sphere = PolypSphere(
                 position=position,
@@ -377,6 +394,7 @@ class PolypCreature:
                 base_color=sphere_color,
                 parent=self.root,
                 toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite,
                 sphere_index=i,
                 parent_sphere=parent_sphere
             )
@@ -395,7 +413,8 @@ class PolypCreature:
                 thickness_base=self.thickness_base / (1 + i * 0.2),  # Thinner tentacles on smaller spheres
                 taper_factor=self.taper_factor,
                 scene_parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
     def rebuild(self, num_spheres, algorithm, algorithm_params, base_sphere_size,

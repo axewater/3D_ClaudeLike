@@ -8,7 +8,7 @@ import random
 from .tentacle import Tentacle
 from .eye import Eye
 from ..core.constants import GOLDEN_ANGLE
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class MedusaCreature:
@@ -66,19 +66,27 @@ class MedusaCreature:
         self.attack_start_time = 0
         self.attack_camera_position = None
 
-        # Create toon shader (shared across all parts)
+        # Create toon shaders (shared across all parts)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in MedusaCreature, using default rendering")
 
-        # Create central body sphere (match TentacleCreature color handling)
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in MedusaCreature, will use full shader")
+
+        # Create central body sphere with appropriate shader
         body_params = {
             'model': 'sphere',
             'color': color.rgb(*tentacle_color),
             'scale': body_scale,
             'parent': self.root
         }
-        if self.toon_shader is not None:
+        # Choose shader based on body size (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(body_scale, self.toon_shader, self.toon_shader_lite)
+            body_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
             body_params['shader'] = self.toon_shader
 
         self.body = Entity(**body_params)
@@ -156,7 +164,7 @@ class MedusaCreature:
                 max(0.0, b - hue_offset * 0.3)
             )
 
-            # Create tentacle
+            # Create tentacle with shared shaders
             tentacle = Tentacle(
                 parent=self.root,
                 anchor=anchor,
@@ -170,7 +178,8 @@ class MedusaCreature:
                 branch_depth=0,  # No branches for medusa (eyes are the feature)
                 branch_count=0,
                 current_depth=0,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.tentacles.append(tentacle)
@@ -184,14 +193,15 @@ class MedusaCreature:
                 # Calculate direction from body to tip (for eye orientation)
                 tip_direction = (tip_position - anchor).normalized()
 
-                # Create eye at tip
+                # Create eye at tip with shared shaders
                 eye = Eye(
                     position=tip_position,
                     size=eye_size,
                     eyeball_color=eyeball_color,
                     pupil_color=pupil_color,
                     parent=self.root,
-                    toon_shader=self.toon_shader
+                    toon_shader=self.toon_shader,
+                    toon_shader_lite=self.toon_shader_lite
                 )
 
                 self.tentacle_tip_eyes.append(eye)

@@ -11,14 +11,14 @@ from ..core.constants import (
     DEFAULT_JIGGLE_SPEED, DEFAULT_BLOB_PULSE_AMOUNT,
     BLOB_JIGGLE_AMPLITUDE
 )
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class BlobCube:
     """Single cube in the blob with individual animation state and tree structure."""
 
     def __init__(self, position, size, base_color, transparency, parent, toon_shader=None,
-                 tree_depth=0, parent_cube=None):
+                 toon_shader_lite=None, tree_depth=0, parent_cube=None):
         """
         Create a blob cube.
 
@@ -28,7 +28,8 @@ class BlobCube:
             base_color: RGB tuple (0-1)
             transparency: Alpha value (0-1, where 1 is fully transparent)
             parent: Parent entity (scene root)
-            toon_shader: Optional toon shader to apply
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small cubes (performance optimization)
             tree_depth: Distance from root (0 = root, 1 = children, etc.)
             parent_cube: Reference to parent BlobCube (None for root)
         """
@@ -38,6 +39,8 @@ class BlobCube:
         self.transparency = transparency
         self.tree_depth = tree_depth
         self.parent_cube = parent_cube
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
         self.children = []  # Child BlobCubes
         self.connector_tube = None  # Tube (stretched cube) connecting to parent
         self.physics_particle = None  # Physics particle for Verlet simulation (None = not enabled)
@@ -47,7 +50,7 @@ class BlobCube:
         self.jiggle_phase_y = random.random() * math.pi * 2
         self.jiggle_phase_z = random.random() * math.pi * 2
 
-        # Create cube entity with transparency
+        # Create cube entity with transparency and appropriate shader
         # Ursina color.rgba() for transparency
         cube_color = color.rgba(base_color[0], base_color[1], base_color[2], 1.0 - transparency)
 
@@ -59,17 +62,20 @@ class BlobCube:
             'parent': parent
         }
 
-        # Apply toon shader if provided
-        if toon_shader is not None:
+        # Choose shader based on size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(size, toon_shader, toon_shader_lite)
+            entity_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             entity_params['shader'] = toon_shader
 
         self.entity = Entity(**entity_params)
 
         # Create connector tube if this cube has a parent
         if parent_cube is not None:
-            self._create_connector_tube(parent, base_color, transparency, toon_shader)
+            self._create_connector_tube(parent, base_color, transparency)
 
-    def _create_connector_tube(self, scene_parent, base_color, transparency, toon_shader):
+    def _create_connector_tube(self, scene_parent, base_color, transparency):
         """Create tube (stretched cube) connecting this cube to its parent cube."""
         from ..core.constants import CONNECTOR_TUBE_RADIUS_RATIO, CONNECTOR_TUBE_OPACITY_MULTIPLIER
 
@@ -103,7 +109,7 @@ class BlobCube:
         # Create tube color (same as cube but with tube transparency)
         tube_color = color.rgba(base_color[0], base_color[1], base_color[2], 1.0 - tube_transparency)
 
-        # Create tube entity (using cube instead of cylinder, as Ursina doesn't have cylinder primitive)
+        # Create tube entity with appropriate shader (using cube instead of cylinder)
         tube_params = {
             'model': 'cube',
             'color': tube_color,
@@ -112,9 +118,12 @@ class BlobCube:
             'parent': scene_parent
         }
 
-        # Apply toon shader if provided
-        if toon_shader is not None:
-            tube_params['shader'] = toon_shader
+        # Choose shader based on tube size (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(tube_radius, self.toon_shader, self.toon_shader_lite)
+            tube_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
+            tube_params['shader'] = self.toon_shader
 
         self.connector_tube = Entity(**tube_params)
 
@@ -295,10 +304,14 @@ class BlobCreature:
         self.physics_enabled = False
         self.physics_time = 0.0
 
-        # Create toon shader (shared across all cubes and tubes)
+        # Create toon shaders (shared across all cubes and tubes)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in BlobCreature, using default rendering")
+
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in BlobCreature, will use full shader")
 
         # Generate blob cubes with tree structure
         self._generate_cubes()
@@ -321,6 +334,7 @@ class BlobCreature:
             transparency=self.transparency,
             parent=self.root,
             toon_shader=self.toon_shader,
+            toon_shader_lite=self.toon_shader_lite,
             tree_depth=0,
             parent_cube=None  # Root has no parent
         )
@@ -380,6 +394,7 @@ class BlobCreature:
                 transparency=self.transparency,
                 parent=self.root,
                 toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite,
                 tree_depth=current_depth + 1,
                 parent_cube=parent_cube  # Link to parent (creates connector tube)
             )

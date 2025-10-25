@@ -5,13 +5,14 @@ Eye model - eyeball with pupil and random blinking animation.
 from ursina import Entity, Vec3, color, destroy
 import math
 import random
+from ..shaders import get_shader_for_scale
 
 
 class Eye:
     """An eye with eyeball and pupil that blinks randomly."""
 
     def __init__(self, position, size, eyeball_color=(1.0, 1.0, 1.0),
-                 pupil_color=(0.0, 0.0, 0.0), parent=None, toon_shader=None):
+                 pupil_color=(0.0, 0.0, 0.0), parent=None, toon_shader=None, toon_shader_lite=None):
         """
         Create an eye at the given position.
 
@@ -21,7 +22,8 @@ class Eye:
             eyeball_color: RGB tuple for eyeball color (default white)
             pupil_color: RGB tuple for pupil color (default black)
             parent: Parent entity
-            toon_shader: Shared toon shader instance
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small eyes (performance optimization)
         """
         self.position = position
         self.base_size = size
@@ -29,6 +31,7 @@ class Eye:
         self.pupil_color = pupil_color
         self.parent = parent
         self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
 
         # Blink animation state
         self.blink_state = 'idle'  # 'idle', 'closing', 'opening'
@@ -38,7 +41,7 @@ class Eye:
         # Calculate direction from origin to eye position (surface normal)
         self.surface_normal = position.normalized() if position.length() > 0.001 else Vec3(0, 0, 1)
 
-        # Create eyeball sphere
+        # Create eyeball sphere with appropriate shader based on size
         eyeball_params = {
             'model': 'sphere',
             'color': color.rgb(*[int(c * 255) for c in eyeball_color]),
@@ -46,7 +49,11 @@ class Eye:
             'scale': size,
             'parent': parent
         }
-        if toon_shader is not None:
+        # Choose shader based on eyeball size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(size, toon_shader, toon_shader_lite)
+            eyeball_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             eyeball_params['shader'] = toon_shader
         self.eyeball = Entity(**eyeball_params)
 
@@ -60,7 +67,11 @@ class Eye:
             'scale': pupil_size,
             'parent': parent
         }
-        if toon_shader is not None:
+        # Choose shader based on pupil size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(pupil_size, toon_shader, toon_shader_lite)
+            pupil_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             pupil_params['shader'] = toon_shader
         self.pupil = Entity(**pupil_params)
 

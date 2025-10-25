@@ -10,7 +10,7 @@ from ..core.constants import (
     GOLDEN_RATIO, GOLDEN_ANGLE,
     TOON_CONTACT_SHADOW_SIZE, TOON_CONTACT_SHADOW_OPACITY
 )
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class Tentacle:
@@ -18,7 +18,7 @@ class Tentacle:
 
     def __init__(self, parent, anchor, target, segments, algorithm, color_rgb,
                  algorithm_params, thickness_base=0.25, taper_factor=0.6,
-                 branch_depth=0, branch_count=1, current_depth=0, toon_shader=None):
+                 branch_depth=0, branch_count=1, current_depth=0, toon_shader=None, toon_shader_lite=None):
         """
         Create a tentacle from anchor to target point.
 
@@ -35,7 +35,8 @@ class Tentacle:
             branch_depth: Maximum branching depth (0 = no branches)
             branch_count: Number of child branches per tentacle
             current_depth: Current depth in recursion (internal)
-            toon_shader: Toon shader instance (created once, shared across tentacles)
+            toon_shader: Full toon shader instance (created once, shared across tentacles)
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
         """
         self.parent = parent
         self.anchor = anchor
@@ -53,13 +54,20 @@ class Tentacle:
         # Generate unique random phase offset for this tentacle (for animation variation)
         self.animation_phase_offset = random.random() * math.pi * 2
 
-        # Get or create toon shader (create once, share across all tentacles)
+        # Get or create toon shaders (create once, share across all tentacles)
         if toon_shader is not None:
             self.toon_shader = toon_shader
         else:
             self.toon_shader = create_toon_shader()
             if self.toon_shader is None:
                 print("WARNING: Toon shader creation failed, using default rendering")
+
+        if toon_shader_lite is not None:
+            self.toon_shader_lite = toon_shader_lite
+        else:
+            self.toon_shader_lite = create_toon_shader_lite()
+            if self.toon_shader_lite is None:
+                print("WARNING: Lite toon shader creation failed, will use full shader for all")
 
         # Generate curve points based on algorithm with dynamic parameters
         if algorithm == 'bezier':
@@ -95,8 +103,7 @@ class Tentacle:
             # Calculate thickness (taper from base to tip) with dynamic parameters
             thickness = thickness_base * (1.0 - i / segments * taper_factor)
 
-            # Create segment as sphere with toon shader
-            # Only apply shader if it was created successfully
+            # Create segment as sphere with appropriate shader based on size (LOD optimization)
             entity_params = {
                 'model': 'sphere',
                 'color': color.rgb(*color_rgb),
@@ -104,7 +111,11 @@ class Tentacle:
                 'scale': thickness,
                 'parent': parent
             }
-            if self.toon_shader is not None:
+            # Choose shader based on scale for performance optimization
+            if self.toon_shader is not None and self.toon_shader_lite is not None:
+                chosen_shader = get_shader_for_scale(thickness, self.toon_shader, self.toon_shader_lite)
+                entity_params['shader'] = chosen_shader
+            elif self.toon_shader is not None:
                 entity_params['shader'] = self.toon_shader
 
             segment = Entity(**entity_params)
@@ -198,7 +209,7 @@ class Tentacle:
                 max(0.0, self.color_rgb[2] - hue_shift * 0.5)
             )
 
-            # Create child tentacle (recursively, share shader instance)
+            # Create child tentacle (recursively, share shader instances)
             child = Tentacle(
                 parent=self.parent,
                 anchor=branch_anchor,
@@ -212,7 +223,8 @@ class Tentacle:
                 branch_depth=self.branch_depth,
                 branch_count=self.branch_count,
                 current_depth=self.current_depth + 1,  # Increment depth
-                toon_shader=self.toon_shader  # Share shader instance
+                toon_shader=self.toon_shader,  # Share shader instances
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.children.append(child)

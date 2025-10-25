@@ -8,7 +8,7 @@ import random
 from .tentacle import Tentacle
 from .eye import Eye
 from ..core.constants import BODY_COLOR, BODY_SCALE, BODY_PULSE_AMOUNT, BODY_PULSE_SPEED
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class TentacleCreature:
@@ -83,21 +83,28 @@ class TentacleCreature:
         self.exploration_state = 'idle'  # 'idle', 'reaching', or 'returning'
         self.exploration_phase_start_time = 0  # When current phase started
 
-        # Create toon shader (shared across all creature parts)
+        # Create toon shaders (shared across all creature parts)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in TentacleCreature, using default rendering")
 
-        # Create body (use dynamic scale and color with toon shader)
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in TentacleCreature, will use full shader")
+
+        # Create body (use dynamic scale and color with appropriate shader)
         # Body color matches tentacle base color
-        # Only apply shader if it was created successfully
         body_params = {
             'model': 'sphere',
             'color': color.rgb(*tentacle_color),
             'scale': body_scale,
             'parent': self.root
         }
-        if self.toon_shader is not None:
+        # Choose shader based on body size (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(body_scale, self.toon_shader, self.toon_shader_lite)
+            body_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
             body_params['shader'] = self.toon_shader
 
         self.body = Entity(**body_params)
@@ -188,7 +195,7 @@ class TentacleCreature:
                 max(0.0, b - hue_offset * 0.3)
             )
 
-            # Create tentacle with dynamic parameters (including branching and shared shader)
+            # Create tentacle with dynamic parameters (including branching and shared shaders)
             tentacle = Tentacle(
                 parent=self.root,
                 anchor=anchor,
@@ -202,7 +209,8 @@ class TentacleCreature:
                 branch_depth=branch_depth,
                 branch_count=branch_count,
                 current_depth=0,  # Main tentacles start at depth 0
-                toon_shader=self.toon_shader  # Share shader instance across all tentacles
+                toon_shader=self.toon_shader,  # Share shader instances across all tentacles
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.tentacles.append(tentacle)
@@ -238,14 +246,15 @@ class TentacleCreature:
             # Random size within range
             eye_size = random.uniform(eye_size_min, eye_size_max)
 
-            # Create eye with dynamic parameters and shared shader
+            # Create eye with dynamic parameters and shared shaders
             eye = Eye(
                 position=position,
                 size=eye_size,
                 eyeball_color=eyeball_color,
                 pupil_color=pupil_color,
                 parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.eyes.append(eye)

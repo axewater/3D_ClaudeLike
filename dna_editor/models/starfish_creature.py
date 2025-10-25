@@ -9,7 +9,7 @@ from .tentacle import Tentacle
 from .eye import Eye
 from ..core.curves import bezier_curve
 from ..core.constants import GOLDEN_RATIO, GOLDEN_ANGLE
-from ..shaders import create_toon_shader
+from ..shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
 class StarfishArm:
@@ -17,7 +17,7 @@ class StarfishArm:
 
     def __init__(self, central_body_position, arm_index, total_arms,
                  arm_segments, base_thickness, central_body_size, base_color,
-                 parent, toon_shader=None, curl_factor=0.3):
+                 parent, toon_shader=None, toon_shader_lite=None, curl_factor=0.3):
         """
         Create a spider-like leg.
 
@@ -30,7 +30,8 @@ class StarfishArm:
             central_body_size: Size of central body (for anchor positioning)
             base_color: RGB tuple for leg color
             parent: Parent entity (scene root)
-            toon_shader: Optional toon shader to apply
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
             curl_factor: Affects leg reach/extension (0-1, higher = longer reach)
         """
         self.central_body_position = central_body_position
@@ -39,6 +40,8 @@ class StarfishArm:
         self.arm_segments = arm_segments
         self.base_color = base_color
         self.curl_factor = curl_factor
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
 
         # Leg components
         self.leg_segments = []  # Cylinder segments (femur, tibia, tarsus)
@@ -52,9 +55,9 @@ class StarfishArm:
         self.animation_phase_offset = random.random() * math.pi * 2
 
         # Generate spider leg using mathematical joint positioning
-        self._generate_spider_leg(central_body_size, base_thickness, parent, toon_shader)
+        self._generate_spider_leg(central_body_size, base_thickness, parent)
 
-    def _generate_spider_leg(self, central_body_size, base_thickness, parent, toon_shader):
+    def _generate_spider_leg(self, central_body_size, base_thickness, parent):
         """Generate multi-jointed spider leg using mathematical positioning."""
         # Calculate leg direction based on radial angle
         direction_x = math.cos(self.angle)
@@ -111,7 +114,7 @@ class StarfishArm:
             color_factor = 1.0 - (segment_t * 0.2)
             segment_color = tuple(c * color_factor for c in self.base_color)
 
-            self._create_leg_segment(start_joint, end_joint, thickness, segment_color, parent, toon_shader)
+            self._create_leg_segment(start_joint, end_joint, thickness, segment_color, parent)
 
         # === CREATE JOINT SPHERES ===
         # Joints cover the connections between segments (hide any gaps)
@@ -132,21 +135,25 @@ class StarfishArm:
                 'parent': parent
             }
 
-            if toon_shader is not None:
-                joint_params['shader'] = toon_shader
+            # Choose shader based on joint size (LOD optimization)
+            if self.toon_shader is not None and self.toon_shader_lite is not None:
+                chosen_shader = get_shader_for_scale(joint_size, self.toon_shader, self.toon_shader_lite)
+                joint_params['shader'] = chosen_shader
+            elif self.toon_shader is not None:
+                joint_params['shader'] = self.toon_shader
 
             joint = Entity(**joint_params)
             joint.base_position = joint_pos
             joint.joint_index = i
             self.joints.append(joint)
 
-    def _create_leg_segment(self, start_pos, end_pos, thickness, segment_color, parent, toon_shader):
+    def _create_leg_segment(self, start_pos, end_pos, thickness, segment_color, parent):
         """Create cylindrical leg segment between two joints."""
         # Calculate segment position, rotation, and length
         midpoint = (start_pos + end_pos) / 2
         length = (end_pos - start_pos).length()
 
-        # Create cylinder entity (using cube stretched along Y axis)
+        # Create cylinder entity (using cube stretched along Y axis) with appropriate shader
         segment_params = {
             'model': 'cube',
             'color': color.rgb(*segment_color),
@@ -155,8 +162,12 @@ class StarfishArm:
             'parent': parent
         }
 
-        if toon_shader is not None:
-            segment_params['shader'] = toon_shader
+        # Choose shader based on thickness (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(thickness, self.toon_shader, self.toon_shader_lite)
+            segment_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
+            segment_params['shader'] = self.toon_shader
 
         segment = Entity(**segment_params)
 
@@ -280,10 +291,14 @@ class StarfishCreature:
         self.eye_stalk_thickness = 0.15
         self.eye_size = 0.25
 
-        # Create toon shader (shared across all parts)
+        # Create toon shaders (shared across all parts)
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in StarfishCreature, using default rendering")
+
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in StarfishCreature, will use full shader")
 
         # Generate creature
         self._generate_starfish()
@@ -310,7 +325,11 @@ class StarfishCreature:
             'parent': self.root
         }
 
-        if self.toon_shader is not None:
+        # Choose shader based on body size (LOD optimization)
+        if self.toon_shader is not None and self.toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(self.central_body_size, self.toon_shader, self.toon_shader_lite)
+            body_params['shader'] = chosen_shader
+        elif self.toon_shader is not None:
             body_params['shader'] = self.toon_shader
 
         self.central_body = Entity(**body_params)
@@ -336,6 +355,7 @@ class StarfishCreature:
                 base_color=arm_color,
                 parent=self.root,
                 toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite,
                 curl_factor=self.curl_factor
             )
 
@@ -394,7 +414,8 @@ class StarfishCreature:
             branch_depth=0,  # No branches
             branch_count=0,
             current_depth=0,
-            toon_shader=self.toon_shader
+            toon_shader=self.toon_shader,
+            toon_shader_lite=self.toon_shader_lite
         )
 
         # Create eye at tentacle tip
@@ -412,7 +433,8 @@ class StarfishCreature:
                 eyeball_color=eyeball_color,
                 pupil_color=pupil_color,
                 parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
     def get_bottom_extent(self):

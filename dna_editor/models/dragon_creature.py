@@ -85,11 +85,15 @@ class DragonCreature:
         # Random phase offset for organic variation
         self.phase_offset = random.random() * math.pi * 2
 
-        # Create toon shader (shared across all parts)
-        from ..shaders import create_toon_shader
+        # Create toon shaders (shared across all parts)
+        from ..shaders import create_toon_shader, create_toon_shader_lite
         self.toon_shader = create_toon_shader()
         if self.toon_shader is None:
             print("WARNING: Toon shader creation failed in DragonCreature, using default rendering")
+
+        self.toon_shader_lite = create_toon_shader_lite()
+        if self.toon_shader_lite is None:
+            print("WARNING: Lite toon shader creation failed in DragonCreature, will use full shader")
 
         # Generate dragon body
         self._generate_dragon()
@@ -169,7 +173,7 @@ class DragonCreature:
                         self.body_color[2] * darkness_factor
                     )
 
-            # Create segment
+            # Create segment with shared shaders
             segment = DragonSegment(
                 segment_index=i,
                 total_segments=self.num_segments,
@@ -178,6 +182,7 @@ class DragonCreature:
                 segment_color=segment_color,
                 parent=self.root,
                 toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite,
                 previous_segment=previous_segment
             )
 
@@ -256,14 +261,15 @@ class DragonCreature:
             )
             eye_position = head_position + eye_offset
 
-            # Create eye
+            # Create eye with shared shaders
             eye = Eye(
                 position=eye_position,
                 size=self.eye_size,
                 eyeball_color=self.eyeball_color,
                 pupil_color=self.pupil_color,
                 parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.eyes.append(eye)
@@ -383,7 +389,7 @@ class DragonCreature:
                 # Random phase for animation variety
                 phase_offset = random.random() * math.pi * 2
 
-                # Create whisker
+                # Create whisker with shared shaders
                 whisker = DragonWhisker(
                     anchor_point=anchor_point,
                     target_point=target_point,
@@ -392,6 +398,7 @@ class DragonCreature:
                     whisker_color=whisker_color,
                     parent=self.root,
                     toon_shader=self.toon_shader,
+                    toon_shader_lite=self.toon_shader_lite,
                     phase_offset=phase_offset
                 )
 
@@ -464,7 +471,7 @@ class DragonCreature:
 
             target_point = anchor_point + target_direction * horn_length
 
-            # Create horn with 3 segments
+            # Create horn with 3 segments and shared shaders
             horn = DragonHorn(
                 anchor_point=anchor_point,
                 target_point=target_point,
@@ -472,7 +479,8 @@ class DragonCreature:
                 base_thickness=horn_base_thickness,
                 horn_color=horn_color,
                 parent=self.root,
-                toon_shader=self.toon_shader
+                toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite
             )
 
             self.horns.append(horn)
@@ -500,13 +508,14 @@ class DragonCreature:
             anchor_offset = Vec3(0, segment_size / 2, 0)
             anchor_point = segment_position + anchor_offset
 
-            # Create spike with tail tapering
+            # Create spike with tail tapering and shared shaders
             spike = DragonSpike(
                 anchor_point=anchor_point,
                 segment_size=segment_size,
                 spike_color=self.spine_spike_color,
                 parent=self.root,
                 toon_shader=self.toon_shader,
+                toon_shader_lite=self.toon_shader_lite,
                 segment_index=i,
                 total_segments=total_segments
             )

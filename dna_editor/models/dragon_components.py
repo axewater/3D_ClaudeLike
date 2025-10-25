@@ -6,13 +6,14 @@ from ursina import Entity, Vec3, color, destroy
 import math
 import random
 from ..core.curves import bezier_curve
+from ..shaders import get_shader_for_scale
 
 
 class DragonSegment:
     """Single segment (sphere) in the dragon body with connector tube to previous segment."""
 
     def __init__(self, segment_index, total_segments, position, size,
-                 segment_color, parent, toon_shader=None, previous_segment=None):
+                 segment_color, parent, toon_shader=None, toon_shader_lite=None, previous_segment=None):
         """
         Create a dragon segment.
 
@@ -23,7 +24,8 @@ class DragonSegment:
             size: Sphere scale
             segment_color: RGB tuple (0-1) for this segment
             parent: Parent entity (scene root)
-            toon_shader: Optional toon shader to apply
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
             previous_segment: Reference to previous DragonSegment (None for head)
         """
         self.segment_index = segment_index
@@ -34,7 +36,7 @@ class DragonSegment:
         self.previous_segment = previous_segment
         self.connector_tube = None
 
-        # Create sphere entity
+        # Create sphere entity with appropriate shader based on size
         sphere_params = {
             'model': 'sphere',
             'color': color.rgb(*segment_color),
@@ -43,16 +45,20 @@ class DragonSegment:
             'parent': parent
         }
 
-        if toon_shader is not None:
+        # Choose shader based on size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(size, toon_shader, toon_shader_lite)
+            sphere_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             sphere_params['shader'] = toon_shader
 
         self.entity = Entity(**sphere_params)
 
         # Create connector tube to previous segment (if not head)
         if previous_segment is not None:
-            self._create_connector_tube(parent, segment_color, toon_shader)
+            self._create_connector_tube(parent, segment_color, toon_shader, toon_shader_lite)
 
-    def _create_connector_tube(self, scene_parent, tube_color, toon_shader):
+    def _create_connector_tube(self, scene_parent, tube_color, toon_shader, toon_shader_lite):
         """Create tube connecting this segment to previous segment."""
         if self.previous_segment is None:
             return
@@ -65,7 +71,7 @@ class DragonSegment:
         avg_size = (self.size + self.previous_segment.size) / 2
         tube_radius = avg_size * 0.4  # Thicker tubes for dragon body
 
-        # Create tube entity (stretched cube along Y axis)
+        # Create tube entity (stretched cube along Y axis) with appropriate shader
         tube_params = {
             'model': 'cube',
             'color': color.rgb(*tube_color),
@@ -74,7 +80,11 @@ class DragonSegment:
             'parent': scene_parent
         }
 
-        if toon_shader is not None:
+        # Choose shader based on tube size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(tube_radius, toon_shader, toon_shader_lite)
+            tube_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             tube_params['shader'] = toon_shader
 
         self.connector_tube = Entity(**tube_params)
@@ -109,7 +119,7 @@ class DragonHorn:
     """Rigid curved horn extending from dragon's head, using Bezier curves and sphere chains."""
 
     def __init__(self, anchor_point, target_point, num_segments, base_thickness,
-                 horn_color, parent, toon_shader=None):
+                 horn_color, parent, toon_shader=None, toon_shader_lite=None):
         """
         Create a dragon horn.
 
@@ -120,13 +130,16 @@ class DragonHorn:
             base_thickness: Thickness at anchor point (tapers to tip using golden ratio)
             horn_color: RGB tuple (0-1) for horn
             parent: Parent entity
-            toon_shader: Optional toon shader
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
         """
         self.anchor_point = anchor_point
         self.target_point = target_point
         self.num_segments = num_segments
         self.base_thickness = base_thickness
         self.horn_color = horn_color
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
 
         # Generate horn curve using Bezier (rigid curve for horns)
         # Use lower control_strength for more rigid, less wavy horns
@@ -152,7 +165,7 @@ class DragonHorn:
             taper_factor = 1.0 - (t * (1.0 - 1.0 / (PHI ** 2)))
             sphere_size = base_thickness * taper_factor
 
-            # Create sphere
+            # Create sphere with appropriate shader
             sphere_params = {
                 'model': 'sphere',
                 'color': color.rgb(*horn_color),
@@ -161,7 +174,11 @@ class DragonHorn:
                 'parent': parent
             }
 
-            if toon_shader is not None:
+            # Choose shader based on size (LOD optimization)
+            if toon_shader is not None and toon_shader_lite is not None:
+                chosen_shader = get_shader_for_scale(sphere_size, toon_shader, toon_shader_lite)
+                sphere_params['shader'] = chosen_shader
+            elif toon_shader is not None:
                 sphere_params['shader'] = toon_shader
 
             sphere = Entity(**sphere_params)
@@ -186,7 +203,11 @@ class DragonHorn:
                     'parent': parent
                 }
 
-                if toon_shader is not None:
+                # Choose shader based on tube size (LOD optimization)
+                if toon_shader is not None and toon_shader_lite is not None:
+                    chosen_shader = get_shader_for_scale(tube_radius, toon_shader, toon_shader_lite)
+                    tube_params['shader'] = chosen_shader
+                elif toon_shader is not None:
                     tube_params['shader'] = toon_shader
 
                 tube = Entity(**tube_params)
@@ -234,7 +255,7 @@ class DragonHorn:
 class DragonSpike:
     """Sharp spike extending upward from dragon's back (one per body segment)."""
 
-    def __init__(self, anchor_point, segment_size, spike_color, parent, toon_shader=None, segment_index=0, total_segments=1):
+    def __init__(self, anchor_point, segment_size, spike_color, parent, toon_shader=None, toon_shader_lite=None, segment_index=0, total_segments=1):
         """
         Create a dragon spine spike.
 
@@ -243,13 +264,16 @@ class DragonSpike:
             segment_size: Size of the parent segment (for proportional sizing)
             spike_color: RGB tuple (0-1) for spike
             parent: Parent entity
-            toon_shader: Optional toon shader
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small cubes (performance optimization)
             segment_index: Index of this segment along body (0=head, higher=tail)
             total_segments: Total number of body segments (for tail tapering)
         """
         self.anchor_point = anchor_point
         self.segment_size = segment_size
         self.spike_color = spike_color
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
 
         # Golden ratio for sizing
         PHI = 1.618033988749895
@@ -265,7 +289,7 @@ class DragonSpike:
         spike_base_thickness = (segment_size / (PHI ** 3)) * tail_taper  # Smaller base
         spike_length = (segment_size * 0.8) * tail_taper  # Shorter spikes
 
-        # Create a single tapered pyramid/cone spike
+        # Create a single tapered pyramid/cone spike with appropriate shader
         # Use a stretched cube that tapers from base to tip
         spike_params = {
             'model': 'cube',
@@ -275,7 +299,11 @@ class DragonSpike:
             'parent': parent
         }
 
-        if toon_shader is not None:
+        # Choose shader based on size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(spike_base_thickness, toon_shader, toon_shader_lite)
+            spike_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             spike_params['shader'] = toon_shader
 
         self.spike = Entity(**spike_params)
@@ -291,7 +319,11 @@ class DragonSpike:
             'parent': parent
         }
 
-        if toon_shader is not None:
+        # Choose shader based on tip size (LOD optimization)
+        if toon_shader is not None and toon_shader_lite is not None:
+            chosen_shader = get_shader_for_scale(tip_size, toon_shader, toon_shader_lite)
+            tip_params['shader'] = chosen_shader
+        elif toon_shader is not None:
             tip_params['shader'] = toon_shader
 
         self.tip = Entity(**tip_params)
@@ -327,7 +359,7 @@ class DragonWhisker:
     """Thin curved whisker extending from dragon's head, using Bezier curves and sphere chains."""
 
     def __init__(self, anchor_point, target_point, num_segments, base_thickness,
-                 whisker_color, parent, toon_shader=None, phase_offset=0):
+                 whisker_color, parent, toon_shader=None, toon_shader_lite=None, phase_offset=0):
         """
         Create a dragon whisker.
 
@@ -338,7 +370,8 @@ class DragonWhisker:
             base_thickness: Thickness at anchor point (tapers to tip)
             whisker_color: RGB tuple (0-1) for whisker
             parent: Parent entity
-            toon_shader: Optional toon shader
+            toon_shader: Full toon shader instance
+            toon_shader_lite: Lite toon shader for small spheres (performance optimization)
             phase_offset: Random phase for animation variation
         """
         self.anchor_point = anchor_point
@@ -346,6 +379,8 @@ class DragonWhisker:
         self.num_segments = num_segments
         self.base_thickness = base_thickness
         self.whisker_color = whisker_color
+        self.toon_shader = toon_shader
+        self.toon_shader_lite = toon_shader_lite
         self.phase_offset = phase_offset
 
         # Generate whisker curve using Bezier
@@ -373,7 +408,7 @@ class DragonWhisker:
             taper_factor = 1.0 - (t * (1.0 - 1.0 / (PHI ** 2)))
             sphere_size = base_thickness * taper_factor
 
-            # Create sphere
+            # Create sphere with appropriate shader
             sphere_params = {
                 'model': 'sphere',
                 'color': color.rgb(*whisker_color),
@@ -382,7 +417,11 @@ class DragonWhisker:
                 'parent': parent
             }
 
-            if toon_shader is not None:
+            # Choose shader based on size (LOD optimization)
+            if toon_shader is not None and toon_shader_lite is not None:
+                chosen_shader = get_shader_for_scale(sphere_size, toon_shader, toon_shader_lite)
+                sphere_params['shader'] = chosen_shader
+            elif toon_shader is not None:
                 sphere_params['shader'] = toon_shader
 
             sphere = Entity(**sphere_params)
@@ -407,7 +446,11 @@ class DragonWhisker:
                     'parent': parent
                 }
 
-                if toon_shader is not None:
+                # Choose shader based on tube size (LOD optimization)
+                if toon_shader is not None and toon_shader_lite is not None:
+                    chosen_shader = get_shader_for_scale(tube_radius, toon_shader, toon_shader_lite)
+                    tube_params['shader'] = chosen_shader
+                elif toon_shader is not None:
                     tube_params['shader'] = toon_shader
 
                 tube = Entity(**tube_params)
