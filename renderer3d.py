@@ -17,6 +17,7 @@ from graphics3d.enemies import create_enemy_model_3d, update_enemy_animation, cr
 from graphics3d.items import create_item_model_3d, update_item_animation
 from animations3d import AnimationManager3D
 from textures import get_fog_of_war_texture
+from shaders import create_radial_shadow_shader
 import time
 from logger import get_logger
 
@@ -361,13 +362,15 @@ class Renderer3D:
             )
             self.player_shadow = Entity(
                 model='circle',
-                scale=0.7,  # Slightly larger than player for soft edge
-                color=ursina_color.rgba(0, 0, 0, 0.4),  # Semi-transparent black
+                scale=0.8,  # Slightly larger for softer edge
+                color=ursina_color.black,  # Shader will handle alpha
                 position=shadow_pos,
                 rotation_x=90,  # Flat on ground
                 collider=None
             )
-            log.debug("Created player contact shadow", "renderer")
+            # Apply radial shadow shader for smooth falloff
+            self.player_shadow.shader = create_radial_shadow_shader(max_alpha=0.5, falloff_power=2.5)
+            log.debug("Created player contact shadow with radial falloff", "renderer")
         else:
             # Update position
             self.player_entity.position = pos
@@ -439,12 +442,14 @@ class Renderer3D:
                 shadow_pos = world_to_3d_position(enemy.x, enemy.y, 0.01)
                 enemy_shadow = Entity(
                     model='circle',
-                    scale=0.6,  # Slightly smaller than player
-                    color=ursina_color.rgba(0, 0, 0, 0.35),  # Slightly lighter than player shadow
+                    scale=0.7,  # Sized for smooth falloff
+                    color=ursina_color.black,  # Shader will handle alpha
                     position=shadow_pos,
                     rotation_x=90,
                     collider=None
                 )
+                # Apply radial shadow shader for smooth falloff (slightly lighter than player)
+                enemy_shadow.shader = create_radial_shadow_shader(max_alpha=0.4, falloff_power=2.5)
                 self.enemy_shadows[enemy_id] = enemy_shadow
 
                 log.debug(f"Created {enemy.enemy_type} at ({enemy.x}, {enemy.y})", "renderer")
