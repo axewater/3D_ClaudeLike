@@ -378,14 +378,14 @@ class AlertParticle3D:
         """
         self.enemy_entity = enemy_entity
         self.lifetime = 0.0
-        self.max_lifetime = 0.5
+        self.max_lifetime = 1.0
 
         # Create "!" text billboard
         self.entity = Text(
             text="!",
-            position=(0, 1.5, 0),  # Above enemy
-            scale=2.0,
-            color=ursina_color.rgb(1, 0.86, 0.2),  # Yellow
+            position=(0, 2.5, 0),  # Above enemy
+            scale=6.0,
+            color=ursina_color.rgb(1, 1, 0),  # Bright yellow
             billboard=True,
             parent=enemy_entity  # Attach to enemy
         )
@@ -399,7 +399,7 @@ class AlertParticle3D:
 
         # Bounce animation
         bounce = abs(math.sin(self.lifetime * 8.0)) * 0.3
-        self.entity.y = 1.5 + bounce
+        self.entity.y = 2.5 + bounce
 
         return True
 
