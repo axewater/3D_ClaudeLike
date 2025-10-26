@@ -24,6 +24,50 @@ from logger import get_logger
 log = get_logger()
 
 
+def get_item_shadow_config(item_type: str) -> dict:
+    """
+    Get shadow configuration for an item type.
+
+    Args:
+        item_type: Item type constant (e.g., c.ITEM_SWORD)
+
+    Returns:
+        Dict with keys:
+            - model: 'circle' for round items, 'plane' for box-like items
+            - scale: Shadow size (float or tuple for rectangular shadows)
+            - max_alpha: Shadow opacity (0.0-1.0)
+            - falloff_power: How sharply shadow fades
+
+    Round items (circular shadow):
+        - Rings, coins, potions
+    Box-like items (square/rectangular shadow):
+        - Boots, shields, swords, treasure chests
+    """
+    # Box-like items get square/rectangular shadows
+    box_items = {
+        c.ITEM_SWORD: {'model': 'plane', 'scale': (0.3, 0.6), 'max_alpha': 0.3, 'falloff_power': 2.0},
+        c.ITEM_SHIELD: {'model': 'plane', 'scale': (0.4, 0.5), 'max_alpha': 0.35, 'falloff_power': 2.0},
+        c.ITEM_BOOTS: {'model': 'plane', 'scale': (0.4, 0.4), 'max_alpha': 0.3, 'falloff_power': 2.0},
+        c.ITEM_TREASURE_CHEST: {'model': 'plane', 'scale': (0.5, 0.5), 'max_alpha': 0.35, 'falloff_power': 2.0},
+    }
+
+    # Round items get circular shadows
+    round_items = {
+        c.ITEM_RING: {'model': 'circle', 'scale': 0.3, 'max_alpha': 0.25, 'falloff_power': 2.5},
+        c.ITEM_HEALTH_POTION: {'model': 'circle', 'scale': 0.4, 'max_alpha': 0.3, 'falloff_power': 2.5},
+        c.ITEM_GOLD_COIN: {'model': 'circle', 'scale': 0.35, 'max_alpha': 0.25, 'falloff_power': 2.5},
+    }
+
+    # Try box items first, then round items, then default to circle
+    if item_type in box_items:
+        return box_items[item_type]
+    elif item_type in round_items:
+        return round_items[item_type]
+    else:
+        # Default: circular shadow
+        return {'model': 'circle', 'scale': 0.4, 'max_alpha': 0.3, 'falloff_power': 2.5}
+
+
 class Renderer3D:
     """
     3D rendering manager using Ursina Engine
@@ -48,6 +92,7 @@ class Renderer3D:
         self.enemy_entities: Dict[int, Entity] = {}  # enemy id -> Entity
         self.enemy_shadows: Dict[int, Entity] = {}  # enemy id -> shadow Entity
         self.item_entities: Dict[int, Entity] = {}   # item id -> Entity
+        self.item_shadows: Dict[int, Entity] = {}    # item id -> shadow Entity
 
         # Enemy model pool (for performance - eliminates lag spikes)
         self.enemy_model_pool: Dict[str, List[Dict]] = {}  # enemy_type -> [pool entries]
@@ -506,6 +551,8 @@ class Renderer3D:
                 # Item not visible - hide if it exists, skip creation if it doesn't
                 if item_id in self.item_entities:
                     self.item_entities[item_id].visible = False
+                if item_id in self.item_shadows:
+                    self.item_shadows[item_id].visible = False
                 continue
 
             # Item is visible
@@ -521,6 +568,25 @@ class Renderer3D:
                 # Store reference
                 self.item_entities[item_id] = item_model
 
+                # Create soft contact shadow beneath item
+                shadow_config = get_item_shadow_config(item.item_type)
+                shadow_pos = world_to_3d_position(item.x, item.y, 0.01)
+
+                item_shadow = Entity(
+                    model=shadow_config['model'],
+                    scale=shadow_config['scale'],
+                    color=ursina_color.black,  # Shader will handle alpha
+                    position=shadow_pos,
+                    rotation_x=90,
+                    collider=None
+                )
+                # Apply radial shadow shader for smooth falloff
+                item_shadow.shader = create_radial_shadow_shader(
+                    max_alpha=shadow_config['max_alpha'],
+                    falloff_power=shadow_config['falloff_power']
+                )
+                self.item_shadows[item_id] = item_shadow
+
                 log.debug(f"Created {item.rarity} {item.item_type} at ({item.x}, {item.y})", "renderer")
             else:
                 # Update existing item position (base position, animation handles float)
@@ -531,12 +597,24 @@ class Renderer3D:
                 item_entity.z = pos[2]
                 item_entity.visible = True  # Make visible if was hidden
 
+                # Update shadow position and visibility
+                if item_id in self.item_shadows:
+                    shadow_pos = world_to_3d_position(item.x, item.y, 0.01)
+                    self.item_shadows[item_id].position = shadow_pos
+                    self.item_shadows[item_id].visible = True
+
         # Remove entities for items that no longer exist (picked up)
         picked_up_item_ids = set(self.item_entities.keys()) - current_item_ids
         for item_id in picked_up_item_ids:
             item_entity = self.item_entities[item_id]
             item_entity.disable()  # Disable the model
             del self.item_entities[item_id]
+
+            # Clean up shadow if it exists
+            if item_id in self.item_shadows:
+                self.item_shadows[item_id].disable()
+                del self.item_shadows[item_id]
+
             log.debug("Picked up item", "renderer")
 
     def preload_enemy_models(self, enemy_types: Optional[List[str]] = None):
@@ -1160,6 +1238,11 @@ class Renderer3D:
         for item_id, item_entity in self.item_entities.items():
             item_entity.disable()
         self.item_entities.clear()
+
+        # Destroy item shadows
+        for item_id, shadow in self.item_shadows.items():
+            shadow.disable()
+        self.item_shadows.clear()
 
         # Destroy lights
         if self.ambient_light:

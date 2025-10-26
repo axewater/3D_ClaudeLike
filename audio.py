@@ -190,15 +190,21 @@ class SoundSynthesizer:
 class AudioManager:
     """Manages all game audio - sound effects and music"""
 
-    def __init__(self):
-        """Initialize audio system"""
+    def __init__(self, sfx_volume: float = 0.8, music_volume: float = 0.7):
+        """
+        Initialize audio system
+
+        Args:
+            sfx_volume: Sound effects volume (0.0 to 1.0)
+            music_volume: Music volume (0.0 to 1.0)
+        """
         pygame.mixer.pre_init(22050, -16, 2, 512)
         pygame.mixer.init()
 
         # Audio state
         self.enabled = True
-        self.sfx_volume = 0.7
-        self.music_volume = 0.4
+        self.sfx_volume = sfx_volume
+        self.music_volume = music_volume
 
         # Sound cache
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
@@ -927,7 +933,20 @@ def get_audio_manager() -> AudioManager:
     global _audio_manager
     if _audio_manager is None:
         try:
-            _audio_manager = AudioManager()
+            # Load saved audio settings
+            try:
+                from settings import load_settings
+                saved_settings = load_settings()
+                sfx_vol = saved_settings.get('sfx_volume', 0.8)
+                music_vol = saved_settings.get('music_volume', 0.7)
+                print(f"[Audio] Loading saved volumes: SFX={sfx_vol:.1%}, Music={music_vol:.1%}")
+            except:
+                # If settings module not available, use defaults
+                sfx_vol = 0.8
+                music_vol = 0.7
+                print(f"[Audio] Using default volumes: SFX={sfx_vol:.1%}, Music={music_vol:.1%}")
+
+            _audio_manager = AudioManager(sfx_volume=sfx_vol, music_volume=music_vol)
         except Exception as e:
             print(f"Warning: Failed to initialize audio: {e}")
             # Create a dummy audio manager that does nothing

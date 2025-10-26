@@ -1,0 +1,10 @@
+{
+  "music_volume": 0.7,
+  "sfx_volume": 0.8,
+  "fullscreen": false,
+  "shadows_enemies": true,
+  "shadows_items": true,
+  "toon_shader_enemies": true,
+  "toon_shader_items": false,
+  "particle_density": 1.0
+}

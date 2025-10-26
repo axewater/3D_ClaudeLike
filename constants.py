@@ -470,6 +470,9 @@ PARTICLE_DENSITY = 0.5  # Particle spawn multiplier (0.5 = 50%, 0.75 = 75%, 1.0 
 UI_UPDATE_THROTTLE = 0.05  # Minimum seconds between UI updates (20 FPS update rate)
 ENABLE_AMBIENT_PARTICLES_3D = False  # Disable fog/cloud particles in 3D mode (can't see outside dungeon in first-person)
 
+# Display settings
+FULLSCREEN = False  # Run in fullscreen mode (1920x1080 fixed size)
+
 # Enemy model pool settings (CRITICAL for eliminating lag spikes when enemies appear)
 ENEMY_POOL_SIZE_PER_TYPE = 4     # Pre-create 4 instances per enemy type (covers most encounters)
 ENABLE_ENEMY_POOL = True         # Use model pool system (highly recommended)

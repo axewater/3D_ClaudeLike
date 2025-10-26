@@ -720,6 +720,11 @@ class GameController(Entity):
 def main_3d():
     """Main entry point for 3D mode"""
 
+    # Load saved settings before creating the app
+    from settings import load_and_apply_settings
+    saved_settings = load_and_apply_settings()
+    log.debug(f"Loaded settings: {saved_settings}", "main")
+
     # Suppress Panda3D and Ursina startup logs
     from panda3d.core import loadPrcFileData
     loadPrcFileData("", "notify-level error")  # Only show errors, not info/warnings
@@ -729,14 +734,30 @@ def main_3d():
     app = Ursina(
         title="Claude-Like 3D",
         borderless=False,
-        fullscreen=False,
+        fullscreen=c.FULLSCREEN,  # Use setting from constants (loaded from file)
         development_mode=False  # Set to True for debug info
     )
 
-    # Set window resolution to Full HD for better performance
-    window.size = (1920, 1080)
-    window.position = (100, 50)  # Offset from top-left so title bar is accessible
-    log.debug("Window resolution set to 1920x1080, positioned at (100, 50)", "main")
+    # Set window resolution
+    if c.FULLSCREEN:
+        # In fullscreen, use native monitor resolution
+        import tkinter as tk
+        try:
+            root = tk.Tk()
+            monitor_width = root.winfo_screenwidth()
+            monitor_height = root.winfo_screenheight()
+            root.destroy()
+            window.size = (monitor_width, monitor_height)
+            log.debug(f"Fullscreen mode: Using native resolution {monitor_width}x{monitor_height}", "main")
+        except:
+            # Fallback to 1920x1080 if detection fails
+            window.size = (1920, 1080)
+            log.debug("Fullscreen mode: Using fallback resolution 1920x1080", "main")
+    else:
+        # Windowed mode: Fixed 1920x1080 for consistency
+        window.size = (1920, 1080)
+        window.position = (100, 50)  # Offset from top-left so title bar is accessible
+        log.debug("Windowed mode: 1920x1080 at position (100, 50)", "main")
 
     # Set background color (dark blue, matching 2D title screen)
     window.color = color.rgb(0.05, 0.05, 0.15)
