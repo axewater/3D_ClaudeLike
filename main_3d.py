@@ -717,13 +717,22 @@ class GameController(Entity):
         return direction_map.get(yaw, (-1, 0))  # Default to West
 
 
-def main_3d():
-    """Main entry point for 3D mode"""
+def main_3d(force_windowed=False):
+    """Main entry point for 3D mode
+
+    Args:
+        force_windowed: If True, override fullscreen setting and force windowed mode
+    """
 
     # Load saved settings before creating the app
     from settings import load_and_apply_settings
     saved_settings = load_and_apply_settings()
     log.debug(f"Loaded settings: {saved_settings}", "main")
+
+    # Override fullscreen if --windowed flag was passed
+    if force_windowed:
+        c.FULLSCREEN = False
+        log.info("Forcing windowed mode (--windowed flag)", "main")
 
     # Suppress Panda3D and Ursina startup logs
     from panda3d.core import loadPrcFileData

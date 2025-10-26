@@ -48,6 +48,21 @@ def parse_args():
         action='store_true',
         help='Force regeneration of cached TTS voice files (requires pyttsx3)'
     )
+    parser.add_argument(
+        '--reset-settings',
+        action='store_true',
+        help='Reset all settings to defaults (deletes game_settings.json) - use if display/audio settings cause problems'
+    )
+    parser.add_argument(
+        '--windowed',
+        action='store_true',
+        help='Force windowed mode for this session (temporary override, does not modify saved settings)'
+    )
+    parser.add_argument(
+        '--safe-mode',
+        action='store_true',
+        help='Safe mode: reset settings AND force windowed mode (use if game won\'t start)'
+    )
     return parser.parse_args()
 
 
@@ -104,6 +119,18 @@ def main():
     import os
     args = parse_args()
 
+    # Handle --safe-mode (combines reset-settings + windowed)
+    if args.safe_mode:
+        args.reset_settings = True
+        args.windowed = True
+        print("[Safe Mode] Resetting settings and forcing windowed mode...")
+
+    # Handle --reset-settings FIRST (before any settings are loaded)
+    if args.reset_settings:
+        from settings import reset_settings
+        reset_settings()
+        print("[Settings] Settings have been reset to defaults")
+
     # Set texture regeneration flag via environment variable
     # (checked by graphics3d/tiles.py during import)
     if args.regenerate_textures:
@@ -159,7 +186,7 @@ def main():
     # Now launch Ursina game
     log.info("Launching Ursina 3D renderer...")
     from main_3d import main_3d as run_3d_game
-    run_3d_game()
+    run_3d_game(force_windowed=args.windowed)
 
 
 if __name__ == "__main__":

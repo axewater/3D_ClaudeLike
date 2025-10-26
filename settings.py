@@ -71,6 +71,27 @@ def save_settings(settings: Dict[str, Any]) -> bool:
         return False
 
 
+def reset_settings() -> bool:
+    """
+    Reset settings to defaults by deleting the settings file.
+
+    Returns:
+        True if successful (or if file doesn't exist), False on error
+    """
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            os.remove(SETTINGS_FILE)
+            print(f"[Settings] Deleted settings file: {SETTINGS_FILE}")
+            print(f"[Settings] All settings reset to defaults")
+            return True
+        else:
+            print(f"[Settings] No settings file to delete (already at defaults)")
+            return True
+    except Exception as e:
+        print(f"[Settings] Error deleting settings file: {e}")
+        return False
+
+
 def apply_settings_to_constants(settings: Dict[str, Any]):
     """
     Apply loaded settings to constants module.
