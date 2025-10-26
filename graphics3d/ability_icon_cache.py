@@ -35,6 +35,7 @@ ABILITY_NAMES = [
     "Fireball",
     "Frost Nova",
     "Heal",
+    "Healing Touch",  # Alias for Heal (actual ability name in game)
     "Dash",
     "Shadow Step",
     "Whirlwind",

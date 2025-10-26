@@ -143,7 +143,8 @@ def generate_heal_frames(seed: int = 10003) -> List[Image.Image]:
     with RandomSeed(seed):
         primary_color = (50, 255, 100)  # Green
         secondary_color = (255, 220, 80)  # Gold
-        symbol_color = (255, 240, 200)  # Light gold
+        symbol_color = (255, 50, 100)  # Bright pink/red for visibility
+        outline_color = (255, 255, 255)  # White outline
 
         for frame in range(TOTAL_FRAMES):
             # Base: Gentle energy vortex
@@ -164,7 +165,7 @@ def generate_heal_frames(seed: int = 10003) -> List[Image.Image]:
             # Layer 2: Heart symbol (pulsing)
             pulse = 0.85 + 0.15 * abs(frame - TOTAL_FRAMES / 2) / (TOTAL_FRAMES / 2)
             symbol_size = int(ICON_SIZE * 0.5 * pulse)
-            heart_symbol = create_symbol_image('heart', symbol_size, symbol_color + (220,))
+            heart_symbol = create_symbol_image('heart', symbol_size, symbol_color + (240,), outline_color=outline_color + (255,))
 
             # Composite layers
             result = vortex.copy()
@@ -365,13 +366,14 @@ def generate_all_ability_frames() -> dict:
     ability_frames = {
         "Fireball": generate_fireball_frames(),
         "Frost Nova": generate_frost_nova_frames(),
-        "Heal": generate_heal_frames(),  # HealingTouch uses "Heal" key
+        "Heal": generate_heal_frames(),
         "Dash": generate_dash_frames(),
         "Shadow Step": generate_shadow_step_frames(),
         "Whirlwind": generate_whirlwind_frames(),
     }
 
-    # Also add "HealingTouch" as alias for "Heal"
-    ability_frames["HealingTouch"] = ability_frames["Heal"]
+    # Add aliases for different ability name variations
+    ability_frames["Healing Touch"] = ability_frames["Heal"]  # With space (actual ability name)
+    ability_frames["HealingTouch"] = ability_frames["Heal"]  # Without space (fallback)
 
     return ability_frames
