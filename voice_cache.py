@@ -37,32 +37,32 @@ VOICE_LINES = {
 # Death scream configurations (enemy_type -> transformation parameters)
 DEATH_SCREAM_CONFIGS = {
     'startle': {
-        'text': 'aaiieee',     # High-pitched shriek
+        'text': 'ha ha haa',   # Panicked laughter-scream
         'pitch_shift': 8,      # +8 semitones (high-pitched squeal)
-        'time_stretch': 0.8,   # 80% duration (quick death)
+        'time_stretch': 1.6,   # 160% duration (extended panic)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 120,       # Slower TTS for better articulation
+        'tts_rate': 200,       # Fast panicked voice
     },
     'slime': {
-        'text': 'blooorgle',   # Wet gurgling bubble death
-        'pitch_shift': -4,     # -4 semitones (lower, bubbly)
-        'time_stretch': 1.3,   # 130% duration (wet splat)
+        'text': 'plupe plupe plupedeedoop',  # Bubbly splat sounds
+        'pitch_shift': -8,     # -8 semitones (low bubbly)
+        'time_stretch': 0.5,   # 50% duration (quick splat)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 100,
+        'tts_rate': 200,       # Fast bubbling
     },
     'skeleton': {
-        'text': 'khaaach',     # Dry rattling death rattle
-        'pitch_shift': 0,      # No pitch shift (hollow, neutral)
-        'time_stretch': 0.7,   # 70% duration (brief rattle)
+        'text': 'oh nooh',     # Hollow mournful wail
+        'pitch_shift': 12,     # +12 semitones (high hollow)
+        'time_stretch': 2.0,   # 200% duration (long rattle)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 140,
+        'tts_rate': 150,       # Medium pace
     },
     'orc': {
-        'text': 'graaawr',     # Deep guttural beast roar
-        'pitch_shift': -8,     # -8 semitones (deep guttural)
+        'text': 'graar',       # Guttural roar
+        'pitch_shift': 8,      # +8 semitones (guttural roar)
         'time_stretch': 1.5,   # 150% duration (long roar)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 90,        # Slower for deeper voice
+        'tts_rate': 125,       # Steady growl
     },
     'demon': {
         'text': 'aahh',        # KEEP AS-IS - sounds amazing!
@@ -72,11 +72,11 @@ DEATH_SCREAM_CONFIGS = {
         'tts_rate': 110,
     },
     'dragon': {
-        'text': 'rrroooaawr',  # Epic dragon roar
-        'pitch_shift': -10,    # -10 semitones (epic deep roar)
+        'text': 'haa',         # Epic roar
+        'pitch_shift': 12,     # +12 semitones (epic roar)
         'time_stretch': 2.0,   # 200% duration (dramatic death)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 85,        # Very slow for deepest voice
+        'tts_rate': 125,       # Steady epic voice
     },
 }
 
