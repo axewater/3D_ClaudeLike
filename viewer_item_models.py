@@ -18,12 +18,42 @@ Controls:
 - ESC: Quit
 """
 
-from ursina import Ursina, Entity, Vec3, Text, color as ursina_color, camera, mouse, held_keys, time
 import sys
-import math
 import argparse
 
-# Import item model creators
+# Check for help flags BEFORE importing heavy modules (Ursina takes time to load!)
+# Support both Unix-style (-h, --help) and Windows-style (/?) help flags
+if any(arg in ['/?', '-h', '--help', '--h'] for arg in sys.argv[1:]):
+    # Print help immediately without loading Ursina
+    parser = argparse.ArgumentParser(
+        description='3D Item Model Viewer - View procedurally generated item models',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                              # View all items (7 types × 5 rarities)
+  %(prog)s --type sword                 # View all sword rarities (5 items)
+  %(prog)s --rarity legendary           # View all legendary items (7 items)
+  %(prog)s --type ring --rarity epic    # View only epic ring (1 item)
+        """
+    )
+    parser.add_argument(
+        '--type',
+        choices=['sword', 'shield', 'potion', 'boots', 'ring', 'chest', 'coin'],
+        help='Filter by item type'
+    )
+    parser.add_argument(
+        '--rarity',
+        choices=['common', 'uncommon', 'rare', 'epic', 'legendary'],
+        help='Filter by rarity tier'
+    )
+    # Replace /? with --help for argparse (it doesn't recognize /?)
+    help_args = ['--help' if arg == '/?' else arg for arg in sys.argv[1:]]
+    parser.parse_args(help_args)
+    sys.exit(0)
+
+# Heavy imports moved below help check - only load when actually running the viewer
+import math
+from ursina import Ursina, Entity, Vec3, Text, color as ursina_color, camera, mouse, held_keys, time
 from graphics3d.items import create_item_model_3d, update_item_animation
 import constants as c
 
