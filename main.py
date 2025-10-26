@@ -43,6 +43,11 @@ def parse_args():
         action='store_true',
         help='Force regeneration of cached ability icon animations (slower startup)'
     )
+    parser.add_argument(
+        '--regenerate-voices',
+        action='store_true',
+        help='Force regeneration of cached TTS voice files (requires pyttsx3)'
+    )
     return parser.parse_args()
 
 
@@ -108,6 +113,16 @@ def main():
     # (checked by ui3d/helmet_hud.py during import)
     if args.regenerate_ability_icons:
         os.environ['REGENERATE_ABILITY_ICONS'] = '1'
+
+    # Handle voice cache regeneration
+    if args.regenerate_voices:
+        import shutil
+        from pathlib import Path
+        voice_cache_path = Path("ursina_cache/voices")
+        if voice_cache_path.exists():
+            print(f"Deleting voice cache: {voice_cache_path}")
+            shutil.rmtree(voice_cache_path)
+            print("Voice cache deleted. Will regenerate on startup...")
 
     # Initialize logger FIRST (before any other imports that might log)
     from logger import init_logger, parse_log_level, LogLevel

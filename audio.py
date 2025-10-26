@@ -255,84 +255,8 @@ class AudioManager:
         self.sounds['crit'] = synth.array_to_sound(crit)
 
         # === ENEMY SOUNDS ===
-
-        # Startle death - high pitched alien squeal with wobbling vibrato
-        main_squeal = synth.generate_sweep(900, 350, 0.28, 0.30)
-        main_squeal = synth.apply_vibrato(main_squeal, rate=12.0, depth=0.05)  # Fast wobble
-        startle_death = synth.combine_waves(
-            main_squeal,                                      # Wobbling squeal
-            synth.generate_sweep(1800, 700, 0.28, 0.14),     # Harmonic overtone
-            synth.generate_square_wave(450, 0.15, 0.10),     # Distortion edge
-            synth.generate_harmonic_stack(450, 0.12, 3, 1.8, 0.08)  # Dissonant rattle
-        )
-        self.sounds['enemy_death_startle'] = synth.array_to_sound(startle_death)
-
-        # Slime death - wet bubbling splat with gurgling texture
-        gooey_sweep = synth.generate_sweep(320, 80, 0.35, 0.28)
-        gooey_sweep = synth.apply_formant_filter(gooey_sweep, formant_freq=200.0, resonance=3.0)  # Gurgle
-        bubble_bass = synth.generate_sine_wave(95, 0.18, 0.16)
-        bubble_bass = synth.apply_tremolo(bubble_bass, rate=15.0, depth=0.6)  # Bubbling effect
-        slime_death = synth.combine_waves(
-            gooey_sweep,                                      # Gurgling splat
-            synth.generate_sweep(180, 60, 0.25, 0.20),       # Low gooey spread
-            bubble_bass,                                      # Bubbling bass
-            synth.generate_sine_wave(140, 0.15, 0.12),       # Secondary bubble
-        )
-        self.sounds['enemy_death_slime'] = synth.array_to_sound(slime_death)
-
-        # Skeleton death - bone clatter and collapse with sharp harmonic rattling
-        bone_clatter = synth.generate_harmonic_stack(280, 0.08, 4, 2.1, 0.20)  # Sharp impact
-        bone_scatter = synth.generate_harmonic_stack(320, 0.15, 5, 1.9, 0.16)  # Multiple rattles
-        bone_scatter = synth.apply_tremolo(bone_scatter, rate=25.0, depth=0.7)  # Rapid scatter
-        skeleton_death = synth.combine_waves(
-            bone_clatter,                                     # Initial impact clatter
-            bone_scatter,                                     # Scattered bones rattling
-            synth.generate_sweep(280, 120, 0.22, 0.18),      # Descending fall
-            synth.generate_square_wave(180, 0.12, 0.12),     # Hollow bone tone
-            synth.generate_sine_wave(90, 0.25, 0.14)         # Final settle thud
-        )
-        self.sounds['enemy_death_skeleton'] = synth.array_to_sound(skeleton_death)
-
-        # Orc death - deep guttural roar with distorted bass rumble (displays as "Tentacle")
-        deep_roar = synth.generate_sweep(180, 45, 0.45, 0.32)
-        deep_roar = synth.apply_distortion(deep_roar, amount=0.7)  # Heavy grit
-        guttural_bass = synth.generate_sine_wave(60, 0.35, 0.20)
-        guttural_bass = synth.apply_tremolo(guttural_bass, rate=10.0, depth=0.5)  # Rumbling rattle
-        orc_death = synth.combine_waves(
-            deep_roar,                                        # Distorted roar
-            synth.generate_sweep(90, 35, 0.42, 0.24),        # Sub-bass rumble
-            guttural_bass,                                    # Trembling guttural bass
-            synth.generate_square_wave(120, 0.25, 0.14),     # Growl texture
-        )
-        self.sounds['enemy_death_orc'] = synth.array_to_sound(orc_death)
-
-        # Demon death - demonic multi-layered screech with chaotic harmonics (displays as "Medusa")
-        high_screech = synth.generate_sweep(850, 180, 0.38, 0.26)
-        high_screech = synth.apply_vibrato(high_screech, rate=8.0, depth=0.06)  # Warbling chaos
-        demon_death = synth.combine_waves(
-            high_screech,                                     # Warbling screech
-            synth.generate_sweep(420, 90, 0.38, 0.22),       # Mid demon wail
-            synth.generate_sweep(210, 75, 0.40, 0.20),       # Low demonic rumble
-            synth.generate_square_wave(350, 0.28, 0.16),     # Harsh distortion
-            synth.generate_square_wave(175, 0.28, 0.12),     # Lower distortion layer
-            synth.generate_harmonic_stack(300, 0.25, 4, 2.3, 0.14)  # Dissonant chaos
-        )
-        self.sounds['enemy_death_demon'] = synth.array_to_sound(demon_death)
-
-        # Dragon death - epic multi-harmonic roar with vocal formants and sub-bass
-        main_roar = synth.generate_sweep(220, 40, 0.65, 0.32)
-        main_roar = synth.apply_formant_filter(main_roar, formant_freq=600.0, resonance=5.0)  # Vocal roar
-        sub_bass = synth.generate_sine_wave(48, 0.55, 0.24)
-        sub_bass = synth.apply_tremolo(sub_bass, rate=6.0, depth=0.4)  # Rumbling power
-        dragon_death = synth.combine_waves(
-            main_roar,                                        # Epic vocal roar
-            synth.generate_sweep(110, 30, 0.60, 0.26),       # Harmonic roar
-            sub_bass,                                         # Trembling sub-bass
-            synth.generate_sine_wave(72, 0.50, 0.20),        # Mid bass power
-            synth.apply_distortion(synth.generate_square_wave(95, 0.35, 0.16), 0.6),  # Distorted growl
-            synth.generate_harmonic_stack(60, 0.50, 5, 1.5, 0.16)  # Deep harmonic rumble
-        )
-        self.sounds['enemy_death_dragon'] = synth.array_to_sound(dragon_death)
+        # NOTE: Enemy death sounds are now TTS-based (voice_cache.py)
+        # No procedural death sounds needed - TTS provides all death screams
 
         # === ABILITY SOUNDS ===
 
@@ -785,14 +709,14 @@ class AudioManager:
 
     def play_enemy_death(self, enemy_type: str, position: tuple = None, player_position: tuple = None):
         """
-        Play enemy death sound - tries voice-based scream first, falls back to procedural.
+        Play enemy death sound - TTS-based voice screams ONLY.
 
         Args:
             enemy_type: Type of enemy (startle, slime, skeleton, orc, demon, dragon)
             position: World position of enemy (x, y)
             player_position: Player position for positional audio (x, y)
         """
-        # Try voice-based death scream first
+        # Play TTS voice-based death scream
         scream_key = f'death_scream_{enemy_type}'
         if scream_key in self.voices:
             # Calculate volume based on distance (positional audio)
@@ -808,11 +732,10 @@ class AudioManager:
             voice.set_volume(final_volume)
             voice.play()
         else:
-            # Fallback to procedural death sound
-            sound_name = f'enemy_death_{enemy_type}'
-            if sound_name in self.sounds:
-                self.play_sound(sound_name, volume=0.9, pitch_variation=0.1,
-                               position=position, player_position=player_position)
+            # TTS cache missing - warn once per session
+            if not hasattr(self, '_warned_missing_death_screams'):
+                log.warning(f"TTS death scream cache missing! Delete 'ursina_cache/voices/' and restart to regenerate.")
+                self._warned_missing_death_screams = True
 
     def play_ability_sound(self, ability_name: str):
         """Play ability sound effect"""
