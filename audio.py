@@ -355,17 +355,30 @@ class AudioManager:
             synth.generate_sine_wave(1976, 0.12, 0.20)       # High B shimmer
         )
         # Final "daaa!" - fuller, warmer chord without piercing chirp
+        # REDUCED volumes to prevent clipping (total amplitude ~0.75)
         rare_note4 = synth.combine_waves(
-            synth.generate_sine_wave(1319, 0.25, 0.38),      # High E finale (main)
-            synth.generate_sine_wave(988, 0.25, 0.30),       # B - chord fullness
-            synth.generate_sine_wave(659, 0.25, 0.28),       # E - bass warmth
-            synth.generate_sine_wave(1976, 0.20, 0.20),      # Gentle shimmer (no chirp!)
-            synth.generate_sine_wave(330, 0.22, 0.25)        # Low E - triumphant bass
+            synth.generate_sine_wave(1319, 0.25, 0.25),      # High E finale (main) - reduced
+            synth.generate_sine_wave(988, 0.25, 0.20),       # B - chord fullness - reduced
+            synth.generate_sine_wave(659, 0.25, 0.18),       # E - bass warmth - reduced
+            synth.generate_sine_wave(1976, 0.20, 0.10),      # Gentle shimmer (no chirp!) - reduced harsh freq
+            synth.generate_sine_wave(330, 0.22, 0.15)        # Low E - triumphant bass - reduced
         )
         # Create ascending arpeggio sequence
         tiny_gap = np.zeros(int(SoundSynthesizer.SAMPLE_RATE * 0.03))
         pickup_rare = np.concatenate([rare_note1, tiny_gap, rare_note2, tiny_gap,
                                       rare_note3, tiny_gap, rare_note4])
+
+        # Apply final fade-out envelope to prevent harsh ending
+        final_fadeout_length = int(len(pickup_rare) * 0.15)  # Fade last 15%
+        final_envelope = np.ones(len(pickup_rare))
+        final_envelope[-final_fadeout_length:] = np.linspace(1, 0, final_fadeout_length)
+        pickup_rare = pickup_rare * final_envelope
+
+        # Normalize to prevent any clipping artifacts
+        max_amplitude = np.max(np.abs(pickup_rare))
+        if max_amplitude > 0.95:  # Leave headroom
+            pickup_rare = pickup_rare * (0.95 / max_amplitude)
+
         self.sounds['item_pickup_rare'] = synth.array_to_sound(pickup_rare)
 
         # Potion drink - gulp
