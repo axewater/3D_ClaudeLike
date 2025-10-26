@@ -489,21 +489,29 @@ class AudioManager:
         select = np.concatenate([select_note1, select_note2])
         self.sounds['ui_select'] = synth.array_to_sound(select)
 
-        # Menu hover - gentle bouncy "boop" with warmth
+        # Menu hover - dark thump similar to stairs
         hover = synth.combine_waves(
-            synth.generate_sine_wave(784, 0.04, 0.12),   # G - main friendly tone
-            synth.generate_sine_wave(1568, 0.04, 0.06)   # High G - soft sparkle
+            synth.generate_sine_wave(80, 0.12, 0.15),    # Deep bass thud
+            synth.generate_sweep(240, 120, 0.10, 0.08),  # Stone impact
+            synth.generate_noise(0.05, 0.05)             # Stone texture
         )
         self.sounds['ui_hover'] = synth.array_to_sound(hover)
 
         # === TITLE SCREEN EFFECTS ===
 
-        # Letter whoosh - deep stone brick rumble
-        whoosh = synth.combine_waves(
-            synth.generate_sweep(200, 60, 0.35, 0.5),      # Deep air displacement
-            synth.generate_sine_wave(45, 0.35, 0.35),      # Sub-bass weight
-            synth.generate_noise(0.3, 0.25)                # Low rumble texture
-        )
+        # Letter whoosh - air displacement getting closer (soft to loud)
+        # Create base whoosh components with safe volumes (stretched out, quieter)
+        air_sweep = synth.generate_sweep(400, 150, 0.8, 0.11)     # Air cutting through
+        wind_noise = synth.generate_noise(0.8, 0.07)              # Wind texture
+        bass_rumble = synth.generate_sine_wave(55, 0.8, 0.09)     # Approaching mass
+
+        # Combine waves
+        whoosh = synth.combine_waves(air_sweep, wind_noise, bass_rumble)
+
+        # Apply crescendo envelope (soft to loud, simulating approach)
+        crescendo = np.linspace(0.15, 1.0, len(whoosh))  # Start at 15%, build to 100%
+        whoosh = whoosh * crescendo
+
         self.sounds['letter_whoosh'] = synth.array_to_sound(whoosh)
 
         # Letter impact - deep stone brick thump
