@@ -262,12 +262,16 @@ class Game:
         return self.dungeon.get_random_floor_position()
 
     def _is_position_occupied(self, x: int, y: int) -> bool:
-        """Check if position is occupied by entity"""
+        """Check if position is occupied by entity or item"""
         if self.player and self.player.x == x and self.player.y == y:
             return True
 
         for enemy in self.enemies:
             if enemy.x == x and enemy.y == y:
+                return True
+
+        for item in self.items:
+            if item.x == x and item.y == y:
                 return True
 
         return False

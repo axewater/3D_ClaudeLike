@@ -271,7 +271,8 @@ class GameController(Entity):
             'escape': False, 'left mouse down': False,
             'left arrow': False, 'right arrow': False,
             'f1': False,  # Debug: reveal map
-            'f2': False   # Debug: skip level
+            'f2': False,  # Debug: skip level
+            'space': False  # Attack without moving
         }
 
         log.debug("GameController initialized (First-Person Mode)", "controller")
@@ -299,6 +300,9 @@ class GameController(Entity):
 
         # Handle debug keys (F1)
         self._handle_debug_input()
+
+        # Handle space attack (attack without moving)
+        self._handle_space_attack()
 
         # Handle ability input and targeting
         self._handle_ability_input()
@@ -498,6 +502,44 @@ class GameController(Entity):
             self.prev_key_states['f2'] = True
         elif not held_keys['f2']:
             self.prev_key_states['f2'] = False
+
+    def _handle_space_attack(self):
+        """Handle space key attack (attack without moving)"""
+        # Check if space key is pressed (debounce to prevent holding)
+        if held_keys['space'] and not self.prev_key_states['space']:
+            # Calculate the tile directly in front of the player
+            offset_x, offset_y = self._get_forward_offset()
+            target_x = self.game.player.x + offset_x
+            target_y = self.game.player.y + offset_y
+
+            # Check if there's an enemy at the target position
+            target_enemy = None
+            for enemy in self.game.enemies:
+                if enemy.x == target_x and enemy.y == target_y:
+                    target_enemy = enemy
+                    break
+
+            if target_enemy:
+                # Attack the enemy without moving
+                log.debug(f"Space attack on {target_enemy.enemy_type} at ({target_x}, {target_y})", "combat")
+                self.game._player_attack(target_enemy)
+            else:
+                # No enemy found - swing at air (whiff)
+                log.debug(f"Space attack missed at ({target_x}, {target_y})", "combat")
+                self.game.add_message("You swing at the air!", "event")
+                # Play whiff sound (light attack that missed)
+                self.game.audio_manager.play_attack_sound('light')
+
+            # Always consume a turn and trigger enemy actions
+            self.game._enemy_turn()
+            self.game._reduce_ability_cooldowns()
+
+            # Apply movement cooldown to prevent spam
+            self.move_cooldown = self.move_cooldown_time
+
+            self.prev_key_states['space'] = True
+        elif not held_keys['space']:
+            self.prev_key_states['space'] = False
 
     def _handle_ability_input(self):
         """Handle ability input (1/2/3 keys) and targeting"""

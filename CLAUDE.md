@@ -108,6 +108,7 @@ The `AnimationManager3DProxy` in `main_3d.py` bridges neutral interface to 3D:
 
 - **WASD** - Move (camera-relative direction)
 - **Arrow Keys** - Rotate camera 90° / Move forward-backward
+- **SPACE** - Attack without moving (tactical positioning)
 - **1/2/3** - Use abilities (click to target)
 - **Mouse** - Aim targeting reticle
 - **ESC** - Cancel targeting / Pause menu
