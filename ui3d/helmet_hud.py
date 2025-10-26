@@ -11,6 +11,7 @@ from ursina import Entity, Text, color, Vec2
 from game import Game
 import constants as c
 from ui3d.minimap_3d import MiniMap3D
+from shaders.glossy_bar_shader import create_hp_bar_shader, create_xp_bar_shader
 
 
 # ===== ABILITY ICON TEXTURE LOADING =====
@@ -119,11 +120,19 @@ class HelmetHUD3D:
         # ===== TOP-LEFT PANEL (Player Stats) =====
         self.top_left_panel: Optional[Entity] = None
         self.class_level_text: Optional[Text] = None
+        # HP Bar elements
+        self.hp_bar_shadow: Optional[Entity] = None
+        self.hp_bar_outer_frame: Optional[Entity] = None
         self.hp_bar_bg: Optional[Entity] = None
         self.hp_bar_fill: Optional[Entity] = None
+        self.hp_bar_inner_glow: Optional[Entity] = None
         self.hp_text: Optional[Text] = None
+        # XP Bar elements
+        self.xp_bar_shadow: Optional[Entity] = None
+        self.xp_bar_outer_frame: Optional[Entity] = None
         self.xp_bar_bg: Optional[Entity] = None
         self.xp_bar_fill: Optional[Entity] = None
+        self.xp_bar_inner_glow: Optional[Entity] = None
         self.xp_text: Optional[Text] = None
         self.gold_text: Optional[Text] = None
 
@@ -229,6 +238,29 @@ class HelmetHUD3D:
         hp_bar_y = pos_y - 0.09
         bar_width = 0.38  # Increased from 0.30 to accommodate larger numbers
         bar_height = 0.04
+        shadow_offset = 0.008  # 4-6px equivalent in screen space
+
+        # Drop shadow (furthest back)
+        self.hp_bar_shadow = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(0.0, 0.0, 0.0, 0.8),  # Strong black shadow
+            position=(pos_x + 0.01 + shadow_offset, hp_bar_y - shadow_offset, 6),
+            scale=(bar_width + 0.01, bar_height + 0.005),  # Slightly larger
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
+
+        # Outer frame (metallic tech border)
+        self.hp_bar_outer_frame = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(0.3, 0.5, 0.7, 0.9),  # Tech blue metallic
+            position=(pos_x + 0.01, hp_bar_y, 5.5),
+            scale=(bar_width + 0.01, bar_height + 0.008),  # Larger than bar
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
 
         self.hp_bar_bg = Entity(
             parent=self.parent,
@@ -240,12 +272,28 @@ class HelmetHUD3D:
             eternal=True
         )
 
+        # Bar fill with glossy shader
         self.hp_bar_fill = Entity(
             parent=self.parent,
             model='quad',
             color=color.rgb(0.3, 1.0, 0.3),  # Bright green
             position=(pos_x + 0.01, hp_bar_y, 4),  # In front of bg
             scale=(bar_width, bar_height),
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
+        # Apply glossy shader to bar fill
+        hp_shader = create_hp_bar_shader()
+        if hp_shader:
+            self.hp_bar_fill.shader = hp_shader
+
+        # Inner glow (bright border inside bar)
+        self.hp_bar_inner_glow = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(0.3, 1.0, 0.3, 0.4),  # Bright green glow, semi-transparent
+            position=(pos_x + 0.01, hp_bar_y, 3),  # In front of fill
+            scale=(bar_width - 0.005, bar_height - 0.005),  # Slightly smaller
             origin=(-0.5, 0.5),
             eternal=True
         )
@@ -263,6 +311,28 @@ class HelmetHUD3D:
         # XP Bar
         xp_bar_y = pos_y - 0.17  # Adjusted for new spacing
 
+        # Drop shadow (furthest back)
+        self.xp_bar_shadow = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(0.0, 0.0, 0.0, 0.8),  # Strong black shadow
+            position=(pos_x + 0.01 + shadow_offset, xp_bar_y - shadow_offset, 6),
+            scale=(bar_width + 0.01, bar_height + 0.005),  # Slightly larger
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
+
+        # Outer frame (metallic tech border)
+        self.xp_bar_outer_frame = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(0.3, 0.5, 0.7, 0.9),  # Tech blue metallic
+            position=(pos_x + 0.01, xp_bar_y, 5.5),
+            scale=(bar_width + 0.01, bar_height + 0.008),  # Larger than bar
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
+
         self.xp_bar_bg = Entity(
             parent=self.parent,
             model='quad',
@@ -273,12 +343,28 @@ class HelmetHUD3D:
             eternal=True
         )
 
+        # Bar fill with glossy shader
         self.xp_bar_fill = Entity(
             parent=self.parent,
             model='quad',
             color=color.rgb(1.0, 0.85, 0.0),  # Gold
             position=(pos_x + 0.01, xp_bar_y, 4),  # In front of bg
             scale=(bar_width, bar_height),
+            origin=(-0.5, 0.5),
+            eternal=True
+        )
+        # Apply glossy shader to bar fill
+        xp_shader = create_xp_bar_shader()
+        if xp_shader:
+            self.xp_bar_fill.shader = xp_shader
+
+        # Inner glow (bright border inside bar)
+        self.xp_bar_inner_glow = Entity(
+            parent=self.parent,
+            model='quad',
+            color=color.rgba(1.0, 0.85, 0.0, 0.4),  # Bright gold glow, semi-transparent
+            position=(pos_x + 0.01, xp_bar_y, 3),  # In front of fill
+            scale=(bar_width - 0.005, bar_height - 0.005),  # Slightly smaller
             origin=(-0.5, 0.5),
             eternal=True
         )
@@ -587,14 +673,22 @@ class HelmetHUD3D:
         if player.hp != self._last_hp or player.max_hp != self._last_max_hp:
             hp_percent = player.hp / player.max_hp if player.max_hp > 0 else 0
             self.hp_bar_fill.scale_x = 0.38 * hp_percent  # Updated to match new bar width
+            # Also scale inner glow to match fill
+            self.hp_bar_inner_glow.scale_x = (0.38 - 0.005) * hp_percent
 
-            # Color code based on HP percentage
+            # Color code based on HP percentage (update both fill and glow)
             if hp_percent > 0.6:
-                self.hp_bar_fill.color = color.rgb(0.3, 1.0, 0.3)  # Green
+                bar_color = color.rgb(0.3, 1.0, 0.3)  # Green
+                glow_color = color.rgba(0.3, 1.0, 0.3, 0.4)  # Green glow
             elif hp_percent > 0.3:
-                self.hp_bar_fill.color = color.rgb(1.0, 0.9, 0.0)  # Yellow
+                bar_color = color.rgb(1.0, 0.9, 0.0)  # Yellow
+                glow_color = color.rgba(1.0, 0.9, 0.0, 0.4)  # Yellow glow
             else:
-                self.hp_bar_fill.color = color.rgb(1.0, 0.3, 0.3)  # Red
+                bar_color = color.rgb(1.0, 0.3, 0.3)  # Red
+                glow_color = color.rgba(1.0, 0.3, 0.3, 0.4)  # Red glow
+
+            self.hp_bar_fill.color = bar_color
+            self.hp_bar_inner_glow.color = glow_color
 
             self.hp_text.text = f"{player.hp}/{player.max_hp} HP"
             self._last_hp = player.hp
@@ -604,6 +698,8 @@ class HelmetHUD3D:
         if player.xp != self._last_xp or player.xp_to_next_level != self._last_xp_to_next:
             xp_percent = player.xp / player.xp_to_next_level if player.xp_to_next_level > 0 else 0
             self.xp_bar_fill.scale_x = 0.38 * xp_percent  # Updated to match new bar width
+            # Also scale inner glow to match fill
+            self.xp_bar_inner_glow.scale_x = (0.38 - 0.005) * xp_percent
             self.xp_text.text = f"{player.xp}/{player.xp_to_next_level} XP"
             self._last_xp = player.xp
             self._last_xp_to_next = player.xp_to_next_level
