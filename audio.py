@@ -80,6 +80,77 @@ class SoundSynthesizer:
         return wave * envelope
 
     @staticmethod
+    def apply_vibrato(wave: np.ndarray, rate: float = 6.0, depth: float = 0.02) -> np.ndarray:
+        """Apply vibrato (frequency wobbling) to a wave"""
+        samples = len(wave)
+        duration = samples / SoundSynthesizer.SAMPLE_RATE
+        t = np.linspace(0, duration, samples, False)
+
+        # Create vibrato modulation (slight pitch variation)
+        vibrato = 1.0 + depth * np.sin(2 * np.pi * rate * t)
+
+        # Apply vibrato by resampling with modulated indices
+        indices = np.cumsum(vibrato)
+        indices = indices / indices[-1] * (samples - 1)
+        indices = np.clip(indices, 0, samples - 1).astype(int)
+
+        return wave[indices]
+
+    @staticmethod
+    def apply_tremolo(wave: np.ndarray, rate: float = 8.0, depth: float = 0.5) -> np.ndarray:
+        """Apply tremolo (volume pulsing) to a wave"""
+        samples = len(wave)
+        duration = samples / SoundSynthesizer.SAMPLE_RATE
+        t = np.linspace(0, duration, samples, False)
+
+        # Create tremolo modulation (volume variation)
+        tremolo = 1.0 - depth * (1.0 + np.sin(2 * np.pi * rate * t)) / 2.0
+
+        return wave * tremolo
+
+    @staticmethod
+    def generate_harmonic_stack(base_freq: float, duration: float, num_harmonics: int = 3,
+                                dissonance: float = 1.5, volume: float = 0.5) -> np.ndarray:
+        """Generate a stack of harmonic frequencies with optional dissonance"""
+        samples = int(SoundSynthesizer.SAMPLE_RATE * duration)
+        t = np.linspace(0, duration, samples, False)
+
+        wave = np.zeros(samples)
+        for i in range(num_harmonics):
+            # Add harmonic with decreasing volume
+            harmonic_freq = base_freq * (i + 1) * dissonance
+            harmonic_vol = volume / (i + 1)
+            wave += np.sin(2 * np.pi * harmonic_freq * t) * harmonic_vol
+
+        # Apply envelope
+        envelope = np.ones(samples)
+        fade_samples = min(int(samples * 0.15), 1000)
+        envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
+        envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+
+        return wave * envelope
+
+    @staticmethod
+    def apply_formant_filter(wave: np.ndarray, formant_freq: float = 800.0, resonance: float = 10.0) -> np.ndarray:
+        """Apply simple formant-like filtering to make sweeps sound more vocal"""
+        samples = len(wave)
+        duration = samples / SoundSynthesizer.SAMPLE_RATE
+        t = np.linspace(0, duration, samples, False)
+
+        # Create formant resonance (simplified - real formants use bandpass filters)
+        formant = np.sin(2 * np.pi * formant_freq * t) * 0.3
+
+        # Mix formant with original wave
+        return wave + formant * np.abs(wave) * resonance / 10.0
+
+    @staticmethod
+    def apply_distortion(wave: np.ndarray, amount: float = 0.5) -> np.ndarray:
+        """Apply soft saturation distortion"""
+        # Soft clipping using tanh (smoother than hard clipping)
+        gain = 1.0 + amount * 4.0
+        return np.tanh(wave * gain) / np.tanh(gain)
+
+    @staticmethod
     def combine_waves(*waves: np.ndarray) -> np.ndarray:
         """Combine multiple waveforms, padding to the longest duration"""
         if not waves:
@@ -185,64 +256,81 @@ class AudioManager:
 
         # === ENEMY SOUNDS ===
 
-        # Startle death - high pitched squeal with harmonics (FIX: was 'goblin')
+        # Startle death - high pitched alien squeal with wobbling vibrato
+        main_squeal = synth.generate_sweep(900, 350, 0.28, 0.30)
+        main_squeal = synth.apply_vibrato(main_squeal, rate=12.0, depth=0.05)  # Fast wobble
         startle_death = synth.combine_waves(
-            synth.generate_sweep(900, 350, 0.28, 0.55),      # Main squeal
-            synth.generate_sweep(1800, 700, 0.28, 0.25),     # Harmonic overtone
-            synth.generate_square_wave(450, 0.15, 0.15),     # Distortion edge
-            synth.generate_noise(0.12, 0.2)                  # Death rattle
+            main_squeal,                                      # Wobbling squeal
+            synth.generate_sweep(1800, 700, 0.28, 0.14),     # Harmonic overtone
+            synth.generate_square_wave(450, 0.15, 0.10),     # Distortion edge
+            synth.generate_harmonic_stack(450, 0.12, 3, 1.8, 0.08)  # Dissonant rattle
         )
         self.sounds['enemy_death_startle'] = synth.array_to_sound(startle_death)
 
-        # Slime death - wet bubbling splat with gooey texture
+        # Slime death - wet bubbling splat with gurgling texture
+        gooey_sweep = synth.generate_sweep(320, 80, 0.35, 0.28)
+        gooey_sweep = synth.apply_formant_filter(gooey_sweep, formant_freq=200.0, resonance=3.0)  # Gurgle
+        bubble_bass = synth.generate_sine_wave(95, 0.18, 0.16)
+        bubble_bass = synth.apply_tremolo(bubble_bass, rate=15.0, depth=0.6)  # Bubbling effect
         slime_death = synth.combine_waves(
-            synth.generate_sweep(320, 80, 0.35, 0.52),       # Main wet splat
-            synth.generate_sweep(180, 60, 0.25, 0.38),       # Low gooey spread
-            synth.generate_sine_wave(95, 0.18, 0.28),        # Bubble pop bass
-            synth.generate_sine_wave(140, 0.15, 0.22),       # Secondary bubble
-            synth.generate_noise(0.2, 0.36)                  # Liquid splatter texture
+            gooey_sweep,                                      # Gurgling splat
+            synth.generate_sweep(180, 60, 0.25, 0.20),       # Low gooey spread
+            bubble_bass,                                      # Bubbling bass
+            synth.generate_sine_wave(140, 0.15, 0.12),       # Secondary bubble
         )
         self.sounds['enemy_death_slime'] = synth.array_to_sound(slime_death)
 
-        # Skeleton death - bone clatter and collapse with rattling
+        # Skeleton death - bone clatter and collapse with sharp harmonic rattling
+        bone_clatter = synth.generate_harmonic_stack(280, 0.08, 4, 2.1, 0.20)  # Sharp impact
+        bone_scatter = synth.generate_harmonic_stack(320, 0.15, 5, 1.9, 0.16)  # Multiple rattles
+        bone_scatter = synth.apply_tremolo(bone_scatter, rate=25.0, depth=0.7)  # Rapid scatter
         skeleton_death = synth.combine_waves(
-            synth.generate_noise(0.08, 0.42),                # Initial impact
-            synth.generate_noise(0.15, 0.35),                # Bone scatter
-            synth.generate_sweep(280, 120, 0.22, 0.32),      # Descending fall
-            synth.generate_square_wave(180, 0.12, 0.18),     # Hollow bone tone
-            synth.generate_sine_wave(90, 0.25, 0.25)         # Final settle thud
+            bone_clatter,                                     # Initial impact clatter
+            bone_scatter,                                     # Scattered bones rattling
+            synth.generate_sweep(280, 120, 0.22, 0.18),      # Descending fall
+            synth.generate_square_wave(180, 0.12, 0.12),     # Hollow bone tone
+            synth.generate_sine_wave(90, 0.25, 0.14)         # Final settle thud
         )
         self.sounds['enemy_death_skeleton'] = synth.array_to_sound(skeleton_death)
 
-        # Orc death - deep guttural roar with bass rumble (displays as "Tentacle")
+        # Orc death - deep guttural roar with distorted bass rumble (displays as "Tentacle")
+        deep_roar = synth.generate_sweep(180, 45, 0.45, 0.32)
+        deep_roar = synth.apply_distortion(deep_roar, amount=0.7)  # Heavy grit
+        guttural_bass = synth.generate_sine_wave(60, 0.35, 0.20)
+        guttural_bass = synth.apply_tremolo(guttural_bass, rate=10.0, depth=0.5)  # Rumbling rattle
         orc_death = synth.combine_waves(
-            synth.generate_sweep(180, 45, 0.45, 0.62),       # Deep roar
-            synth.generate_sweep(90, 35, 0.42, 0.48),        # Sub-bass rumble
-            synth.generate_sine_wave(60, 0.35, 0.38),        # Guttural bass
-            synth.generate_square_wave(120, 0.25, 0.22),     # Growl texture
-            synth.generate_noise(0.35, 0.32)                 # Death rattle
+            deep_roar,                                        # Distorted roar
+            synth.generate_sweep(90, 35, 0.42, 0.24),        # Sub-bass rumble
+            guttural_bass,                                    # Trembling guttural bass
+            synth.generate_square_wave(120, 0.25, 0.14),     # Growl texture
         )
         self.sounds['enemy_death_orc'] = synth.array_to_sound(orc_death)
 
-        # Demon death - demonic multi-layered screech (displays as "Medusa")
+        # Demon death - demonic multi-layered screech with chaotic harmonics (displays as "Medusa")
+        high_screech = synth.generate_sweep(850, 180, 0.38, 0.26)
+        high_screech = synth.apply_vibrato(high_screech, rate=8.0, depth=0.06)  # Warbling chaos
         demon_death = synth.combine_waves(
-            synth.generate_sweep(850, 180, 0.38, 0.52),      # High screech
-            synth.generate_sweep(420, 90, 0.38, 0.46),       # Mid demon wail
-            synth.generate_sweep(210, 75, 0.40, 0.42),       # Low demonic rumble
-            synth.generate_square_wave(350, 0.28, 0.28),     # Harsh distortion
-            synth.generate_square_wave(175, 0.28, 0.22),     # Lower distortion layer
-            synth.generate_noise(0.25, 0.32)                 # Chaotic texture
+            high_screech,                                     # Warbling screech
+            synth.generate_sweep(420, 90, 0.38, 0.22),       # Mid demon wail
+            synth.generate_sweep(210, 75, 0.40, 0.20),       # Low demonic rumble
+            synth.generate_square_wave(350, 0.28, 0.16),     # Harsh distortion
+            synth.generate_square_wave(175, 0.28, 0.12),     # Lower distortion layer
+            synth.generate_harmonic_stack(300, 0.25, 4, 2.3, 0.14)  # Dissonant chaos
         )
         self.sounds['enemy_death_demon'] = synth.array_to_sound(demon_death)
 
-        # Dragon death - epic multi-harmonic roar with sub-bass
+        # Dragon death - epic multi-harmonic roar with vocal formants and sub-bass
+        main_roar = synth.generate_sweep(220, 40, 0.65, 0.32)
+        main_roar = synth.apply_formant_filter(main_roar, formant_freq=600.0, resonance=5.0)  # Vocal roar
+        sub_bass = synth.generate_sine_wave(48, 0.55, 0.24)
+        sub_bass = synth.apply_tremolo(sub_bass, rate=6.0, depth=0.4)  # Rumbling power
         dragon_death = synth.combine_waves(
-            synth.generate_sweep(220, 40, 0.65, 0.64),       # Main roar
-            synth.generate_sweep(110, 30, 0.60, 0.52),       # Harmonic roar
-            synth.generate_sine_wave(48, 0.55, 0.48),        # Deep sub-bass rumble
-            synth.generate_sine_wave(72, 0.50, 0.40),        # Mid bass power
-            synth.generate_square_wave(95, 0.35, 0.28),      # Draconic growl texture
-            synth.generate_noise(0.55, 0.34)                 # Epic death rattle
+            main_roar,                                        # Epic vocal roar
+            synth.generate_sweep(110, 30, 0.60, 0.26),       # Harmonic roar
+            sub_bass,                                         # Trembling sub-bass
+            synth.generate_sine_wave(72, 0.50, 0.20),        # Mid bass power
+            synth.apply_distortion(synth.generate_square_wave(95, 0.35, 0.16), 0.6),  # Distorted growl
+            synth.generate_harmonic_stack(60, 0.50, 5, 1.5, 0.16)  # Deep harmonic rumble
         )
         self.sounds['enemy_death_dragon'] = synth.array_to_sound(dragon_death)
 
