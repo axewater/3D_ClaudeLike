@@ -8,7 +8,7 @@ Controls:
 - Left mouse drag: Rotate camera
 - Scroll wheel: Zoom in/out
 - R: Reset camera
-- 1-6: Focus on item types (Sword, Shield, Potion, Boots, Ring, Chest)
+- 1-7: Focus on item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)
 - Q/W/E/R/T: Focus on rarity tiers (Common, Uncommon, Rare, Epic, Legendary)
 - 0: Return to overview
 - ESC: Quit
@@ -164,10 +164,10 @@ class OrbitCamera:
 
 def create_item_grid():
     """
-    Create all item models in a 6x5 grid layout (6 types x 5 rarities)
+    Create all item models in a 7x5 grid layout (7 types x 5 rarities)
 
     Grid layout:
-    - Rows: Item types (Sword, Shield, Potion, Boots, Ring, Chest)
+    - Rows: Item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)
     - Columns: Rarities (Common, Uncommon, Rare, Epic, Legendary)
 
     Returns:
@@ -183,6 +183,7 @@ def create_item_grid():
         (c.ITEM_BOOTS, "Boots"),
         (c.ITEM_RING, "Ring"),
         (c.ITEM_TREASURE_CHEST, "Chest"),
+        (c.ITEM_GOLD_COIN, "Coin"),
     ]
 
     # Rarities (columns)
@@ -194,14 +195,14 @@ def create_item_grid():
         (c.RARITY_LEGENDARY, "Legendary"),
     ]
 
-    # Grid layout: 5 columns (rarities) x 5 rows (item types)
+    # Grid layout: 5 columns (rarities) x 7 rows (item types)
     grid_cols = 5
     grid_spacing = 2.5
 
     # Column headers (rarity names)
     for col, (rarity, rarity_name) in enumerate(rarities):
         x = (col - 2) * grid_spacing  # -2 to center (cols: -2, -1, 0, 1, 2)
-        z = -3.0  # Top of grid
+        z = -4.5  # Top of grid (moved up for 7 rows)
 
         Text(
             text=rarity_name,
@@ -215,7 +216,7 @@ def create_item_grid():
     # Row headers (item type names)
     for row, (item_type, item_name) in enumerate(item_types):
         x = -7.0  # Left of grid
-        z = (row - 2) * grid_spacing  # -2 to center (rows: -2, -1, 0, 1, 2)
+        z = (row - 3) * grid_spacing  # -3 to center (rows: -3, -2, -1, 0, 1, 2, 3)
 
         Text(
             text=item_name,
@@ -231,7 +232,7 @@ def create_item_grid():
         for col, (rarity, rarity_name) in enumerate(rarities):
             # Calculate grid position (centered around origin)
             x = (col - 2) * grid_spacing  # -2 to center (cols: -2, -1, 0, 1, 2)
-            z = (row - 2) * grid_spacing  # -2 to center (rows: -2, -1, 0, 1, 2)
+            z = (row - 3) * grid_spacing  # -3 to center (rows: -3, -2, -1, 0, 1, 2, 3)
             y = 0.5  # Slightly above ground (items float)
 
             position = Vec3(x, y, z)
@@ -332,14 +333,14 @@ def input(key):
     # Handle scroll for zoom (scroll is momentary, not "held")
     orbit_cam.handle_scroll(key)
 
-    # Handle number keys for item type focus (1-6)
+    # Handle number keys for item type focus (1-7)
     if key == '0':
         orbit_cam.focus_overview()
         if info_text:
             info_text.text = "Overview Mode"
-    elif key in ['1', '2', '3', '4', '5', '6']:
+    elif key in ['1', '2', '3', '4', '5', '6', '7']:
         # Focus on first item of this type (common rarity)
-        item_type_index = int(key) - 1  # Convert 1-6 to 0-5
+        item_type_index = int(key) - 1  # Convert 1-7 to 0-6
         first_item_of_type = item_type_index * 5  # Each type has 5 rarities
         if first_item_of_type < len(items):
             orbit_cam.focus_on_item(first_item_of_type)
@@ -392,7 +393,7 @@ def main():
     # Create all items in a grid
     print("Loading item models...")
     items = create_item_grid()
-    print(f"Loaded {len(items)} item models (6 types x 5 rarities)")
+    print(f"Loaded {len(items)} item models (7 types x 5 rarities)")
 
     # Setup orbit camera (look at center of grid)
     # Pass items list so camera can track them
@@ -406,10 +407,11 @@ def main():
             "Left Mouse Drag: Rotate\n"
             "Scroll Wheel: Zoom\n"
             "R: Reset Camera\n"
-            "1-6: Focus Item Type\n"
+            "1-7: Focus Item Type\n"
             "  (1=Sword, 2=Shield,\n"
             "   3=Potion, 4=Boots,\n"
-            "   5=Ring, 6=Chest)\n"
+            "   5=Ring, 6=Chest,\n"
+            "   7=Coin)\n"
             "Q/W/E/R/T: Focus Rarity\n"
             "  (Q=Common, W=Uncommon,\n"
             "   E=Rare, R=Epic, T=Legendary)\n"
@@ -436,7 +438,7 @@ def main():
     print("Controls:")
     print("  - Left mouse drag to rotate, scroll to zoom")
     print("  - R to reset camera")
-    print("  - 1-6 to focus on item types (Sword, Shield, Potion, Boots, Ring, Chest)")
+    print("  - 1-7 to focus on item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)")
     print("  - Q/W/E/R/T to focus on rarities (Common, Uncommon, Rare, Epic, Legendary)")
     print("  - 0 to return to overview")
     print("  - ESC to quit")
