@@ -8,6 +8,15 @@ from ursina import Entity, Vec3, color as ursina_color
 import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 
+# Import toon shader system
+import sys
+from pathlib import Path
+dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
+if dna_editor_path not in sys.path:
+    sys.path.insert(0, dna_editor_path)
+
+from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+
 
 def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     """
@@ -22,6 +31,10 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     """
     # Container entity (invisible parent)
     sword = Entity(position=position)
+
+    # Create toon shader instances (shared across all sword components)
+    toon_shader = create_toon_shader()
+    toon_shader_lite = create_toon_shader_lite()
 
     # Rarity-based colors
     if rarity == c.RARITY_COMMON:
@@ -57,6 +70,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
 
     # Blade glow for epic/legendary (outer sphere)
     if has_glow:
+        glow_shader = get_shader_for_scale(0.35, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
         glow = Entity(
             model='sphere',
             color=glow_color,
@@ -64,52 +78,63 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
             parent=sword,
             position=(0, 0.3, 0),
             alpha=0.3,
-            unlit=True
+            unlit=True,
+            shader=glow_shader
         )
 
     # Blade (vertical stretched cube)
+    blade_shader = get_shader_for_scale(0.45, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     blade = Entity(
         model='cube',
         color=blade_color,
         scale=(0.05, 0.45, 0.12),
         parent=sword,
-        position=(0, 0.3, 0)
+        position=(0, 0.3, 0),
+        shader=blade_shader
     )
 
     # Blade edge highlight (thin lighter cube on front)
+    blade_edge_shader = get_shader_for_scale(0.45, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     blade_edge = Entity(
         model='cube',
         color=blade_color.tint(0.3),
         scale=(0.02, 0.45, 0.13),
         parent=blade,
-        position=(0, 0, 0)
+        position=(0, 0, 0),
+        shader=blade_edge_shader
     )
 
     # Crossguard (horizontal rectangle)
+    crossguard_shader = get_shader_for_scale(0.25, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     crossguard = Entity(
         model='cube',
         color=crossguard_color,
         scale=(0.25, 0.04, 0.05),
         parent=sword,
-        position=(0, 0.05, 0)
+        position=(0, 0.05, 0),
+        shader=crossguard_shader
     )
 
     # Handle (vertical cylinder/cube)
+    handle_shader = get_shader_for_scale(0.15, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     handle = Entity(
         model='cube',
         color=handle_color,
         scale=(0.05, 0.15, 0.05),
         parent=sword,
-        position=(0, -0.08, 0)
+        position=(0, -0.08, 0),
+        shader=handle_shader
     )
 
     # Pommel (sphere at bottom)
+    pommel_shader = get_shader_for_scale(0.06, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     pommel = Entity(
         model='sphere',
         color=crossguard_color,
         scale=0.06,
         parent=sword,
-        position=(0, -0.18, 0)
+        position=(0, -0.18, 0),
+        shader=pommel_shader
     )
 
     # Gem on pommel for rare+ (small colored sphere)
@@ -119,13 +144,15 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
             c.RARITY_EPIC: rgb_to_ursina_color(200, 50, 255),   # Purple gem
             c.RARITY_LEGENDARY: rgb_to_ursina_color(100, 255, 255),  # Cyan gem
         }
+        gem_shader = get_shader_for_scale(0.04, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
         gem = Entity(
             model='sphere',
             color=gem_colors.get(rarity, ursina_color.white),
             scale=0.04,
             parent=pommel,
             position=(0, 0, 0),
-            unlit=True  # Emissive gem
+            unlit=True,  # Emissive gem
+            shader=gem_shader
         )
 
     # Store animation state
