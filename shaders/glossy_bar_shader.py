@@ -16,15 +16,16 @@ Features:
 from ursina import Shader
 
 
-def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5):
+def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5, wave_enabled=True):
     """
-    Create a glossy bar shader with vertical gradient and center highlight.
+    Create a glossy bar shader with vertical gradient, center highlight, and animated wave edges.
 
     Args:
         highlight_intensity: Brightness multiplier for center highlight (default 1.5)
                            Higher = brighter center, Lower = more subtle
         edge_darkening: Darkness factor for edges (0.0-1.0, default 0.5)
                        Higher = darker edges, Lower = more subtle
+        wave_enabled: Enable animated wave distortion on edges (default True)
 
     Returns:
         Shader: Ursina shader object with glossy gradient effect
@@ -36,6 +37,9 @@ def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5):
         # Apply to bar entity
         bar_fill.shader = shader
         bar_fill.color = color.rgb(0.3, 1.0, 0.3)  # Green
+
+        # Update time uniform each frame for animation
+        bar_fill.set_shader_input('time', time.time())
     """
 
     # Vertex shader - pass UV coordinates to fragment shader
@@ -62,11 +66,19 @@ def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5):
     }
     '''
 
-    # Fragment shader - create glossy gradient based on UV.y
+    # Fragment shader - create glossy gradient with animated wave edges
+    wave_code = '''
+        // Animated wave distortion on edges (slowed down 36x from original - ultra slow)
+        float wave = sin(vUV.x * 8.0 + time * 0.0835) * 0.02;  // Ultra subtle, ultra slow wave
+        float edgeWave = wave * smoothstep(0.4, 0.5, distFromCenter);  // Only affect edges
+        brightness += edgeWave;
+    ''' if wave_enabled else ''
+
     fragment_shader = f'''
     #version 140
 
     uniform vec4 p3d_ColorScale;
+    uniform float time;  // Time uniform for animation
 
     in vec2 vUV;
     in vec4 vColor;
@@ -95,6 +107,8 @@ def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5):
         // Apply edge darkening
         float edgeDarkness = 1.0 - (distFromCenter * 2.0 * edge_darkening);
         brightness *= edgeDarkness;
+
+        {wave_code}
 
         // Apply base color with brightness modulation
         vec3 baseColor = vColor.rgb * p3d_ColorScale.rgb;

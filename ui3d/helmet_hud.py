@@ -6,12 +6,16 @@ All UI elements are consolidated into corner panels and bottom displays for mini
 """
 
 import os
+import time
+import random
+import math
 from typing import Optional, List
 from ursina import Entity, Text, color, Vec2
 from game import Game
 import constants as c
 from ui3d.minimap_3d import MiniMap3D
 from shaders.glossy_bar_shader import create_hp_bar_shader, create_xp_bar_shader
+from shaders.bubble_shader import create_bubble_shader
 
 
 # ===== ABILITY ICON TEXTURE LOADING =====
@@ -50,6 +54,197 @@ def _load_ability_icon_textures():
 
 # Module-level texture dictionary (loaded once at import time)
 ABILITY_ICON_TEXTURES = _load_ability_icon_textures()
+
+# Module-level bubble shader (created once, reused for all bubbles)
+BUBBLE_SHADER = create_bubble_shader()
+if BUBBLE_SHADER:
+    print("✓ Bubble shader loaded for HUD particles")
+
+
+class BubbleParticle:
+    """Ultra-realistic bubble particle with shader effects"""
+    def __init__(self, start_pos: tuple, bar_color: tuple, parent: Entity):
+        """
+        Create a bubble particle with advanced visual effects
+
+        Args:
+            start_pos: (x, y) starting position in screen space
+            bar_color: (r, g, b) color tuple
+            parent: Parent entity for the bubble
+        """
+        self.lifetime = random.uniform(0.4, 0.8)  # Very short lifetime - bubbles pop quickly
+        self.age = 0.0
+        self.velocity_y = random.uniform(0.0005, 0.0015)  # Barely rise (tomato soup bubbling)
+        self.velocity_x = random.uniform(-0.003, 0.003)  # More lateral movement (surface bubbling)
+
+        # Smaller bubbles for surface effect
+        self.base_size = random.uniform(0.004, 0.012)  # Smaller (was 0.005-0.020)
+
+        # Pulsation parameters (6x slower than original for very slow bubbling)
+        self.pulse_speed = random.uniform(1.0, 1.75)  # Very slow pulsation (was 2.0-3.5)
+        self.pulse_amplitude = random.uniform(0.15, 0.25)  # ±15-25% size variation (more dramatic)
+
+        # Color variation (±10% jitter on spawn)
+        color_jitter = 0.1
+        varied_color = (
+            max(0.0, min(1.0, bar_color[0] + random.uniform(-color_jitter, color_jitter))),
+            max(0.0, min(1.0, bar_color[1] + random.uniform(-color_jitter, color_jitter))),
+            max(0.0, min(1.0, bar_color[2] + random.uniform(-color_jitter, color_jitter)))
+        )
+
+        # Store original color for calculations (avoid reading from modified entity color)
+        self.original_color = varied_color
+
+        # Create visual entity with SPHERE model
+        self.entity = Entity(
+            parent=parent,
+            model='sphere',  # Circular! (was 'quad')
+            color=color.rgba(*varied_color, 0.8),  # Higher initial alpha (was 0.6)
+            position=(start_pos[0], start_pos[1], 2),  # In front of bar
+            scale=(self.base_size, self.base_size),
+            origin=(0, 0),
+            eternal=True
+        )
+
+        # Apply cached bubble shader (reuse, don't create new)
+        if BUBBLE_SHADER:
+            self.entity.shader = BUBBLE_SHADER
+            # Initialize shader uniforms
+            self.entity.set_shader_input('time', time.time())
+            self.entity.set_shader_input('age_factor', 0.0)
+            self.entity.set_shader_input('shimmer_speed', random.uniform(1.5, 2.5))
+
+    def update(self, dt: float) -> bool:
+        """
+        Update bubble particle with pulsation and advanced effects
+
+        Args:
+            dt: Delta time
+
+        Returns:
+            bool: True if particle is still alive, False if expired
+        """
+        self.age += dt
+
+        # Check if particle is dead (early exit)
+        if self.age >= self.lifetime:
+            return False
+
+        # Update position (slower movement)
+        self.entity.y += self.velocity_y * dt * 60  # Scale by 60 for frame-rate independence
+        self.entity.x += self.velocity_x * dt * 60
+
+        # Calculate age factor (0.0 to 1.0) - clamp to prevent complex numbers
+        age_factor = max(0.0, min(1.0, self.age / self.lifetime))
+
+        # === PULSATING SIZE ANIMATION ===
+        pulse = 1.0 + math.sin(self.age * self.pulse_speed) * self.pulse_amplitude
+
+        # Grow slightly then shrink quickly (bubble pop effect)
+        if age_factor < 0.3:
+            # First 30% of life: grow slightly
+            scale_factor = 1.0 + (age_factor / 0.3) * 0.2  # Grow to 120%
+        else:
+            # Last 70% of life: shrink rapidly
+            fade_progress = (age_factor - 0.3) / 0.7
+            scale_factor = 1.2 * max(0.0, 1.0 - fade_progress)  # Shrink from 120% to 0%
+
+        # Combine pulsation with lifetime scaling
+        final_size = max(0.001, self.base_size * scale_factor * pulse)  # Prevent zero/negative
+        self.entity.scale = (final_size, final_size)
+
+        # === QUICK FADE OUT (very fast dissipation - tomato soup effect) ===
+        # Cubic fade for rapid disappearance (safe from complex numbers)
+        alpha = 0.8 * pow(max(0.0, 1.0 - age_factor), 3.5)
+
+        # === COLOR SHIFTING (toward brighter/white over lifetime) ===
+        # Blend toward a lighter version of the color (use original color, not modified)
+        base_r, base_g, base_b = self.original_color
+        bright_factor = age_factor * 0.3  # Shift 30% toward white
+        shifted_r = base_r + (1.0 - base_r) * bright_factor
+        shifted_g = base_g + (1.0 - base_g) * bright_factor
+        shifted_b = base_b + (1.0 - base_b) * bright_factor
+
+        # Clamp values to valid range [0, 1]
+        shifted_r = max(0.0, min(1.0, shifted_r))
+        shifted_g = max(0.0, min(1.0, shifted_g))
+        shifted_b = max(0.0, min(1.0, shifted_b))
+        alpha = max(0.0, min(1.0, alpha))
+
+        self.entity.color = color.rgba(shifted_r, shifted_g, shifted_b, alpha)
+
+        # === UPDATE SHADER UNIFORMS ===
+        if hasattr(self.entity, 'shader') and self.entity.shader:
+            self.entity.set_shader_input('time', time.time())
+            self.entity.set_shader_input('age_factor', age_factor)
+
+        return True  # Particle is alive (we returned False early if dead)
+
+    def cleanup(self):
+        """Remove particle entity"""
+        if self.entity:
+            self.entity.disable()
+            self.entity = None
+
+
+class BarBubbleSystem:
+    """Manages bubble particles for a single bar"""
+    def __init__(self, parent: Entity, bar_color: tuple):
+        """
+        Initialize bubble system
+
+        Args:
+            parent: Parent entity for particles
+            bar_color: (r, g, b) color for particles
+        """
+        self.parent = parent
+        self.bar_color = bar_color
+        self.particles: List[BubbleParticle] = []
+        self.spawn_timer = 0.0
+        self.spawn_rate = 0.20  # Spawn every 0.20 seconds (5 per second - surface bubbling)
+        self.enabled = True
+        self.bar_end_pos = (0, 0)  # Will be updated each frame
+
+    def set_bar_end_position(self, x: float, y: float):
+        """Update the position where bubbles spawn (end of bar)"""
+        self.bar_end_pos = (x, y)
+
+    def set_color(self, bar_color: tuple):
+        """Update bubble color (when bar color changes)"""
+        self.bar_color = bar_color
+
+    def update(self, dt: float):
+        """Update all particles and spawn new ones"""
+        if not self.enabled:
+            return
+
+        # Update existing particles
+        self.particles = [p for p in self.particles if p.update(dt)]
+
+        # Remove dead particles
+        for p in [p for p in self.particles if p.age >= p.lifetime]:
+            p.cleanup()
+
+        # Spawn new particles (fewer bubbles)
+        self.spawn_timer += dt
+        if self.spawn_timer >= self.spawn_rate:
+            self.spawn_timer = 0.0
+            # Spawn just 1 particle (was 1-2)
+            spawn_x = self.bar_end_pos[0] + random.uniform(-0.005, 0.005)
+            spawn_y = self.bar_end_pos[1] + random.uniform(-0.008, 0.008)
+            particle = BubbleParticle((spawn_x, spawn_y), self.bar_color, self.parent)
+            self.particles.append(particle)
+
+        # Limit particle count (lower since they die quickly)
+        if len(self.particles) > 10:
+            oldest = self.particles.pop(0)
+            oldest.cleanup()
+
+    def cleanup(self):
+        """Clean up all particles"""
+        for particle in self.particles:
+            particle.cleanup()
+        self.particles.clear()
 
 
 class CombatLogEntry:
@@ -162,6 +357,10 @@ class HelmetHUD3D:
         # ===== MINIMAP =====
         self.minimap: Optional[MiniMap3D] = None
 
+        # ===== BUBBLE PARTICLE SYSTEMS =====
+        self.hp_bubble_system: Optional[BarBubbleSystem] = None
+        self.xp_bubble_system: Optional[BarBubbleSystem] = None
+
         # Cached values for conditional updates
         self._last_hp = 0
         self._last_max_hp = 0
@@ -192,6 +391,7 @@ class HelmetHUD3D:
         self._create_bottom_left_abilities()
         self._create_bottom_right_stats()
         self._create_minimap()
+        self._create_bubble_systems()
 
     # ========== TOP-LEFT PANEL (Player Stats) ==========
     def _create_top_left_panel(self):
@@ -637,6 +837,21 @@ class HelmetHUD3D:
                 mode=c.MINIMAP_MODE
             )
 
+    # ========== BUBBLE PARTICLE SYSTEMS ==========
+    def _create_bubble_systems(self):
+        """Create bubble particle systems for HP and XP bars"""
+        # HP bar bubbles (start with green)
+        self.hp_bubble_system = BarBubbleSystem(
+            parent=self.parent,
+            bar_color=(0.3, 1.0, 0.3)  # Green
+        )
+
+        # XP bar bubbles (gold)
+        self.xp_bubble_system = BarBubbleSystem(
+            parent=self.parent,
+            bar_color=(1.0, 0.85, 0.0)  # Gold
+        )
+
     # ========== UPDATE METHODS ==========
     def update(self, dt: float, camera_yaw: float = 0.0):
         """Update all HUD elements
@@ -648,6 +863,13 @@ class HelmetHUD3D:
         if not self.game.player:
             return
 
+        # Update shader time uniforms for wave animation
+        current_time = time.time()
+        if self.hp_bar_fill and hasattr(self.hp_bar_fill, 'shader') and self.hp_bar_fill.shader:
+            self.hp_bar_fill.set_shader_input('time', current_time)
+        if self.xp_bar_fill and hasattr(self.xp_bar_fill, 'shader') and self.xp_bar_fill.shader:
+            self.xp_bar_fill.set_shader_input('time', current_time)
+
         self._update_player_stats()
         self._update_equipment()
         self._update_abilities(dt)
@@ -658,6 +880,12 @@ class HelmetHUD3D:
         # Update minimap
         if self.minimap:
             self.minimap.update(dt, camera_yaw)
+
+        # Update bubble particle systems
+        if self.hp_bubble_system:
+            self.hp_bubble_system.update(dt)
+        if self.xp_bubble_system:
+            self.xp_bubble_system.update(dt)
 
     def _update_player_stats(self):
         """Update top-left player stats panel"""
@@ -680,15 +908,27 @@ class HelmetHUD3D:
             if hp_percent > 0.6:
                 bar_color = color.rgb(0.3, 1.0, 0.3)  # Green
                 glow_color = color.rgba(0.3, 1.0, 0.3, 0.4)  # Green glow
+                bubble_color = (0.3, 1.0, 0.3)
             elif hp_percent > 0.3:
                 bar_color = color.rgb(1.0, 0.9, 0.0)  # Yellow
                 glow_color = color.rgba(1.0, 0.9, 0.0, 0.4)  # Yellow glow
+                bubble_color = (1.0, 0.9, 0.0)
             else:
                 bar_color = color.rgb(1.0, 0.3, 0.3)  # Red
                 glow_color = color.rgba(1.0, 0.3, 0.3, 0.4)  # Red glow
+                bubble_color = (1.0, 0.3, 0.3)
 
             self.hp_bar_fill.color = bar_color
             self.hp_bar_inner_glow.color = glow_color
+
+            # Update bubble system color and position
+            if self.hp_bubble_system:
+                self.hp_bubble_system.set_color(bubble_color)
+                # Calculate bar end position (bar starts at -0.84, width is 0.38 * hp_percent)
+                bar_start_x = -0.84
+                bar_end_x = bar_start_x + (0.38 * hp_percent)
+                bar_y = 0.36  # hp_bar_y from creation
+                self.hp_bubble_system.set_bar_end_position(bar_end_x, bar_y)
 
             self.hp_text.text = f"{player.hp}/{player.max_hp} HP"
             self._last_hp = player.hp
@@ -700,6 +940,15 @@ class HelmetHUD3D:
             self.xp_bar_fill.scale_x = 0.38 * xp_percent  # Updated to match new bar width
             # Also scale inner glow to match fill
             self.xp_bar_inner_glow.scale_x = (0.38 - 0.005) * xp_percent
+
+            # Update bubble system position
+            if self.xp_bubble_system:
+                # Calculate bar end position (bar starts at -0.84, width is 0.38 * xp_percent)
+                bar_start_x = -0.84
+                bar_end_x = bar_start_x + (0.38 * xp_percent)
+                bar_y = 0.28  # xp_bar_y from creation
+                self.xp_bubble_system.set_bar_end_position(bar_end_x, bar_y)
+
             self.xp_text.text = f"{player.xp}/{player.xp_to_next_level} XP"
             self._last_xp = player.xp
             self._last_xp_to_next = player.xp_to_next_level
@@ -944,6 +1193,14 @@ class HelmetHUD3D:
         if self.minimap:
             self.minimap.cleanup()
             self.minimap = None
+
+        # Clean up bubble systems
+        if self.hp_bubble_system:
+            self.hp_bubble_system.cleanup()
+            self.hp_bubble_system = None
+        if self.xp_bubble_system:
+            self.xp_bubble_system.cleanup()
+            self.xp_bubble_system = None
 
         # All other entities will be cleaned up automatically
         # since they're parented to camera.ui
