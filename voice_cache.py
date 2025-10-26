@@ -37,42 +37,42 @@ VOICE_LINES = {
 # Death scream configurations (enemy_type -> transformation parameters)
 DEATH_SCREAM_CONFIGS = {
     'startle': {
-        'text': 'aahh',
+        'text': 'aaiieee',     # High-pitched shriek
         'pitch_shift': 8,      # +8 semitones (high-pitched squeal)
         'time_stretch': 0.8,   # 80% duration (quick death)
         'distortion': 0.0,     # No white noise distortion
-        'tts_rate': 120,       # Slower TTS for better "aahh" sound
+        'tts_rate': 120,       # Slower TTS for better articulation
     },
     'slime': {
-        'text': 'aahh',
+        'text': 'blooorgle',   # Wet gurgling bubble death
         'pitch_shift': -4,     # -4 semitones (lower, bubbly)
         'time_stretch': 1.3,   # 130% duration (wet splat)
         'distortion': 0.0,     # No white noise distortion
         'tts_rate': 100,
     },
     'skeleton': {
-        'text': 'aahh',
+        'text': 'khaaach',     # Dry rattling death rattle
         'pitch_shift': 0,      # No pitch shift (hollow, neutral)
         'time_stretch': 0.7,   # 70% duration (brief rattle)
         'distortion': 0.0,     # No white noise distortion
         'tts_rate': 140,
     },
     'orc': {
-        'text': 'aahh',
+        'text': 'graaawr',     # Deep guttural beast roar
         'pitch_shift': -8,     # -8 semitones (deep guttural)
         'time_stretch': 1.5,   # 150% duration (long roar)
         'distortion': 0.0,     # No white noise distortion
         'tts_rate': 90,        # Slower for deeper voice
     },
     'demon': {
-        'text': 'aahh',
+        'text': 'aahh',        # KEEP AS-IS - sounds amazing!
         'pitch_shift': 12,     # +12 semitones (piercing screech)
         'time_stretch': 1.4,   # 140% duration (extended wail)
         'distortion': 0.0,     # No white noise distortion
         'tts_rate': 110,
     },
     'dragon': {
-        'text': 'aahh',
+        'text': 'rrroooaawr',  # Epic dragon roar
         'pitch_shift': -10,    # -10 semitones (epic deep roar)
         'time_stretch': 2.0,   # 200% duration (dramatic death)
         'distortion': 0.0,     # No white noise distortion
