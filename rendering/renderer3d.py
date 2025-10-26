@@ -1063,8 +1063,10 @@ class Renderer3D:
         if not self.game.player:
             return
 
-        player_x = float(self.game.player.x)
-        player_y = float(self.game.player.y)
+        # Use player's interpolated display position for smooth camera movement
+        # This creates smooth transitions when moving between tiles (matching rotation smoothness)
+        player_x = self.game.player.display_x
+        player_y = self.game.player.display_y
 
         if c.USE_FIRST_PERSON:
             # First-person with over-the-shoulder offset

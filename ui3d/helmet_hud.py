@@ -1173,7 +1173,7 @@ class HelmetHUD3D:
             return 0
 
         count = 0
-        from game_logic.fov import calculate_fov
+        from fov import calculate_fov
 
         for enemy in self.game.enemies:
             enemy_fov = calculate_fov(

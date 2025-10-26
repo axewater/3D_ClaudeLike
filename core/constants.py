@@ -29,6 +29,9 @@ DEFAULT_CAMERA_PITCH = 15.0   # Default pitch: look down 15° for better ground/
 CAMERA_PITCH_SPEED = 1.5      # Pitch interpolation speed (smooth ~1 second transition)
 ENEMY_FOCUS_PITCH = 25.0      # Degrees to tilt down when focusing on adjacent enemy
 
+# Movement animation settings
+MOVEMENT_ANIMATION_DURATION = 0.15  # Seconds to complete movement between tiles (0.15 = snappy, 0.2 = smooth)
+
 # Camera lens distortion (barrel/fisheye effect)
 BARREL_DISTORTION_STRENGTH = 0.10  # Subtle fisheye warp at edges (0.0=none, 0.1=subtle, 0.3=strong)
 

@@ -19,7 +19,7 @@ class Entity:
         self.facing_direction = (0, 1)  # (dx, dy) - default facing down
         self.is_moving = False
         self.move_progress = 0.0  # 0.0 to 1.0
-        self.move_duration = 0.2  # Seconds to complete movement
+        self.move_duration = c.MOVEMENT_ANIMATION_DURATION  # Seconds to complete movement
         self.move_start_x = float(x)
         self.move_start_y = float(y)
         self.move_target_x = float(x)
