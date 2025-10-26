@@ -1,7 +1,7 @@
 """
-3D Pause Menu Overlay
+3D Pause Menu
 
-Semi-transparent overlay that appears when ESC is pressed during gameplay.
+Appears when ESC is pressed during gameplay.
 """
 
 from ursina import Entity, camera, color, Text, Button, held_keys
@@ -14,7 +14,6 @@ class PauseMenu3D(Entity):
     Pause menu overlay (does not replace current screen).
 
     Shows:
-    - Semi-transparent dark overlay
     - "PAUSED" title
     - Options: Resume, Restart, Settings, Main Menu, Quit
     """
@@ -37,17 +36,7 @@ class PauseMenu3D(Entity):
         self.enabled = False
 
     def _create_ui(self):
-        """Create UI overlay elements"""
-        # Semi-transparent dark overlay - RGBA tuple
-        self.overlay_bg = Entity(
-            model='quad',
-            color=(0, 0, 0, 180/255),  # Normalized RGBA (0-1 range)
-            scale=(100, 100),
-            position=(0, 0, -0.5),
-            parent=camera.ui
-        )
-        self.ui_elements.append(self.overlay_bg)
-
+        """Create UI elements"""
         # Title "PAUSED"
         title = Text(
             text="PAUSED",
