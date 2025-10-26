@@ -402,9 +402,9 @@ class AudioManager:
         stairs = np.concatenate([step1, step_gap, step2, step_gap, step3, step_gap, echo_tail])
         self.sounds['stairs'] = synth.array_to_sound(stairs)
 
-        # Coin pickup - classic "bling-bling" two-note ascending pickup sound
-        coin_note1 = synth.generate_sine_wave(988, 0.08, 0.35)   # B - first bright note
-        coin_note2 = synth.generate_sine_wave(1319, 0.12, 0.30)  # E - second higher note with sustain
+        # Coin pickup - friendly "boop-BEEP!" confirmation
+        coin_note1 = synth.generate_sine_wave(659, 0.06, 0.20)   # E - friendly boop
+        coin_note2 = synth.generate_sine_wave(880, 0.10, 0.25)   # A - happy beep!
         coin = np.concatenate([coin_note1, coin_note2])
         self.sounds['coin'] = synth.array_to_sound(coin)
 
@@ -483,10 +483,13 @@ class AudioManager:
 
         self.sounds['gameover'] = synth.array_to_sound(gameover)
 
-        # Menu select - friendly "boop-BEEP!" confirmation
-        select_note1 = synth.generate_sine_wave(659, 0.06, 0.20)   # E - friendly boop
-        select_note2 = synth.generate_sine_wave(880, 0.10, 0.25)   # A - happy beep!
-        select = np.concatenate([select_note1, select_note2])
+        # Menu select - low rumbling stone button click (ancient temple)
+        select = synth.combine_waves(
+            synth.generate_sine_wave(50, 0.15, 0.16),        # Deep stone rumble
+            synth.generate_sine_wave(85, 0.12, 0.12),        # Mid bass thunk
+            synth.generate_sweep(120, 65, 0.10, 0.10),       # Stone settling
+            synth.generate_noise(0.08, 0.08)                 # Stone texture/click
+        )
         self.sounds['ui_select'] = synth.array_to_sound(select)
 
         # Menu hover - dark thump similar to stairs
