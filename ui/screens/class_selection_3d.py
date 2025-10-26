@@ -336,7 +336,7 @@ class ClassSelection3D(Entity):
         # Create model entity - scaled to comfortable viewing size (0.3125 = 50% of original 0.625)
         model = model_func(position=Vec3(0, 0, 0), scale=Vec3(0.3125, 0.3125, 0.3125))
         # NOTE: Do NOT override model.color - let child entities keep their individual colors
-        model.rotation_y = 0
+        # NOTE: Do NOT override model.rotation_y - let each model keep its built-in orientation
         model.rotation_z = 180  # Flip model right-side up
 
         # Position in front of camera at display height
