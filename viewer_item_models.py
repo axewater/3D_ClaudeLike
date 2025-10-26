@@ -2,7 +2,11 @@
 """
 Item Model Viewer - Quick viewer for debugging 3D item models
 
-Usage: python3 viewer_item_models.py
+Usage:
+  python3 viewer_item_models.py                              # View all items (7 types × 5 rarities)
+  python3 viewer_item_models.py --type sword                 # View all sword rarities
+  python3 viewer_item_models.py --rarity legendary           # View all legendary items
+  python3 viewer_item_models.py --type ring --rarity epic    # View only epic ring
 
 Controls:
 - Left mouse drag: Rotate camera
@@ -17,10 +21,40 @@ Controls:
 from ursina import Ursina, Entity, Vec3, Text, color as ursina_color, camera, mouse, held_keys, time
 import sys
 import math
+import argparse
 
 # Import item model creators
 from graphics3d.items import create_item_model_3d, update_item_animation
 import constants as c
+
+
+def parse_arguments():
+    """Parse command-line arguments for filtering items"""
+    parser = argparse.ArgumentParser(
+        description='3D Item Model Viewer - View procedurally generated item models',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                              # View all items (7 types × 5 rarities)
+  %(prog)s --type sword                 # View all sword rarities (5 items)
+  %(prog)s --rarity legendary           # View all legendary items (7 items)
+  %(prog)s --type ring --rarity epic    # View only epic ring (1 item)
+        """
+    )
+
+    parser.add_argument(
+        '--type',
+        choices=['sword', 'shield', 'potion', 'boots', 'ring', 'chest', 'coin'],
+        help='Filter by item type'
+    )
+
+    parser.add_argument(
+        '--rarity',
+        choices=['common', 'uncommon', 'rare', 'epic', 'legendary'],
+        help='Filter by rarity tier'
+    )
+
+    return parser.parse_args()
 
 
 class OrbitCamera:
@@ -162,9 +196,13 @@ class OrbitCamera:
         print("Returned to overview")
 
 
-def create_item_grid():
+def create_item_grid(type_filter=None, rarity_filter=None):
     """
-    Create all item models in a 7x5 grid layout (7 types x 5 rarities)
+    Create item models in a grid layout, optionally filtered by type/rarity
+
+    Args:
+        type_filter: Optional string filter ('sword', 'shield', etc.)
+        rarity_filter: Optional string filter ('common', 'rare', etc.)
 
     Grid layout:
     - Rows: Item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)
@@ -175,8 +213,27 @@ def create_item_grid():
     """
     items_data = []
 
+    # Mapping from string names to constants
+    type_name_map = {
+        'sword': c.ITEM_SWORD,
+        'shield': c.ITEM_SHIELD,
+        'potion': c.ITEM_HEALTH_POTION,
+        'boots': c.ITEM_BOOTS,
+        'ring': c.ITEM_RING,
+        'chest': c.ITEM_TREASURE_CHEST,
+        'coin': c.ITEM_GOLD_COIN,
+    }
+
+    rarity_name_map = {
+        'common': c.RARITY_COMMON,
+        'uncommon': c.RARITY_UNCOMMON,
+        'rare': c.RARITY_RARE,
+        'epic': c.RARITY_EPIC,
+        'legendary': c.RARITY_LEGENDARY,
+    }
+
     # Item types (rows)
-    item_types = [
+    all_item_types = [
         (c.ITEM_SWORD, "Sword"),
         (c.ITEM_SHIELD, "Shield"),
         (c.ITEM_HEALTH_POTION, "Potion"),
@@ -187,7 +244,7 @@ def create_item_grid():
     ]
 
     # Rarities (columns)
-    rarities = [
+    all_rarities = [
         (c.RARITY_COMMON, "Common"),
         (c.RARITY_UNCOMMON, "Uncommon"),
         (c.RARITY_RARE, "Rare"),
@@ -195,44 +252,64 @@ def create_item_grid():
         (c.RARITY_LEGENDARY, "Legendary"),
     ]
 
-    # Grid layout: 5 columns (rarities) x 7 rows (item types)
-    grid_cols = 5
+    # Apply filters
+    if type_filter:
+        filter_const = type_name_map[type_filter]
+        item_types = [(t, n) for t, n in all_item_types if t == filter_const]
+    else:
+        item_types = all_item_types
+
+    if rarity_filter:
+        filter_const = rarity_name_map[rarity_filter]
+        rarities = [(r, n) for r, n in all_rarities if r == filter_const]
+    else:
+        rarities = all_rarities
+
+    # Grid layout - dynamic based on filtered items
+    num_cols = len(rarities)
+    num_rows = len(item_types)
     grid_spacing = 2.5
 
-    # Column headers (rarity names)
-    for col, (rarity, rarity_name) in enumerate(rarities):
-        x = (col - 2) * grid_spacing  # -2 to center (cols: -2, -1, 0, 1, 2)
-        z = -4.5  # Top of grid (moved up for 7 rows)
+    # Calculate centering offsets
+    col_offset = (num_cols - 1) / 2.0  # Center columns around origin
+    row_offset = (num_rows - 1) / 2.0  # Center rows around origin
 
-        Text(
-            text=rarity_name,
-            position=(x, 0, z),
-            scale=1.5,
-            color=ursina_color.white,
-            origin=(0, 0),
-            billboard=True
-        )
+    # Column headers (rarity names) - only if showing multiple rarities
+    if num_cols > 1:
+        for col, (rarity, rarity_name) in enumerate(rarities):
+            x = (col - col_offset) * grid_spacing
+            z = -(row_offset + 0.8) * grid_spacing  # Above grid
 
-    # Row headers (item type names)
-    for row, (item_type, item_name) in enumerate(item_types):
-        x = -7.0  # Left of grid
-        z = (row - 3) * grid_spacing  # -3 to center (rows: -3, -2, -1, 0, 1, 2, 3)
+            Text(
+                text=rarity_name,
+                position=(x, 0, z),
+                scale=1.5,
+                color=ursina_color.white,
+                origin=(0, 0),
+                billboard=True
+            )
 
-        Text(
-            text=item_name,
-            position=(x, 0, z),
-            scale=1.5,
-            color=ursina_color.white,
-            origin=(0, 0),
-            billboard=True
-        )
+    # Row headers (item type names) - only if showing multiple types
+    if num_rows > 1:
+        for row, (item_type, item_name) in enumerate(item_types):
+            x = -(col_offset + 1.4) * grid_spacing  # Left of grid
+            z = (row - row_offset) * grid_spacing
+
+            Text(
+                text=item_name,
+                position=(x, 0, z),
+                scale=1.5,
+                color=ursina_color.white,
+                origin=(0, 0),
+                billboard=True
+            )
 
     # Create all items in grid
     for row, (item_type, item_name) in enumerate(item_types):
         for col, (rarity, rarity_name) in enumerate(rarities):
             # Calculate grid position (centered around origin)
-            x = (col - 2) * grid_spacing  # -2 to center (cols: -2, -1, 0, 1, 2)
-            z = (row - 3) * grid_spacing  # -3 to center (rows: -3, -2, -1, 0, 1, 2, 3)
+            x = (col - col_offset) * grid_spacing
+            z = (row - row_offset) * grid_spacing
             y = 0.5  # Slightly above ground (items float)
 
             position = Vec3(x, y, z)
@@ -370,6 +447,9 @@ def main():
     """Main entry point for the item model viewer"""
     global orbit_cam, items, info_text
 
+    # Parse command-line arguments
+    args = parse_arguments()
+
     # Initialize Ursina with simple window settings
     app = Ursina(
         title="Item Model Viewer",
@@ -390,14 +470,37 @@ def main():
     # Create ground plane
     ground = create_ground_plane()
 
-    # Create all items in a grid
+    # Create filtered items
     print("Loading item models...")
-    items = create_item_grid()
-    print(f"Loaded {len(items)} item models (7 types x 5 rarities)")
+    if args.type and args.rarity:
+        print(f"  Filter: {args.rarity.capitalize()} {args.type.capitalize()}")
+    elif args.type:
+        print(f"  Filter: All {args.type.capitalize()} rarities")
+    elif args.rarity:
+        print(f"  Filter: All {args.rarity.capitalize()} items")
+    else:
+        print("  Filter: All items (7 types × 5 rarities)")
+
+    items = create_item_grid(type_filter=args.type, rarity_filter=args.rarity)
+    print(f"Loaded {len(items)} item model(s)")
+
+    # Adjust camera defaults based on number of items
+    # Single item: Close-up view
+    # Row/column: Medium view
+    # Full grid: Wide view
+    if len(items) == 1:
+        camera_distance = 4.0
+        camera_height = 1.5
+    elif len(items) <= 7:  # Single row or column
+        camera_distance = 8.0
+        camera_height = 2.0
+    else:  # Full grid
+        camera_distance = 15.0
+        camera_height = 3.0
 
     # Setup orbit camera (look at center of grid)
     # Pass items list so camera can track them
-    orbit_cam = OrbitCamera(target_position=Vec3(0, 0.5, 0), distance=15.0, height=3.0, items_list=items)
+    orbit_cam = OrbitCamera(target_position=Vec3(0, 0.5, 0), distance=camera_distance, height=camera_height, items_list=items)
 
     # Create controls text (top-left corner)
     controls_text = Text(
@@ -438,12 +541,18 @@ def main():
     print("Controls:")
     print("  - Left mouse drag to rotate, scroll to zoom")
     print("  - R to reset camera")
-    print("  - 1-7 to focus on item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)")
-    print("  - Q/W/E/R/T to focus on rarities (Common, Uncommon, Rare, Epic, Legendary)")
-    print("  - 0 to return to overview")
+    if len(items) > 1:
+        print("  - 1-7 to focus on item types (Sword, Shield, Potion, Boots, Ring, Chest, Coin)")
+        print("  - Q/W/E/R/T to focus on rarities (Common, Uncommon, Rare, Epic, Legendary)")
+        print("  - 0 to return to overview")
     print("  - ESC to quit")
     print(f"\nCamera position: {camera.position}")
     print(f"Camera looking at: {orbit_cam.target}")
+
+    # Show filtering info
+    if args.type or args.rarity:
+        print("\nFiltering enabled - use without filters to see all items:")
+        print("  python3 viewer_item_models.py")
 
     # Run the app (update function will be called automatically)
     app.run()

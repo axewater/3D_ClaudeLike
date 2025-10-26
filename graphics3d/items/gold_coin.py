@@ -6,15 +6,14 @@ Gold coins spin rapidly to attract attention.
 
 Features:
 - Proper cylinder geometry for realistic circular shape
-- Procedurally generated coin texture with embossed designs
+- 3D embossed emblems (dot, diamond, star, crown, sunburst)
 - Toon shader for cel-shaded appearance
+- Physically raised geometry on both coin faces
 """
 
-from ursina import Entity, Vec3, Texture, Mesh
-from PIL import Image, ImageDraw, ImageFont
+from ursina import Entity, Vec3, Mesh
 import constants as c
 from graphics3d.utils import rgb_to_ursina_color
-import random
 import math
 
 # Import toon shader system
@@ -32,6 +31,213 @@ if dna_editor_path not in sys.path:
     sys.path.insert(0, dna_editor_path)
 
 from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+
+
+def generate_star_emblem_mesh(points=5, outer_radius=0.04, inner_radius=0.02, extrude_depth=0.01):
+    """
+    Generate a 3D extruded star emblem mesh with variable point count.
+
+    Args:
+        points: Number of star points (5=star, 8=crown, 16=sunburst)
+        outer_radius: Distance from center to star points
+        inner_radius: Distance from center to valleys between points
+        extrude_depth: How much the star extrudes from the surface
+
+    Returns:
+        Mesh: 3D star emblem
+    """
+    vertices = []
+    triangles = []
+    normals = []
+
+    # Center vertex at base (on coin surface)
+    base_center_idx = len(vertices)
+    vertices.append(Vec3(0, 0, 0))
+    normals.append(Vec3(0, 0, -1))  # Point down into coin
+
+    # Center vertex at top (extruded peak)
+    top_center_idx = len(vertices)
+    vertices.append(Vec3(0, extrude_depth, 0))
+    normals.append(Vec3(0, 1, 0))  # Point up
+
+    # Generate star points (alternating outer/inner radii)
+    base_vertices = []
+    for i in range(points * 2):
+        angle = (i / (points * 2)) * 2 * math.pi - math.pi / 2
+        radius = outer_radius if i % 2 == 0 else inner_radius
+
+        x = radius * math.cos(angle)
+        z = radius * math.sin(angle)
+
+        # Base vertex (on coin surface)
+        base_idx = len(vertices)
+        vertices.append(Vec3(x, 0, z))
+        base_vertices.append(base_idx)
+
+        # Calculate outward normal for side faces
+        normal = Vec3(x, 0, z).normalized()
+        normals.append(normal)
+
+        # Top vertex (extruded)
+        top_idx = len(vertices)
+        vertices.append(Vec3(x, extrude_depth, z))
+        normals.append(normal)
+
+        # Create side wall triangles (quad = 2 triangles)
+        if i > 0:
+            prev_base = base_vertices[i - 1]
+            prev_top = base_vertices[i - 1] + 1
+            curr_base = base_idx
+            curr_top = top_idx
+
+            # Triangle 1: base -> next_base -> top
+            triangles.append((prev_base, curr_base, prev_top))
+            # Triangle 2: next_base -> next_top -> top
+            triangles.append((curr_base, curr_top, prev_top))
+
+    # Close the loop (connect last to first)
+    first_base = base_vertices[0]
+    first_top = first_base + 1
+    last_base = base_vertices[-1]
+    last_top = last_base + 1
+    triangles.append((last_base, first_base, last_top))
+    triangles.append((first_base, first_top, last_top))
+
+    # Create bottom face (star shape on coin surface)
+    for i in range(len(base_vertices)):
+        curr = base_vertices[i]
+        next_v = base_vertices[(i + 1) % len(base_vertices)]
+        triangles.append((base_center_idx, next_v, curr))
+
+    # Create top face (star shape at extruded peak)
+    top_vertices = [v + 1 for v in base_vertices]  # Top vertices are +1 from base
+    for i in range(len(top_vertices)):
+        curr = top_vertices[i]
+        next_v = top_vertices[(i + 1) % len(top_vertices)]
+        triangles.append((top_center_idx, curr, next_v))
+
+    return Mesh(vertices=vertices, triangles=triangles, normals=normals)
+
+
+def generate_diamond_emblem_mesh(size=0.04, height=0.015):
+    """
+    Generate a 4-sided pyramid (diamond) emblem.
+
+    Args:
+        size: Base size of the diamond
+        height: Height of the pyramid peak
+
+    Returns:
+        Mesh: 3D diamond emblem
+    """
+    vertices = []
+    triangles = []
+    normals = []
+
+    # Base vertices (4 corners of square)
+    base_vertices = [
+        Vec3(-size, 0, 0),      # Left
+        Vec3(0, 0, -size),      # Front
+        Vec3(size, 0, 0),       # Right
+        Vec3(0, 0, size),       # Back
+    ]
+
+    # Center of base
+    center_base = Vec3(0, 0, 0)
+
+    # Peak of pyramid
+    peak = Vec3(0, height, 0)
+
+    # Add base center
+    center_idx = 0
+    vertices.append(center_base)
+    normals.append(Vec3(0, -1, 0))
+
+    # Add peak
+    peak_idx = 1
+    vertices.append(peak)
+    normals.append(Vec3(0, 1, 0))
+
+    # Add base vertices and create triangular faces
+    base_indices = []
+    for i, v in enumerate(base_vertices):
+        idx = len(vertices)
+        base_indices.append(idx)
+        vertices.append(v)
+
+        # Normal points outward and up
+        normal = Vec3(v.x, height/2, v.z).normalized()
+        normals.append(normal)
+
+    # Create pyramid faces (4 triangles from peak to base edges)
+    for i in range(4):
+        curr = base_indices[i]
+        next_v = base_indices[(i + 1) % 4]
+        triangles.append((peak_idx, curr, next_v))
+
+    # Create base face (4 triangles from center to base edges)
+    for i in range(4):
+        curr = base_indices[i]
+        next_v = base_indices[(i + 1) % 4]
+        triangles.append((center_idx, next_v, curr))
+
+    return Mesh(vertices=vertices, triangles=triangles, normals=normals)
+
+
+def generate_dot_emblem_mesh(radius=0.03, height=0.01, segments=12):
+    """
+    Generate a simple raised hemisphere (dot) emblem.
+
+    Args:
+        radius: Radius of the hemisphere
+        height: Height of the hemisphere
+        segments: Number of segments for smoothness
+
+    Returns:
+        Mesh: 3D hemisphere emblem
+    """
+    vertices = []
+    triangles = []
+    normals = []
+
+    # Center point at base
+    center_idx = 0
+    vertices.append(Vec3(0, 0, 0))
+    normals.append(Vec3(0, -1, 0))
+
+    # Peak point
+    peak_idx = 1
+    vertices.append(Vec3(0, height, 0))
+    normals.append(Vec3(0, 1, 0))
+
+    # Generate circular base ring
+    base_indices = []
+    for i in range(segments):
+        angle = (i / segments) * 2 * math.pi
+        x = radius * math.cos(angle)
+        z = radius * math.sin(angle)
+
+        idx = len(vertices)
+        base_indices.append(idx)
+        vertices.append(Vec3(x, 0, z))
+
+        # Normal points outward
+        normal = Vec3(x, height, z).normalized()
+        normals.append(normal)
+
+    # Create side faces (triangles from peak to base ring)
+    for i in range(segments):
+        curr = base_indices[i]
+        next_v = base_indices[(i + 1) % segments]
+        triangles.append((peak_idx, curr, next_v))
+
+    # Create base face (triangles from center to base ring)
+    for i in range(segments):
+        curr = base_indices[i]
+        next_v = base_indices[(i + 1) % segments]
+        triangles.append((center_idx, next_v, curr))
+
+    return Mesh(vertices=vertices, triangles=triangles, normals=normals)
 
 
 def generate_coin_mesh(radius=0.2, height=0.08, segments=32):
@@ -163,151 +369,26 @@ def generate_coin_mesh(radius=0.2, height=0.08, segments=32):
     return Mesh(vertices=vertices, triangles=triangles, normals=normals, uvs=uvs)
 
 
-def generate_coin_texture(coin_color_rgb: tuple, rarity: str, size: int = 256) -> Image.Image:
-    """
-    Generate procedural texture for coin faces with embossed designs.
-
-    Creates a circular coin texture with:
-    - Outer rim/border
-    - Central emblem/symbol (varies by rarity)
-    - Subtle radial lines for metallic look
-    - Color variation and detail
-
-    Args:
-        coin_color_rgb: Base color as RGB tuple (0-255 scale)
-        rarity: Item rarity (affects symbol complexity)
-        size: Texture size in pixels (default 256)
-
-    Returns:
-        PIL Image with RGBA coin texture
-    """
-    # Create circular coin texture
-    image = Image.new('RGBA', (size, size), color=(0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-
-    center = size // 2
-    radius = size // 2 - 2
-
-    # Draw main coin circle (solid fill)
-    draw.ellipse(
-        [center - radius, center - radius, center + radius, center + radius],
-        fill=coin_color_rgb + (255,),
-        outline=None
-    )
-
-    # Outer rim - darker border
-    rim_color = tuple(max(0, c - 30) for c in coin_color_rgb)
-    rim_width = max(3, size // 32)
-    for i in range(rim_width):
-        r = radius - i
-        draw.ellipse(
-            [center - r, center - r, center + r, center + r],
-            fill=None,
-            outline=rim_color + (255,),
-            width=1
-        )
-
-    # Inner rim - brighter highlight
-    highlight_color = tuple(min(255, c + 40) for c in coin_color_rgb)
-    inner_rim_radius = radius - rim_width * 2
-    for i in range(2):
-        r = inner_rim_radius - i
-        draw.ellipse(
-            [center - r, center - r, center + r, center + r],
-            fill=None,
-            outline=highlight_color + (255,),
-            width=1
-        )
-
-    # Draw radial lines for metallic texture (subtle)
-    num_lines = 24 + (len(rarity) * 4)  # More lines for rarer coins
-    for i in range(num_lines):
-        angle = (i / num_lines) * 2 * math.pi
-        start_r = inner_rim_radius - 10
-        end_r = radius - rim_width - 5
-
-        x1 = center + int(math.cos(angle) * start_r)
-        y1 = center + int(math.sin(angle) * start_r)
-        x2 = center + int(math.cos(angle) * end_r)
-        y2 = center + int(math.sin(angle) * end_r)
-
-        line_color = tuple(min(255, c + 10) for c in coin_color_rgb)
-        draw.line([x1, y1, x2, y2], fill=line_color + (128,), width=1)
-
-    # Central emblem varies by rarity
-    emblem_radius = size // 6
-
-    if rarity == c.RARITY_COMMON:
-        # Simple dot
-        draw.ellipse(
-            [center - emblem_radius, center - emblem_radius,
-             center + emblem_radius, center + emblem_radius],
-            fill=highlight_color + (255,)
-        )
-    elif rarity == c.RARITY_UNCOMMON:
-        # Diamond shape
-        points = [
-            (center, center - emblem_radius),
-            (center + emblem_radius, center),
-            (center, center + emblem_radius),
-            (center - emblem_radius, center)
-        ]
-        draw.polygon(points, fill=highlight_color + (255,))
-    elif rarity == c.RARITY_RARE:
-        # Star (5 points)
-        points = []
-        for i in range(10):
-            angle = (i / 10) * 2 * math.pi - math.pi / 2
-            r = emblem_radius if i % 2 == 0 else emblem_radius // 2
-            x = center + int(math.cos(angle) * r)
-            y = center + int(math.sin(angle) * r)
-            points.append((x, y))
-        draw.polygon(points, fill=highlight_color + (255,))
-    elif rarity == c.RARITY_EPIC:
-        # Crown/gear shape (8 points)
-        points = []
-        for i in range(16):
-            angle = (i / 16) * 2 * math.pi
-            r = emblem_radius if i % 2 == 0 else emblem_radius * 0.7
-            x = center + int(math.cos(angle) * r)
-            y = center + int(math.sin(angle) * r)
-            points.append((x, y))
-        draw.polygon(points, fill=highlight_color + (255,))
-    else:  # LEGENDARY
-        # Complex sun/star burst (16 points)
-        points = []
-        for i in range(32):
-            angle = (i / 32) * 2 * math.pi
-            r = emblem_radius if i % 2 == 0 else emblem_radius * 0.6
-            x = center + int(math.cos(angle) * r)
-            y = center + int(math.sin(angle) * r)
-            points.append((x, y))
-        draw.polygon(points, fill=highlight_color + (255,))
-
-        # Add inner circle for legendary
-        inner_circle_r = emblem_radius // 3
-        draw.ellipse(
-            [center - inner_circle_r, center - inner_circle_r,
-             center + inner_circle_r, center + inner_circle_r],
-            fill=coin_color_rgb + (255,)
-        )
-
-    return image
-
-
 def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
     """
     Create a 3D gold coin model with rarity-based appearance
 
-    Uses proper cylinder geometry with procedurally generated textures
+    Uses proper cylinder geometry with 3D embossed emblems
     and toon shading for a high-quality cel-shaded coin.
+
+    Emblems by rarity:
+    - Common: Raised dot (hemisphere)
+    - Uncommon: Diamond pyramid (4-sided)
+    - Rare: 5-pointed star
+    - Epic: 8-pointed crown/gear
+    - Legendary: 16-pointed sunburst
 
     Args:
         position: 3D world position
-        rarity: Item rarity (affects gold color and value)
+        rarity: Item rarity (affects gold color, emblem, and glow)
 
     Returns:
-        Entity: Gold coin 3D model
+        Entity: Gold coin 3D model with embossed emblems on both faces
     """
     # Create toon shader instances
     toon_shader = create_toon_shader()
@@ -353,10 +434,6 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
             unlit=True
         )
 
-    # Generate procedural coin texture
-    coin_texture_pil = generate_coin_texture(coin_color_rgb, rarity, size=256)
-    coin_texture = Texture(coin_texture_pil)
-
     # Generate procedural coin meshes (cylinder geometry)
     # Using thicker coins for better visibility (height 0.08 vs radius 0.2 = 2.5:1 ratio)
     coin_mesh = generate_coin_mesh(radius=0.2, height=0.08, segments=32)
@@ -373,8 +450,49 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
         parent=coin,
         position=(0, 0, 0),
         rotation=(90, 0, 0),  # Rotate to stand upright
-        texture=coin_texture,
         shader=coin_shader
+    )
+
+    # Create 3D embossed emblems based on rarity (2x larger for visibility)
+    emblem_color = rgb_to_ursina_color(*tuple(min(255, c + 30) for c in coin_color_rgb))  # Slightly brighter
+    emblem_shader = get_shader_for_scale(0.08, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+
+    if rarity == c.RARITY_COMMON:
+        # Simple raised dot (2x size)
+        emblem_mesh = generate_dot_emblem_mesh(radius=0.06, height=0.02, segments=12)
+    elif rarity == c.RARITY_UNCOMMON:
+        # Diamond pyramid (2x size)
+        emblem_mesh = generate_diamond_emblem_mesh(size=0.08, height=0.03)
+    elif rarity == c.RARITY_RARE:
+        # 5-pointed star (2x size)
+        emblem_mesh = generate_star_emblem_mesh(points=5, outer_radius=0.09, inner_radius=0.04, extrude_depth=0.024)
+    elif rarity == c.RARITY_EPIC:
+        # 8-pointed crown/gear (2x size)
+        emblem_mesh = generate_star_emblem_mesh(points=8, outer_radius=0.10, inner_radius=0.05, extrude_depth=0.03)
+    else:  # LEGENDARY
+        # 16-pointed sunburst (2x size)
+        emblem_mesh = generate_star_emblem_mesh(points=16, outer_radius=0.11, inner_radius=0.06, extrude_depth=0.036)
+
+    # Add emblem to FRONT face (coin rotated 90° on X, so Z+ is front)
+    # Emblem positioned at front of coin face
+    front_emblem = Entity(
+        model=emblem_mesh,
+        color=emblem_color,
+        parent=coin,
+        position=(0, 0, 0.045),  # Slightly in front of coin face
+        rotation=(90, 0, 0),  # Match coin rotation
+        shader=emblem_shader
+    )
+
+    # Add emblem to BACK face
+    # Rotate 180° to flip emblem to face outward on back side
+    back_emblem = Entity(
+        model=emblem_mesh,
+        color=emblem_color,
+        parent=coin,
+        position=(0, 0, -0.045),  # Slightly behind coin face
+        rotation=(90, 180, 0),  # Match coin rotation + flip 180°
+        shader=emblem_shader
     )
 
     # Edge ring - slightly larger cylinder for raised rim effect
