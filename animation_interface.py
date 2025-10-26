@@ -80,6 +80,16 @@ class AnimationManagerInterface(ABC):
         pass
 
     @abstractmethod
+    def add_damage_number(self, enemy, damage: int, damage_type: str = "normal"):
+        """Add floating damage number above enemy"""
+        pass
+
+    @abstractmethod
+    def add_player_damage_number(self, damage: int):
+        """Add damage number in HUD for player"""
+        pass
+
+    @abstractmethod
     def add_death_burst(self, x: int, y: int, enemy_type: str):
         """Create death burst effect for enemy type"""
         pass

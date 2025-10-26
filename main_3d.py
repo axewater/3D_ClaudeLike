@@ -138,6 +138,18 @@ class AnimationManager3DProxy(AnimationManagerInterface):
             enemy_model = self.enemy_entities[enemy_id]['model']
             self.anim_3d.add_alert_particle(enemy_model)
 
+    def add_damage_number(self, enemy, damage, damage_type="normal"):
+        """Add floating damage number above enemy"""
+        # Get enemy's 3D model entity from renderer's tracking dict
+        enemy_id = id(enemy)
+        if enemy_id in self.enemy_entities:
+            enemy_model = self.enemy_entities[enemy_id]['model']
+            self.anim_3d.add_damage_number(enemy_model, damage, damage_type)
+
+    def add_player_damage_number(self, damage):
+        """Add damage number in HUD for player"""
+        self.anim_3d.add_player_damage_number(damage)
+
     def add_death_burst(self, x, y, enemy_type):
         """Death burst effect for enemy type"""
         self.anim_3d.add_death_burst(x, y, enemy_type)

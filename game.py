@@ -403,6 +403,10 @@ class Game:
 
         self.anim_manager.add_flash_effect(enemy.x, enemy.y, c.COLOR_FLASH_RGB)
 
+        # Add floating damage number above enemy
+        damage_type = "backstab" if was_backstab else "crit" if is_crit else "normal"
+        self.anim_manager.add_damage_number(enemy, damage, damage_type)
+
         if enemy_died:
             # Enhanced death effect with enemy-specific particles
             self.anim_manager.add_death_burst(enemy.x, enemy.y, enemy.enemy_type)
@@ -477,6 +481,9 @@ class Game:
                 )
 
                 self.anim_manager.add_flash_effect(self.player.x, self.player.y, c.COLOR_DAMAGE_TAKEN_RGB)
+
+                # Add damage number in HUD for player
+                self.anim_manager.add_player_damage_number(damage)
 
                 if player_died:
                     self.anim_manager.add_screen_shake(8.0, 0.3)

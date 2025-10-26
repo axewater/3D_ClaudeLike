@@ -76,6 +76,9 @@ class Fireball(Ability):
                 enemy.take_damage(self.damage)
                 hit_count += 1
 
+                # Add floating damage number
+                game.anim_manager.add_damage_number(enemy, self.damage, "normal")
+
                 # Create animations (using RGB tuples)
                 game.anim_manager.add_particle_burst(enemy.x, enemy.y, c.COLOR_FIREBALL_BURST_RGB, count=int(15 * c.PARTICLE_DENSITY), particle_type="circle")
 
@@ -253,6 +256,9 @@ class Whirlwind(Ability):
                 hit_count += 1
                 total_damage += damage
 
+                # Add floating damage number
+                game.anim_manager.add_damage_number(enemy, damage, "normal")
+
                 # Create animations (using RGB tuples)
                 game.anim_manager.add_flash_effect(enemy.x, enemy.y)
 
@@ -311,6 +317,9 @@ class ShadowStep(Ability):
         # Deal bonus damage
         damage = int(user.attack * 1.5)
         target_enemy.take_damage(damage)
+
+        # Add floating damage number (use crit color for shadow strike bonus damage)
+        game.anim_manager.add_damage_number(target_enemy, damage, "crit")
 
         # Animations (using RGB tuples)
         # Dark shadow trail

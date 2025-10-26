@@ -420,6 +420,142 @@ class AlertParticle3D:
             self.entity = None
 
 
+class DamageNumber3D:
+    """Floating damage number above enemy (billboard text)"""
+
+    def __init__(self, enemy_entity: Entity, damage: int, damage_type: str = "normal"):
+        """
+        Create floating damage number
+
+        Args:
+            enemy_entity: Enemy model entity to follow
+            damage: Damage amount to display
+            damage_type: "normal", "crit", or "backstab"
+        """
+        self.enemy_entity = enemy_entity
+        self.damage = damage
+        self.damage_type = damage_type
+        self.lifetime = 0.0
+        self.max_lifetime = 1.2
+
+        # Determine color and scale based on damage type
+        if damage_type == "backstab":
+            color_rgb = (0.706, 0.392, 1.0)  # Purple
+            scale = 10  # Larger for backstabs
+        elif damage_type == "crit":
+            color_rgb = (1.0, 0.784, 0.196)  # Gold
+            scale = 10  # Larger for crits
+        elif damage >= 20:
+            color_rgb = (1.0, 0.4, 0.0)  # Orange for high damage
+            scale = 8
+        else:
+            color_rgb = (1.0, 1.0, 1.0)  # White for normal
+            scale = 7
+
+        # Create damage number text (billboard always faces camera)
+        self.entity = Text(
+            text=str(damage),
+            position=(0, 2.0, 0),  # Above enemy (below alert position)
+            scale=scale,
+            color=ursina_color.rgb(*color_rgb),
+            billboard=True,
+            origin=(0, 0),  # Center origin
+            parent=enemy_entity  # Attach to enemy
+        )
+
+        # Store base position for animation
+        self.base_y = 2.0
+
+    def update(self, dt: float) -> bool:
+        """Update damage number (float upward and fade)"""
+        self.lifetime += dt
+
+        if self.lifetime >= self.max_lifetime:
+            return False
+
+        # Float upward
+        float_speed = 0.8  # Units per second
+        self.entity.y = self.base_y + (self.lifetime * float_speed)
+
+        # Fade out (alpha decreases over time)
+        progress = self.lifetime / self.max_lifetime
+        alpha = 1.0 - progress
+
+        # Get current color and apply alpha
+        if self.damage_type == "backstab":
+            r, g, b = 0.706, 0.392, 1.0
+        elif self.damage_type == "crit":
+            r, g, b = 1.0, 0.784, 0.196
+        elif self.damage >= 20:
+            r, g, b = 1.0, 0.4, 0.0
+        else:
+            r, g, b = 1.0, 1.0, 1.0
+
+        self.entity.color = ursina_color.rgba(r, g, b, alpha)
+
+        return True
+
+    def destroy(self):
+        """Clean up"""
+        if self.entity:
+            destroy(self.entity)
+            self.entity = None
+
+
+class PlayerDamageNumber:
+    """Damage number displayed in HUD next to health bar"""
+
+    def __init__(self, damage: int):
+        """
+        Create player damage number for HUD display
+
+        Args:
+            damage: Damage amount to display
+        """
+        self.damage = damage
+        self.lifetime = 0.0
+        self.max_lifetime = 1.5
+
+        # Position next to health bar (top-left HUD area)
+        # Health bar is at approximately (-0.85 + 0.01, 0.45 - 0.09)
+        # We position to the right of the HP bar
+        pos_x = -0.85 + 0.40  # Right side of HP bar area
+        hp_bar_y = 0.45 - 0.09
+
+        # Create damage text in screen space
+        self.entity = Text(
+            text=f"-{damage}",  # Negative sign to indicate damage taken
+            position=(pos_x, hp_bar_y, -10),  # Screen-space position
+            scale=1.2,  # Same height as HP text (slightly larger for visibility)
+            color=ursina_color.rgb(1.0, 0.3, 0.3),  # Red for damage
+            origin=(-0.5, 0.5),
+            parent=camera.ui,  # Attach to camera UI for screen-space rendering
+            billboard=False  # Not billboard - this is screen-space UI
+        )
+
+    def update(self, dt: float) -> bool:
+        """Update damage number (fade out)"""
+        self.lifetime += dt
+
+        if self.lifetime >= self.max_lifetime:
+            return False
+
+        # Fade out (alpha decreases over time)
+        progress = self.lifetime / self.max_lifetime
+        alpha = 1.0 - progress
+
+        # Red color with fading alpha
+        self.entity.color = ursina_color.rgba(1.0, 0.3, 0.3, alpha)
+
+        return True
+
+    def destroy(self):
+        """Clean up"""
+        if self.entity:
+            destroy(self.entity)
+            self.entity = None
+
+
 class LevelTitleCard3D:
     """Large centered title card for level transitions"""
 
@@ -756,6 +892,8 @@ class AnimationManager3D:
         self.trails: List[TrailEffect3D] = []
         self.ambient_particles: List[AmbientParticle3D] = []
         self.alert_particles: List[AlertParticle3D] = []
+        self.damage_numbers: List[DamageNumber3D] = []
+        self.player_damage_numbers: List[PlayerDamageNumber] = []
         self.stairs_glow_effects: List[StairsGlowEffect3D] = []
         self.screen_shake: Optional[ScreenShake3D] = None
         self.level_titles: List[LevelTitleCard3D] = []
@@ -935,6 +1073,14 @@ class AnimationManager3D:
         """Add alert indicator above enemy"""
         self.alert_particles.append(AlertParticle3D(enemy_entity))
 
+    def add_damage_number(self, enemy_entity: Entity, damage: int, damage_type: str = "normal"):
+        """Add floating damage number above enemy"""
+        self.damage_numbers.append(DamageNumber3D(enemy_entity, damage, damage_type))
+
+    def add_player_damage_number(self, damage: int):
+        """Add damage number in HUD for player"""
+        self.player_damage_numbers.append(PlayerDamageNumber(damage))
+
     def add_ambient_particles(self, count: int = 1):
         """Add ambient atmospheric particles"""
         for _ in range(count):
@@ -976,6 +1122,8 @@ class AnimationManager3D:
         self.trails = [t for t in self.trails if t.update(dt) or not t.destroy()]
         self.ambient_particles = [p for p in self.ambient_particles if p.update(dt) or not p.destroy()]
         self.alert_particles = [a for a in self.alert_particles if a.update(dt) or not a.destroy()]
+        self.damage_numbers = [d for d in self.damage_numbers if d.update(dt) or not d.destroy()]
+        self.player_damage_numbers = [d for d in self.player_damage_numbers if d.update(dt) or not d.destroy()]
         self.level_titles = [t for t in self.level_titles if t.update(dt) or not t.destroy()]
 
         # Update stairs glow effects (continuous, never removed)
@@ -1030,6 +1178,10 @@ class AnimationManager3D:
             p.destroy()
         for a in self.alert_particles:
             a.destroy()
+        for d in self.damage_numbers:
+            d.destroy()
+        for d in self.player_damage_numbers:
+            d.destroy()
         for t in self.level_titles:
             t.destroy()
         for e in self.stairs_glow_effects:
@@ -1042,6 +1194,8 @@ class AnimationManager3D:
         self.trails.clear()
         self.ambient_particles.clear()
         self.alert_particles.clear()
+        self.damage_numbers.clear()
+        self.player_damage_numbers.clear()
         self.level_titles.clear()
         self.stairs_glow_effects.clear()
         self.screen_shake = None
