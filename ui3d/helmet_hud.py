@@ -87,7 +87,7 @@ class BubbleParticle:
 
         # Wave oscillation parameters (for side-to-side sway while drifting outward)
         self.wave_speed = random.uniform(1.0, 2.0)  # Oscillation frequency
-        self.wave_amplitude = random.uniform(0.0003, 0.0008)  # ±horizontal sway distance
+        self.wave_amplitude = random.uniform(0.00003, 0.00008)  # 10% of previous - minimal sway
 
         # Color variation (±10% jitter on spawn)
         color_jitter = 0.1
@@ -209,8 +209,8 @@ class BarBubbleSystem:
         self.bar_color = bar_color
         self.particles: List[BubbleParticle] = []
         self.spawn_timer = 0.0
-        self.spawn_rate = 0.3  # Spawn every 0.3 seconds (slower, gentler)
-        self.bubbles_per_spawn = (1, 2)  # Spawn 1-2 bubbles per event (gentle effect)
+        self.spawn_rate = 0.1  # Spawn every 0.1 seconds (more frequent for surface bubbling)
+        self.bubbles_per_spawn = (2, 4)  # Spawn 2-4 bubbles per event (more bubbles, stay near surface)
         self.enabled = True
         self.bar_end_pos = (0, 0)  # Will be updated each frame
 
@@ -247,8 +247,8 @@ class BarBubbleSystem:
                 particle = BubbleParticle((spawn_x, spawn_y), self.bar_color, self.parent)
                 self.particles.append(particle)
 
-        # Limit particle count (reasonable limit for gentle effect)
-        if len(self.particles) > 25:
+        # Limit particle count (increased for more surface coverage)
+        if len(self.particles) > 50:
             oldest = self.particles.pop(0)
             oldest.cleanup()
 

@@ -10,6 +10,7 @@ import math
 import constants as c
 from audio import get_audio_manager
 from ui.widgets.dungeon_button_3d import DungeonButton
+from dna_editor.shaders import create_toon_shader
 
 
 class ClassSelection3D(Entity):
@@ -28,6 +29,11 @@ class ClassSelection3D(Entity):
         super().__init__()
         self.screen_manager = screen_manager
         self.audio = get_audio_manager()
+
+        # Create toon shader for stylized character rendering
+        self.toon_shader = create_toon_shader()
+        if self.toon_shader is None:
+            print("[ClassSelection] WARNING: Toon shader creation failed, using default rendering")
 
         # Class data
         self.classes = [c.CLASS_WARRIOR, c.CLASS_MAGE, c.CLASS_ROGUE, c.CLASS_RANGER]
@@ -285,6 +291,29 @@ class ClassSelection3D(Entity):
         if self.current_class in self.class_models:
             self.class_models[self.current_class].enabled = True
 
+    def _apply_shader_recursive(self, entity, shader):
+        """
+        Recursively apply shader to an entity and all its children.
+
+        This ensures all body parts (head, torso, arms, armor, etc.)
+        get the toon shader applied for consistent stylized rendering.
+
+        Args:
+            entity: Ursina Entity to apply shader to
+            shader: Shader instance to apply
+        """
+        if shader is None:
+            return
+
+        # Apply shader to this entity
+        if entity and hasattr(entity, 'shader'):
+            entity.shader = shader
+
+        # Recursively apply to all children
+        if hasattr(entity, 'children'):
+            for child in entity.children:
+                self._apply_shader_recursive(child, shader)
+
     def _create_class_model(self, class_type: str):
         """Create a 3D model for the class"""
         # Import the appropriate player model
@@ -312,6 +341,9 @@ class ClassSelection3D(Entity):
 
         # Position in front of camera at display height
         model.position = Vec3(0, self.model_display_height, -self.camera_distance)
+
+        # Apply toon shader to entire model hierarchy
+        self._apply_shader_recursive(model, self.toon_shader)
 
         self.class_models[class_type] = model
 
