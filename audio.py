@@ -250,65 +250,65 @@ class AudioManager:
 
         # Fireball - powerful fire blast with charge and explosion
         fireball = synth.combine_waves(
-            synth.generate_sweep(450, 180, 0.32, 0.54),      # Fire whoosh
-            synth.generate_sweep(850, 350, 0.22, 0.38),      # High sizzle
-            synth.generate_sine_wave(95, 0.28, 0.42),        # Explosive bass
-            synth.generate_square_wave(240, 0.18, 0.28),     # Crackling fire texture
-            synth.generate_noise(0.18, 0.35)                 # Explosion burst
+            synth.generate_sweep(450, 180, 0.32, 0.22),      # Fire whoosh
+            synth.generate_sweep(850, 350, 0.22, 0.15),      # High sizzle
+            synth.generate_sine_wave(95, 0.28, 0.17),        # Explosive bass
+            synth.generate_square_wave(240, 0.18, 0.11),     # Crackling fire texture
+            synth.generate_noise(0.18, 0.14)                 # Explosion burst
         )
         self.sounds['ability_fireball'] = synth.array_to_sound(fireball)
 
         # Dash - magical teleport blink with reality warp
         dash = synth.combine_waves(
-            synth.generate_sweep(1100, 2200, 0.16, 0.45),    # Upward blink
-            synth.generate_sweep(2200, 1100, 0.16, 0.38),    # Shimmer return
-            synth.generate_sine_wave(1650, 0.14, 0.32),      # Magic shimmer hold
-            synth.generate_sine_wave(880, 0.12, 0.28),       # Lower harmonic
-            synth.generate_sine_wave(110, 0.10, 0.35)        # Reality pop bass
+            synth.generate_sweep(1100, 2200, 0.16, 0.18),    # Upward blink
+            synth.generate_sweep(2200, 1100, 0.16, 0.15),    # Shimmer return
+            synth.generate_sine_wave(1650, 0.14, 0.13),      # Magic shimmer hold
+            synth.generate_sine_wave(880, 0.12, 0.11),       # Lower harmonic
+            synth.generate_sine_wave(110, 0.10, 0.14)        # Reality pop bass
         )
         self.sounds['ability_dash'] = synth.array_to_sound(dash)
 
         # Healing Touch - warm magical chimes with sparkle
         heal = synth.combine_waves(
-            synth.generate_sine_wave(523, 0.35, 0.32),       # C - main note
-            synth.generate_sine_wave(659, 0.35, 0.28),       # E - harmony
-            synth.generate_sine_wave(784, 0.35, 0.26),       # G - chord
-            synth.generate_sine_wave(1046, 0.25, 0.20),      # High C - sparkle
-            synth.generate_sine_wave(1318, 0.20, 0.15),      # E - shimmer
-            synth.generate_sine_wave(220, 0.30, 0.22)        # Bass warmth
+            synth.generate_sine_wave(523, 0.35, 0.15),       # C - main note
+            synth.generate_sine_wave(659, 0.35, 0.13),       # E - harmony
+            synth.generate_sine_wave(784, 0.35, 0.12),       # G - chord
+            synth.generate_sine_wave(1046, 0.25, 0.09),      # High C - sparkle
+            synth.generate_sine_wave(1318, 0.20, 0.07),      # E - shimmer
+            synth.generate_sine_wave(220, 0.30, 0.10)        # Bass warmth
         )
         self.sounds['ability_heal'] = synth.array_to_sound(heal)
 
         # Frost Nova - crystalline ice burst with shattering
         frost = synth.combine_waves(
-            synth.generate_sine_wave(1320, 0.32, 0.35),      # Crystal formation high
-            synth.generate_sine_wave(1680, 0.32, 0.28),      # Ice harmonic
-            synth.generate_sine_wave(2100, 0.25, 0.22),      # Crystalline sparkle
-            synth.generate_sweep(1800, 900, 0.20, 0.32),     # Shattering sweep
-            synth.generate_square_wave(1400, 0.15, 0.18),    # Sharp ice edges
-            synth.generate_noise(0.12, 0.20)                 # Ice cracking texture
+            synth.generate_sine_wave(1320, 0.32, 0.14),      # Crystal formation high
+            synth.generate_sine_wave(1680, 0.32, 0.11),      # Ice harmonic
+            synth.generate_sine_wave(2100, 0.25, 0.09),      # Crystalline sparkle
+            synth.generate_sweep(1800, 900, 0.20, 0.13),     # Shattering sweep
+            synth.generate_square_wave(1400, 0.15, 0.07),    # Sharp ice edges
+            synth.generate_noise(0.12, 0.08)                 # Ice cracking texture
         )
         self.sounds['ability_frost'] = synth.array_to_sound(frost)
 
         # Whirlwind - spinning cyclone with metallic blade sounds
         whirlwind = synth.combine_waves(
-            synth.generate_sweep(320, 680, 0.42, 0.52),      # Rising cyclone
-            synth.generate_sweep(680, 320, 0.42, 0.48),      # Falling cyclone
-            synth.generate_square_wave(420, 0.35, 0.32),     # Metallic blade whoosh
-            synth.generate_square_wave(210, 0.35, 0.28),     # Lower blade harmonic
-            synth.generate_sine_wave(85, 0.38, 0.35),        # Wind bass
-            synth.generate_noise(0.28, 0.30)                 # Air turbulence
+            synth.generate_sweep(320, 680, 0.42, 0.20),      # Rising cyclone
+            synth.generate_sweep(680, 320, 0.42, 0.18),      # Falling cyclone
+            synth.generate_square_wave(420, 0.35, 0.12),     # Metallic blade whoosh
+            synth.generate_square_wave(210, 0.35, 0.11),     # Lower blade harmonic
+            synth.generate_sine_wave(85, 0.38, 0.14),        # Wind bass
+            synth.generate_noise(0.28, 0.12)                 # Air turbulence
         )
         self.sounds['ability_whirlwind'] = synth.array_to_sound(whirlwind)
 
         # Shadow Step - dark sinister teleport with void energy
         shadow = synth.combine_waves(
-            synth.generate_sweep(420, 85, 0.28, 0.52),       # Descending darkness
-            synth.generate_sweep(210, 55, 0.30, 0.45),       # Deep void pull
-            synth.generate_sine_wave(65, 0.26, 0.42),        # Sinister bass rumble
-            synth.generate_square_wave(180, 0.20, 0.28),     # Dark energy distortion
-            synth.generate_sine_wave(1400, 0.12, 0.22),      # Ethereal whisper
-            synth.generate_noise(0.15, 0.25)                 # Shadow texture
+            synth.generate_sweep(420, 85, 0.28, 0.20),       # Descending darkness
+            synth.generate_sweep(210, 55, 0.30, 0.18),       # Deep void pull
+            synth.generate_sine_wave(65, 0.26, 0.16),        # Sinister bass rumble
+            synth.generate_square_wave(180, 0.20, 0.11),     # Dark energy distortion
+            synth.generate_sine_wave(1400, 0.12, 0.09),      # Ethereal whisper
+            synth.generate_noise(0.15, 0.10)                 # Shadow texture
         )
         self.sounds['ability_shadow'] = synth.array_to_sound(shadow)
 
@@ -402,16 +402,10 @@ class AudioManager:
         stairs = np.concatenate([step1, step_gap, step2, step_gap, step3, step_gap, echo_tail])
         self.sounds['stairs'] = synth.array_to_sound(stairs)
 
-        # Coin pickup - satisfying metallic clink with ringing overtones
-        coin = synth.combine_waves(
-            synth.generate_sine_wave(1320, 0.10, 0.38),      # Main bright metallic tone
-            synth.generate_sine_wave(1980, 0.09, 0.28),      # High harmonic ring
-            synth.generate_sine_wave(2640, 0.07, 0.20),      # Crystalline sparkle
-            synth.generate_sine_wave(880, 0.08, 0.30),       # Mid tone for body
-            synth.generate_sine_wave(660, 0.06, 0.25),       # Lower harmonic warmth
-            synth.generate_square_wave(1320, 0.04, 0.15),    # Metallic "ting" edge
-            synth.generate_sine_wave(220, 0.07, 0.22)        # Bass weight (gold is heavy!)
-        )
+        # Coin pickup - classic "bling-bling" two-note ascending pickup sound
+        coin_note1 = synth.generate_sine_wave(988, 0.08, 0.35)   # B - first bright note
+        coin_note2 = synth.generate_sine_wave(1319, 0.12, 0.30)  # E - second higher note with sustain
+        coin = np.concatenate([coin_note1, coin_note2])
         self.sounds['coin'] = synth.array_to_sound(coin)
 
         # === UI SOUNDS ===
@@ -449,16 +443,57 @@ class AudioManager:
         levelup = np.concatenate([note1, silence_gap, note2, silence_gap, note3, silence_gap, final_chord])
         self.sounds['levelup'] = synth.array_to_sound(levelup)
 
-        # Game over - dramatic descending tones
-        gameover = synth.generate_sweep(400, 100, 0.8, 0.6)
+        # Game over - Beethoven's 5th Symphony opening motif: "da-da-da-DUMMM" (Fate knocking!)
+        # The iconic G-G-G-E♭ pattern (short-short-short-LONG)
+
+        # Three short G notes (392 Hz) - "da-da-da"
+        beethoven_g1 = synth.combine_waves(
+            synth.generate_sine_wave(392, 0.15, 0.20),     # G4 - main note
+            synth.generate_sine_wave(784, 0.15, 0.08),     # G5 - octave harmonic
+            synth.generate_sine_wave(196, 0.15, 0.10)      # G3 - bass power
+        )
+        beethoven_g2 = synth.combine_waves(
+            synth.generate_sine_wave(392, 0.15, 0.20),
+            synth.generate_sine_wave(784, 0.15, 0.08),
+            synth.generate_sine_wave(196, 0.15, 0.10)
+        )
+        beethoven_g3 = synth.combine_waves(
+            synth.generate_sine_wave(392, 0.15, 0.20),
+            synth.generate_sine_wave(784, 0.15, 0.08),
+            synth.generate_sine_wave(196, 0.15, 0.10)
+        )
+
+        # One long E♭ note (311 Hz) - "DUMMM" (fate's answer)
+        beethoven_eb = synth.combine_waves(
+            synth.generate_sine_wave(311, 0.60, 0.22),     # E♭4 - main dramatic note
+            synth.generate_sine_wave(622, 0.60, 0.10),     # E♭5 - octave harmonic
+            synth.generate_sine_wave(155, 0.60, 0.12)      # E♭3 - deep ominous bass
+        )
+
+        # Combine with proper rhythm: short gap between quick notes, longer gap before the finale
+        short_gap = np.zeros(int(SoundSynthesizer.SAMPLE_RATE * 0.05))   # 50ms between "da"s
+        dramatic_pause = np.zeros(int(SoundSynthesizer.SAMPLE_RATE * 0.08))  # Slight pause before "DUMMM"
+
+        gameover = np.concatenate([
+            beethoven_g1, short_gap,
+            beethoven_g2, short_gap,
+            beethoven_g3, dramatic_pause,
+            beethoven_eb
+        ])
+
         self.sounds['gameover'] = synth.array_to_sound(gameover)
 
-        # Menu select - click
-        select = synth.generate_sine_wave(800, 0.05, 0.3)
+        # Menu select - friendly "boop-BEEP!" confirmation
+        select_note1 = synth.generate_sine_wave(659, 0.06, 0.20)   # E - friendly boop
+        select_note2 = synth.generate_sine_wave(880, 0.10, 0.25)   # A - happy beep!
+        select = np.concatenate([select_note1, select_note2])
         self.sounds['ui_select'] = synth.array_to_sound(select)
 
-        # Menu hover - soft tick
-        hover = synth.generate_sine_wave(600, 0.03, 0.15)
+        # Menu hover - gentle bouncy "boop" with warmth
+        hover = synth.combine_waves(
+            synth.generate_sine_wave(784, 0.04, 0.12),   # G - main friendly tone
+            synth.generate_sine_wave(1568, 0.04, 0.06)   # High G - soft sparkle
+        )
         self.sounds['ui_hover'] = synth.array_to_sound(hover)
 
         # === TITLE SCREEN EFFECTS ===

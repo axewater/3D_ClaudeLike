@@ -63,7 +63,14 @@ def list_sounds(audio_manager):
 
 def play_sound(audio_manager, sound_name):
     """Play a sound by name"""
-    if sound_name in audio_manager.sounds:
+    # Check if this is an enemy death sound - use proper method to get TTS voices
+    if 'enemy_death_' in sound_name:
+        enemy_type = sound_name.replace('enemy_death_', '')
+        print(f"\n▶ Playing death sound for: {enemy_type}")
+        print(f"   (Trying TTS voice first, fallback to procedural)")
+        audio_manager.play_enemy_death(enemy_type)
+        return True
+    elif sound_name in audio_manager.sounds:
         print(f"\n▶ Playing: {sound_name}")
         audio_manager.play_sound(sound_name)
         return True
