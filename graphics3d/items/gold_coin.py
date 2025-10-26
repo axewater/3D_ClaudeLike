@@ -34,7 +34,7 @@ if dna_editor_path not in sys.path:
 from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
 
 
-def generate_coin_mesh(radius=0.2, height=0.04, segments=32):
+def generate_coin_mesh(radius=0.2, height=0.08, segments=32):
     """
     Generate a procedural cylinder mesh for coin geometry using parametric equations.
 
@@ -47,7 +47,7 @@ def generate_coin_mesh(radius=0.2, height=0.04, segments=32):
 
     Args:
         radius: Coin radius (default 0.2)
-        height: Coin thickness/height (default 0.04 - thin like a real coin)
+        height: Coin thickness/height (default 0.08 for good visibility)
         segments: Number of segments around circumference (default 32 for smoothness)
 
     Returns:
@@ -80,17 +80,18 @@ def generate_coin_mesh(radius=0.2, height=0.04, segments=32):
         uvs.append((i / segments, 1))
 
     # Generate triangles for side wall (two triangles per segment)
+    # IMPORTANT: Counter-clockwise winding from outside view for correct normals
     for i in range(segments):
         bottom_current = i * 2
         top_current = i * 2 + 1
         bottom_next = (i + 1) * 2
         top_next = (i + 1) * 2 + 1
 
-        # Triangle 1 (bottom-left to top-right)
-        triangles.append((bottom_current, top_current, bottom_next))
+        # Triangle 1 (lower-left triangle of quad, counter-clockwise from outside)
+        triangles.append((bottom_current, bottom_next, top_current))
 
-        # Triangle 2 (top-left to top-right to bottom-right)
-        triangles.append((top_current, top_next, bottom_next))
+        # Triangle 2 (upper-right triangle of quad, counter-clockwise from outside)
+        triangles.append((bottom_next, top_next, top_current))
 
     # === TOP CAP (circular disc at y = half_height) ===
     top_cap_start = len(vertices)
@@ -357,8 +358,9 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
     coin_texture = Texture(coin_texture_pil)
 
     # Generate procedural coin meshes (cylinder geometry)
-    coin_mesh = generate_coin_mesh(radius=0.2, height=0.04, segments=32)
-    edge_mesh = generate_coin_mesh(radius=0.21, height=0.045, segments=32)
+    # Using thicker coins for better visibility (height 0.08 vs radius 0.2 = 2.5:1 ratio)
+    coin_mesh = generate_coin_mesh(radius=0.2, height=0.08, segments=32)
+    edge_mesh = generate_coin_mesh(radius=0.21, height=0.09, segments=32)
 
     # Main coin body - procedural cylinder with flat circular faces
     # Cylinder is oriented vertically by default (Y-axis)
