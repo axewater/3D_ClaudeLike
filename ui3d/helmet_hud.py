@@ -74,8 +74,9 @@ class BubbleParticle:
         """
         self.lifetime = random.uniform(0.4, 0.8)  # Very short lifetime - bubbles pop quickly
         self.age = 0.0
-        self.velocity_y = random.uniform(0.0005, 0.0015)  # Barely rise (tomato soup bubbling)
-        self.velocity_x = random.uniform(-0.003, 0.003)  # More lateral movement (surface bubbling)
+        # 25% speed (4x slower) with MORE horizontal wobble than upward
+        self.velocity_y = random.uniform(0.0001, 0.0003)  # Barely any upward movement
+        self.velocity_x = random.uniform(-0.006, 0.006)  # Strong horizontal wobble (2x lateral movement)
 
         # Smaller bubbles for surface effect
         self.base_size = random.uniform(0.004, 0.012)  # Smaller (was 0.005-0.020)
@@ -201,7 +202,8 @@ class BarBubbleSystem:
         self.bar_color = bar_color
         self.particles: List[BubbleParticle] = []
         self.spawn_timer = 0.0
-        self.spawn_rate = 0.20  # Spawn every 0.20 seconds (5 per second - surface bubbling)
+        self.spawn_rate = 0.15  # Spawn every 0.15 seconds (6.67 events per second)
+        self.bubbles_per_spawn = (3, 5)  # Spawn 3-5 bubbles per event (bubble surface effect)
         self.enabled = True
         self.bar_end_pos = (0, 0)  # Will be updated each frame
 
@@ -225,18 +227,21 @@ class BarBubbleSystem:
         for p in [p for p in self.particles if p.age >= p.lifetime]:
             p.cleanup()
 
-        # Spawn new particles (fewer bubbles)
+        # Spawn new particles (BURST spawning for bubble surface effect)
         self.spawn_timer += dt
         if self.spawn_timer >= self.spawn_rate:
             self.spawn_timer = 0.0
-            # Spawn just 1 particle (was 1-2)
-            spawn_x = self.bar_end_pos[0] + random.uniform(-0.005, 0.005)
-            spawn_y = self.bar_end_pos[1] + random.uniform(-0.008, 0.008)
-            particle = BubbleParticle((spawn_x, spawn_y), self.bar_color, self.parent)
-            self.particles.append(particle)
+            # Spawn 3-5 bubbles per event for "boiling surface" effect
+            num_bubbles = random.randint(self.bubbles_per_spawn[0], self.bubbles_per_spawn[1])
+            for _ in range(num_bubbles):
+                # Wider spawn area for surface bubbling
+                spawn_x = self.bar_end_pos[0] + random.uniform(-0.010, 0.010)
+                spawn_y = self.bar_end_pos[1] + random.uniform(-0.015, 0.015)
+                particle = BubbleParticle((spawn_x, spawn_y), self.bar_color, self.parent)
+                self.particles.append(particle)
 
-        # Limit particle count (lower since they die quickly)
-        if len(self.particles) > 10:
+        # Limit particle count (increased for more visible bubbles)
+        if len(self.particles) > 40:
             oldest = self.particles.pop(0)
             oldest.cleanup()
 
