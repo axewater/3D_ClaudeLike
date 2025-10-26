@@ -56,7 +56,7 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3,
 
     # Vertex shader - transforms normals and calculates world position
     vertex_shader = """
-    #version 140
+    #version 150
 
     // Input attributes
     in vec4 p3d_Vertex;
@@ -99,7 +99,7 @@ def create_toon_normal_shader(num_bands: int = 4, rim_intensity: float = 0.3,
 
     # Fragment shader - toon shading with normal mapping
     fragment_shader = f"""
-    #version 140
+    #version 150
 
     // Input from vertex shader
     in vec2 texcoord;

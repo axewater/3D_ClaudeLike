@@ -31,7 +31,7 @@ def create_barrel_distortion_shader(strength: float = 0.1) -> Shader:
     # GLSL Fragment Shader
     # This shader distorts UV coordinates based on distance from center
     fragment_shader = f"""
-    #version 140
+    #version 150
 
     uniform sampler2D p3d_Texture0;
     in vec2 texcoord;
@@ -64,7 +64,7 @@ def create_barrel_distortion_shader(strength: float = 0.1) -> Shader:
 
     # Vertex Shader (passthrough - no modification needed)
     vertex_shader = """
-    #version 140
+    #version 150
 
     in vec4 p3d_Vertex;
     in vec2 p3d_MultiTexCoord0;

@@ -39,7 +39,7 @@ def create_radial_gradient_shader(falloff_start=0.3, falloff_end=1.0, intensity=
 
     # Vertex shader - pass object-space position to fragment shader
     vertex_shader = '''
-    #version 140
+    #version 150
 
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat4 p3d_ModelMatrix;
@@ -64,7 +64,7 @@ def create_radial_gradient_shader(falloff_start=0.3, falloff_end=1.0, intensity=
 
     # Fragment shader - calculate radial distance and apply alpha falloff
     fragment_shader = f'''
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;
 

@@ -54,7 +54,7 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
 
     # Vertex shader (standard pass-through)
     vertex_shader = """
-    #version 140
+    #version 150
 
     in vec4 p3d_Vertex;
     in vec2 p3d_MultiTexCoord0;
@@ -70,7 +70,7 @@ def create_corner_shadow_shader(intensity: float = 0.85) -> Shader:
 
     # Fragment shader with edge-specific darkening logic
     fragment_shader = f"""
-    #version 140
+    #version 150
 
     uniform sampler2D p3d_Texture0;
     // Cardinal direction walls (N/S/E/W)

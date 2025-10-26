@@ -44,7 +44,7 @@ def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5, wave_e
 
     # Vertex shader - pass UV coordinates to fragment shader
     vertex_shader = '''
-    #version 140
+    #version 150
 
     uniform mat4 p3d_ModelViewProjectionMatrix;
 
@@ -75,7 +75,7 @@ def create_glossy_bar_shader(highlight_intensity=1.5, edge_darkening=0.5, wave_e
     ''' if wave_enabled else ''
 
     fragment_shader = f'''
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;
     uniform float time;  // Time uniform for animation

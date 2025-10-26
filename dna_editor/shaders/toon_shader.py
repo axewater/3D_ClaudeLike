@@ -34,7 +34,7 @@ def create_toon_shader():
 
     # Vertex shader - pass view direction for Fresnel and specular
     vertex_shader = '''
-    #version 140
+    #version 150
 
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat4 p3d_ModelViewMatrix;
@@ -67,7 +67,7 @@ def create_toon_shader():
 
     # Fragment shader - enhanced toon lighting with advanced features
     fragment_shader = '''
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;
 
@@ -204,7 +204,7 @@ def create_toon_shader_lite():
 
     # Vertex shader - simpler, no view direction needed
     vertex_shader = '''
-    #version 140
+    #version 150
 
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat3 p3d_NormalMatrix;
@@ -230,7 +230,7 @@ def create_toon_shader_lite():
 
     # Fragment shader - simplified 4-band toon with basic rim
     fragment_shader = '''
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;
 

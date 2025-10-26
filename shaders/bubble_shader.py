@@ -38,7 +38,7 @@ def create_bubble_shader():
 
     # Vertex shader - pass position and calculate view direction
     vertex_shader = '''
-    #version 140
+    #version 150
 
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat4 p3d_ModelMatrix;
@@ -76,7 +76,7 @@ def create_bubble_shader():
 
     # Fragment shader - create bubble effect
     fragment_shader = '''
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;
     uniform float time;

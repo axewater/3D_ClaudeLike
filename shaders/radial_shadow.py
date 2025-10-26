@@ -41,7 +41,7 @@ def create_radial_shadow_shader(max_alpha: float = 0.5, falloff_power: float = 2
 
     # Vertex shader (standard pass-through)
     vertex_shader = """
-    #version 140
+    #version 150
 
     in vec4 p3d_Vertex;
     in vec2 p3d_MultiTexCoord0;
@@ -57,7 +57,7 @@ def create_radial_shadow_shader(max_alpha: float = 0.5, falloff_power: float = 2
 
     # Fragment shader with radial falloff
     fragment_shader = f"""
-    #version 140
+    #version 150
 
     uniform vec4 p3d_ColorScale;  // Base color (typically black)
     in vec2 texcoord;
