@@ -785,8 +785,14 @@ class AudioManager:
         self.play_sound('ui_hover', volume=0.3)
 
     def play_letter_whoosh(self):
-        """Play letter flying whoosh sound"""
-        self.play_sound('letter_whoosh', volume=0.4, pitch_variation=0.2)
+        """Play letter flying whoosh sound. Returns channel for stopping."""
+        if not self.enabled or 'letter_whoosh' not in self.sounds:
+            return None
+
+        sound = self.sounds['letter_whoosh']
+        sound.set_volume(0.4 * self.sfx_volume)
+        channel = sound.play()
+        return channel
 
     def play_letter_impact(self):
         """Play letter landing impact sound"""

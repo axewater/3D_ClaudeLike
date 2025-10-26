@@ -61,6 +61,9 @@ class Letter3D:
         # Glow intensity
         self.glow = 0.0
 
+        # Whoosh sound channel (for stopping when landing)
+        self.whoosh_channel = None
+
     def update(self, dt: float) -> Tuple[bool, bool]:
         """Update animation state. Returns (trigger_burst, started_flying)"""
         self.time += dt
@@ -1124,6 +1127,10 @@ class TitleScreen3D(QOpenGLWidget):
         for letter in self.letters:
             trigger_burst, started_flying = letter.update(dt)
 
+            # Play whoosh sound when letter starts flying
+            if started_flying:
+                letter.whoosh_channel = self.audio.play_letter_whoosh()
+
             # Play impact sound and create particles when letter lands
             if trigger_burst and not letter.has_burst:
                 letter.has_burst = True
@@ -1131,6 +1138,11 @@ class TitleScreen3D(QOpenGLWidget):
 
                 # Camera shake
                 self.camera_shake = 0.2
+
+                # Stop whoosh sound immediately before impact
+                if letter.whoosh_channel:
+                    letter.whoosh_channel.stop()
+                    letter.whoosh_channel = None
 
                 # Play impact sound
                 self.audio.play_letter_impact()
