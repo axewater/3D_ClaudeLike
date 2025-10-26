@@ -54,7 +54,7 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         model='sphere',
         color=skin,
         scale=(0.22, 0.22, 0.22),
-        position=(0, 0.5, 0)
+        position=(0, 0.38, 0)
     )
 
     # Helmet (copied from rogue design)
@@ -145,6 +145,43 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         position=(0.32, -0.35, 0)
     )
 
+    # ========== SWORD ==========
+    # Sword handle (grip)
+    sword_handle = Entity(
+        parent=warrior,
+        model='cube',
+        color=leather,
+        scale=(0.06, 0.06, 0.25),
+        position=(0.32, -0.35, 0.10)
+    )
+
+    # Sword guard (crossguard)
+    sword_guard = Entity(
+        parent=warrior,
+        model='cube',
+        color=steel,
+        scale=(0.18, 0.04, 0.04),
+        position=(0.32, -0.35, 0.24)
+    )
+
+    # Sword blade
+    sword_blade = Entity(
+        parent=warrior,
+        model='cube',
+        color=steel,
+        scale=(0.04, 0.08, 0.5),
+        position=(0.32, -0.35, 0.49)
+    )
+
+    # Sword pommel (end of handle)
+    sword_pommel = Entity(
+        parent=warrior,
+        model='sphere',
+        color=dark_steel,
+        scale=(0.08, 0.08, 0.08),
+        position=(0.32, -0.35, -0.05)
+    )
+
     # ========== BELT ==========
     belt = Entity(
         parent=warrior,
@@ -161,7 +198,7 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         model='cube',
         color=pants,
         scale=(0.18, 0.6, 0.18),
-        position=(-0.12, -0.75, 0)
+        position=(-0.12, -0.65, 0)
     )
 
     left_boot = Entity(
@@ -169,7 +206,7 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         model='cube',
         color=leather,
         scale=(0.18, 0.14, 0.22),
-        position=(-0.12, -1.12, 0.02)
+        position=(-0.12, -1.02, 0.02)
     )
 
     # Right leg
@@ -178,7 +215,7 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         model='cube',
         color=pants,
         scale=(0.18, 0.6, 0.18),
-        position=(0.12, -0.75, 0)
+        position=(0.12, -0.65, 0)
     )
 
     right_boot = Entity(
@@ -186,7 +223,7 @@ def create_warrior_model(position=Vec3(0, 0, 0), scale=Vec3(1, 1, 1)):
         model='cube',
         color=leather,
         scale=(0.18, 0.14, 0.22),
-        position=(0.12, -1.12, 0.02)
+        position=(0.12, -1.02, 0.02)
     )
 
     # Rotate 180 degrees to face forward
