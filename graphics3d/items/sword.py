@@ -11,11 +11,21 @@ from graphics3d.utils import rgb_to_ursina_color
 # Import toon shader system
 import sys
 from pathlib import Path
+
+# Add project root to path for imports
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Add dna_editor to path (after project root)
 dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
 if dna_editor_path not in sys.path:
-    sys.path.insert(0, dna_editor_path)
+    sys.path.append(dna_editor_path)
 
 from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+
+# Import radial gradient shader for glow effects
+from shaders.radial_gradient_shader import create_energy_orb_shader
 
 
 def create_sword_3d(position: Vec3, rarity: str) -> Entity:
@@ -35,6 +45,9 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     # Create toon shader instances (shared across all sword components)
     toon_shader = create_toon_shader()
     toon_shader_lite = create_toon_shader_lite()
+
+    # Create radial gradient shader for glow effects
+    radial_glow_shader = create_energy_orb_shader()
 
     # Rarity-based colors
     if rarity == c.RARITY_COMMON:
@@ -70,16 +83,15 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
 
     # Blade glow for epic/legendary (outer sphere)
     if has_glow:
-        glow_shader = get_shader_for_scale(0.35, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
         glow = Entity(
             model='sphere',
             color=glow_color,
             scale=0.35,
             parent=sword,
             position=(0, 0.3, 0),
-            alpha=0.3,
+            alpha=0.5,  # Increased from 0.3 - shader will create gradient
             unlit=True,
-            shader=glow_shader
+            shader=radial_glow_shader
         )
 
     # Blade (vertical stretched cube)
