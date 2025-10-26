@@ -36,7 +36,7 @@ def create_item_model_3d(item_type: str, rarity: str, position: Vec3) -> Entity:
     elif item_type == c.ITEM_SHIELD:
         return create_shield_3d(position, rarity)
     elif item_type == c.ITEM_HEALTH_POTION:
-        return create_health_potion_3d(position)
+        return create_health_potion_3d(position, rarity)
     elif item_type == c.ITEM_BOOTS:
         return create_boots_3d(position, rarity)
     elif item_type == c.ITEM_RING:

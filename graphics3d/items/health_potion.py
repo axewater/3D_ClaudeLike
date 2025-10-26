@@ -28,12 +28,13 @@ from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_
 from shaders.radial_gradient_shader import create_soft_glow_shader
 
 
-def create_health_potion_3d(position: Vec3) -> Entity:
+def create_health_potion_3d(position: Vec3, rarity: str) -> Entity:
     """
-    Create a 3D health potion model
+    Create a 3D health potion model with rarity-based appearance
 
     Args:
         position: 3D world position
+        rarity: Item rarity (common, uncommon, rare, epic, legendary)
 
     Returns:
         Entity: Health potion 3D model
@@ -48,22 +49,60 @@ def create_health_potion_3d(position: Vec3) -> Entity:
     # Create radial gradient shader for glow effects (soft glow preset for potions)
     radial_glow_shader = create_soft_glow_shader()
 
-    # Potion colors (red/magenta healing liquid)
-    liquid_color = rgb_to_ursina_color(255, 50, 100)  # Bright magenta/red
+    # Rarity-based colors for liquid and glow
+    if rarity == c.RARITY_COMMON:
+        liquid_color = rgb_to_ursina_color(255, 50, 100)  # Bright magenta/red
+        glow_color = liquid_color
+        glow_alpha = 0.5
+        has_strong_glow = False
+    elif rarity == c.RARITY_UNCOMMON:
+        liquid_color = rgb_to_ursina_color(255, 100, 50)  # Bright orange/red
+        glow_color = liquid_color
+        glow_alpha = 0.55
+        has_strong_glow = False
+    elif rarity == c.RARITY_RARE:
+        liquid_color = rgb_to_ursina_color(50, 200, 255)  # Bright cyan/blue
+        glow_color = liquid_color
+        glow_alpha = 0.6
+        has_strong_glow = False
+    elif rarity == c.RARITY_EPIC:
+        liquid_color = rgb_to_ursina_color(200, 50, 255)  # Bright purple
+        glow_color = rgb_to_ursina_color(220, 100, 255)
+        glow_alpha = 0.65
+        has_strong_glow = True
+    else:  # LEGENDARY
+        liquid_color = rgb_to_ursina_color(255, 215, 50)  # Golden
+        glow_color = rgb_to_ursina_color(255, 230, 100)
+        glow_alpha = 0.7
+        has_strong_glow = True
+
     bottle_color = rgb_to_ursina_color(180, 220, 255)  # Light blue glass
     cork_color = rgb_to_ursina_color(120, 80, 40)  # Brown cork
 
     # Glowing aura around potion
     glow = Entity(
         model='sphere',
-        color=liquid_color,
+        color=glow_color,
         scale=0.25,
         parent=potion,
         position=(0, 0, 0),
-        alpha=0.6,  # Increased from 0.4 - shader will create gradient
+        alpha=glow_alpha,
         unlit=True,
         shader=radial_glow_shader
     )
+
+    # Additional strong glow for epic/legendary
+    if has_strong_glow:
+        outer_glow = Entity(
+            model='sphere',
+            color=glow_color,
+            scale=0.35,
+            parent=potion,
+            position=(0, 0, 0),
+            alpha=0.4,
+            unlit=True,
+            shader=radial_glow_shader
+        )
 
     # Bottle (transparent cylinder/cube)
     bottle_shader = get_shader_for_scale(0.25, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
@@ -77,11 +116,11 @@ def create_health_potion_3d(position: Vec3) -> Entity:
         shader=bottle_shader
     )
 
-    # Liquid inside (smaller, brighter sphere)
+    # Liquid inside (larger, brighter sphere - 3x original size)
     liquid = Entity(
         model='sphere',
         color=liquid_color,
-        scale=(0.1, 0.18, 0.1),
+        scale=(0.3, 0.54, 0.3),
         parent=bottle,
         position=(0, -0.02, 0),
         alpha=0.8,
