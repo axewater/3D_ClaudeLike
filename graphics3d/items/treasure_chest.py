@@ -9,6 +9,22 @@ from ursina import Entity, Vec3
 import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 
+# Import toon shader system
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Add dna_editor to path
+dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
+if dna_editor_path not in sys.path:
+    sys.path.insert(0, dna_editor_path)
+
+from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+
 
 def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
     """
@@ -21,6 +37,10 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
     Returns:
         Entity: Treasure chest 3D model
     """
+    # Create toon shader instances (shared across all chest components)
+    toon_shader = create_toon_shader()
+    toon_shader_lite = create_toon_shader_lite()
+
     # Container entity (invisible parent)
     chest = Entity(position=position)
 
@@ -63,12 +83,14 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
 
     # Outer chest box (brown rectangle)
     brown_color = rgb_to_ursina_color(139, 90, 43)  # Brown (0-255 scale)
+    chest_shader = get_shader_for_scale(0.25, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     chest_outer = Entity(
         model='cube',
         color=brown_color,
         scale=(0.4, 0.25, 0.3),  # Wide, short, deep box
         parent=chest,
-        position=(0, 0, 0)
+        position=(0, 0, 0),
+        shader=chest_shader
     )
 
     # Inner empty space (black rectangle) - slightly smaller and raised
@@ -93,6 +115,9 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
         (0.05, 0.18, -0.05),  # Right back (higher)
     ]
 
+    # Create shader for gold coins (using lite shader for small objects)
+    gold_coin_shader = get_shader_for_scale(0.02, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+
     for pos in gold_positions:
         # Main gold coin
         gold_coin = Entity(
@@ -100,10 +125,11 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
             color=gold_color,
             scale=(0.08, 0.02, 0.08),  # Wide and very flat (squashed)
             parent=chest,
-            position=pos
+            position=pos,
+            shader=gold_coin_shader
         )
 
-        # Shine on each coin
+        # Shine on each coin (keep unlit - no shader)
         gold_shine = Entity(
             model='sphere',
             color=shine_color,

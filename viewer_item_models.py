@@ -8,7 +8,7 @@ Controls:
 - Left mouse drag: Rotate camera
 - Scroll wheel: Zoom in/out
 - R: Reset camera
-- 1-5: Focus on item types (Sword, Shield, Potion, Boots, Ring)
+- 1-6: Focus on item types (Sword, Shield, Potion, Boots, Ring, Chest)
 - Q/W/E/R/T: Focus on rarity tiers (Common, Uncommon, Rare, Epic, Legendary)
 - 0: Return to overview
 - ESC: Quit
@@ -164,10 +164,10 @@ class OrbitCamera:
 
 def create_item_grid():
     """
-    Create all item models in a 5x5 grid layout (5 types x 5 rarities)
+    Create all item models in a 6x5 grid layout (6 types x 5 rarities)
 
     Grid layout:
-    - Rows: Item types (Sword, Shield, Potion, Boots, Ring)
+    - Rows: Item types (Sword, Shield, Potion, Boots, Ring, Chest)
     - Columns: Rarities (Common, Uncommon, Rare, Epic, Legendary)
 
     Returns:
@@ -182,6 +182,7 @@ def create_item_grid():
         (c.ITEM_HEALTH_POTION, "Potion"),
         (c.ITEM_BOOTS, "Boots"),
         (c.ITEM_RING, "Ring"),
+        (c.ITEM_TREASURE_CHEST, "Chest"),
     ]
 
     # Rarities (columns)
@@ -331,14 +332,14 @@ def input(key):
     # Handle scroll for zoom (scroll is momentary, not "held")
     orbit_cam.handle_scroll(key)
 
-    # Handle number keys for item type focus (1-5)
+    # Handle number keys for item type focus (1-6)
     if key == '0':
         orbit_cam.focus_overview()
         if info_text:
             info_text.text = "Overview Mode"
-    elif key in ['1', '2', '3', '4', '5']:
+    elif key in ['1', '2', '3', '4', '5', '6']:
         # Focus on first item of this type (common rarity)
-        item_type_index = int(key) - 1  # Convert 1-5 to 0-4
+        item_type_index = int(key) - 1  # Convert 1-6 to 0-5
         first_item_of_type = item_type_index * 5  # Each type has 5 rarities
         if first_item_of_type < len(items):
             orbit_cam.focus_on_item(first_item_of_type)
@@ -391,7 +392,7 @@ def main():
     # Create all items in a grid
     print("Loading item models...")
     items = create_item_grid()
-    print(f"Loaded {len(items)} item models (5 types x 5 rarities)")
+    print(f"Loaded {len(items)} item models (6 types x 5 rarities)")
 
     # Setup orbit camera (look at center of grid)
     # Pass items list so camera can track them
@@ -405,9 +406,10 @@ def main():
             "Left Mouse Drag: Rotate\n"
             "Scroll Wheel: Zoom\n"
             "R: Reset Camera\n"
-            "1-5: Focus Item Type\n"
+            "1-6: Focus Item Type\n"
             "  (1=Sword, 2=Shield,\n"
-            "   3=Potion, 4=Boots, 5=Ring)\n"
+            "   3=Potion, 4=Boots,\n"
+            "   5=Ring, 6=Chest)\n"
             "Q/W/E/R/T: Focus Rarity\n"
             "  (Q=Common, W=Uncommon,\n"
             "   E=Rare, R=Epic, T=Legendary)\n"
@@ -434,7 +436,7 @@ def main():
     print("Controls:")
     print("  - Left mouse drag to rotate, scroll to zoom")
     print("  - R to reset camera")
-    print("  - 1-5 to focus on item types (Sword, Shield, Potion, Boots, Ring)")
+    print("  - 1-6 to focus on item types (Sword, Shield, Potion, Boots, Ring, Chest)")
     print("  - Q/W/E/R/T to focus on rarities (Common, Uncommon, Rare, Epic, Legendary)")
     print("  - 0 to return to overview")
     print("  - ESC to quit")

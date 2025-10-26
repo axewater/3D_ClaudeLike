@@ -9,6 +9,22 @@ import math
 import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 
+# Import toon shader system
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Add dna_editor to path
+dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
+if dna_editor_path not in sys.path:
+    sys.path.insert(0, dna_editor_path)
+
+from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+
 
 def generate_torus_mesh(major_radius=0.12, minor_radius=0.035,
                         segments_major=18, segments_minor=12):
@@ -78,6 +94,10 @@ def create_ring_3d(position: Vec3, rarity: str) -> Entity:
     Returns:
         Entity: Ring 3D model
     """
+    # Create toon shader instances (shared across all ring components)
+    toon_shader = create_toon_shader()
+    toon_shader_lite = create_toon_shader_lite()
+
     # Container entity (invisible parent)
     # Rotate 270 degrees on X axis to stand ring upright with gem on top
     # (90 would make it upright but gem below, so flip 180 more = 270 total)
@@ -128,11 +148,14 @@ def create_ring_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Create ring band entity with torus mesh
+    # Use minor_radius (0.035) for LOD selection (thickness of tube)
+    band_shader = get_shader_for_scale(0.035, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
     band = Entity(
         model=torus_mesh,
         color=band_color,
         parent=ring,
-        position=(0, 0, 0)
+        position=(0, 0, 0),
+        shader=band_shader
     )
 
     # Gem on top (if has gem)
@@ -152,12 +175,14 @@ def create_ring_3d(position: Vec3, rarity: str) -> Entity:
         )
 
         # Gem setting/prongs - connects gem to ring band
+        setting_shader = get_shader_for_scale(0.03, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
         gem_setting = Entity(
             model='cube',
             color=band_color,
             scale=(0.04, 0.03, 0.04),
             parent=ring,
-            position=(0, 0, 0.175)  # Local Z → Global Y
+            position=(0, 0, 0.175),  # Local Z → Global Y
+            shader=setting_shader
         )
 
     # Store animation state
