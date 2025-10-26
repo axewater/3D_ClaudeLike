@@ -5,7 +5,7 @@ Each player class has a unique procedurally generated 3D model.
 """
 
 from ursina import Entity, color as ursina_color
-import constants as c
+from core import constants as c
 from graphics3d.utils import world_to_3d_position
 
 

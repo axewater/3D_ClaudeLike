@@ -5,7 +5,7 @@ DNA creature factory and animation handling.
 """
 
 from ursina import Entity, Vec3, color as ursina_color
-import constants as c
+from core import constants as c
 from graphics3d.utils import world_to_3d_position
 
 

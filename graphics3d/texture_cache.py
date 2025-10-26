@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Dict, List
 from PIL import Image
 from ursina import Texture
-import constants as c
+from core import constants as c
 
 
 # Cache directory structure

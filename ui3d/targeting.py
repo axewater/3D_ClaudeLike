@@ -6,8 +6,8 @@ Provides mouse-based targeting with visual feedback for abilities that require t
 
 from typing import Optional, Tuple
 from ursina import Entity, Text, color, Vec2, Vec3, mouse, camera, raycast
-from game import Game
-import constants as c
+from game_logic.game import Game
+from core import constants as c
 
 
 class TargetingSystem:

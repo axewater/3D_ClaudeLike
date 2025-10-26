@@ -12,8 +12,8 @@ Displays a top-down minimap of the dungeon showing:
 from typing import Optional
 from ursina import Entity, Vec2, Vec3, Texture, color
 from PIL import Image, ImageDraw
-import constants as c
-from game import Game
+from core import constants as c
+from game_logic.game import Game
 import math
 
 

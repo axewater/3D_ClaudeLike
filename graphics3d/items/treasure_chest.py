@@ -6,24 +6,10 @@ Treasure chests contain gold piles and award 10x the value of gold coins.
 """
 
 from ursina import Entity, Vec3
-import constants as c
+from core import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 
-# Import toon shader system
-import sys
-from pathlib import Path
-
-# Add project root to path for imports
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# Add dna_editor to path
-dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
-if dna_editor_path not in sys.path:
-    sys.path.insert(0, dna_editor_path)
-
-from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+from graphics3d.shader_manager import get_shader_manager
 
 
 def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
@@ -37,9 +23,8 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
     Returns:
         Entity: Treasure chest 3D model
     """
-    # Create toon shader instances (shared across all chest components)
-    toon_shader = create_toon_shader()
-    toon_shader_lite = create_toon_shader_lite()
+    # Get shader manager instance
+    shader_mgr = get_shader_manager()
 
     # Container entity (invisible parent)
     chest = Entity(position=position)
@@ -83,7 +68,7 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
 
     # Outer chest box (brown rectangle)
     brown_color = rgb_to_ursina_color(139, 90, 43)  # Brown (0-255 scale)
-    chest_shader = get_shader_for_scale(0.25, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    chest_shader = shader_mgr.get_shader_for_scale(0.25)
     chest_outer = Entity(
         model='cube',
         color=brown_color,
@@ -116,7 +101,7 @@ def create_treasure_chest_3d(position: Vec3, rarity: str) -> Entity:
     ]
 
     # Create shader for gold coins (using lite shader for small objects)
-    gold_coin_shader = get_shader_for_scale(0.02, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    gold_coin_shader = shader_mgr.get_shader_for_scale(0.02)
 
     for pos in gold_positions:
         # Main gold coin

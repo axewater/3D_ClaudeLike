@@ -4,14 +4,15 @@
 Displays death reason and final stats when player dies.
 """
 
-from ursina import Entity, camera, color, Text, Button, Vec3, time as ursina_time
+from ursina import camera, color, Text, Button, Vec3, time as ursina_time
 import math
 import random
 from audio import get_audio_manager
-from animations3d import Particle3D
+from rendering.animations3d import Particle3D
+from ui.screens.base_screen import BaseScreen3D
 
 
-class GameOverScreen3D(Entity):
+class GameOverScreen3D(BaseScreen3D):
     """
     Game Over screen with dark/red particles and death stats.
 
@@ -23,10 +24,6 @@ class GameOverScreen3D(Entity):
     """
 
     def __init__(self, screen_manager):
-        super().__init__()
-        self.screen_manager = screen_manager
-        self.audio = get_audio_manager()
-
         # Stats
         self.stats = {
             'level': 1,
@@ -35,22 +32,15 @@ class GameOverScreen3D(Entity):
         }
         self.death_reason = "You were defeated"
 
-        # UI elements
-        self.ui_elements = []
-
-        # Particles
-        self.particles = []
+        # Particle spawn control
         self.particle_spawn_timer = 0.0
 
         # Animation
         self.time_elapsed = 0.0
         self.fade_progress = 0.0
 
-        # Initialize
-        self._create_ui()
-
-        # Initially hidden
-        self.enabled = False
+        # Base class initializes screen_manager, audio, ui_elements, particles, and calls _create_ui()
+        super().__init__(screen_manager)
 
     def _create_ui(self):
         """Create UI overlay elements"""

@@ -7,10 +7,10 @@ Uses Ursina UI elements.
 """
 
 from ursina import Entity, camera, color, Text, Button, Slider, window, time as ursina_time
-import constants as c
+from core import constants as c
 from audio import get_audio_manager
 from ui.widgets.dungeon_button_3d import DungeonButton
-from settings import save_current_settings
+from core.settings import save_current_settings
 
 
 class Settings3D(Entity):

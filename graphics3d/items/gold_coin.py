@@ -12,25 +12,11 @@ Features:
 """
 
 from ursina import Entity, Vec3, Mesh
-import constants as c
+from core import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 import math
 
-# Import toon shader system
-import sys
-from pathlib import Path
-
-# Add project root to path for imports
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# Add dna_editor to path
-dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
-if dna_editor_path not in sys.path:
-    sys.path.insert(0, dna_editor_path)
-
-from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+from graphics3d.shader_manager import get_shader_manager
 
 
 def generate_star_emblem_mesh(points=5, outer_radius=0.04, inner_radius=0.02, extrude_depth=0.01):
@@ -390,9 +376,8 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
     Returns:
         Entity: Gold coin 3D model with embossed emblems on both faces
     """
-    # Create toon shader instances
-    toon_shader = create_toon_shader()
-    toon_shader_lite = create_toon_shader_lite()
+    # Get shader manager instance
+    shader_mgr = get_shader_manager()
 
     # Container entity (invisible parent)
     coin = Entity(position=position)
@@ -442,7 +427,7 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
     # Main coin body - procedural cylinder with flat circular faces
     # Cylinder is oriented vertically by default (Y-axis)
     # We rotate it 90° around X to make it stand like a coin
-    coin_shader = get_shader_for_scale(0.2, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    coin_shader = shader_mgr.get_shader_for_scale(0.2)
 
     coin_disc = Entity(
         model=coin_mesh,
@@ -455,7 +440,7 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
 
     # Create 3D embossed emblems based on rarity (2x larger for visibility)
     emblem_color = rgb_to_ursina_color(*tuple(min(255, c + 30) for c in coin_color_rgb))  # Slightly brighter
-    emblem_shader = get_shader_for_scale(0.08, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    emblem_shader = shader_mgr.get_shader_for_scale(0.08)
 
     if rarity == c.RARITY_COMMON:
         # Simple raised dot (2x size)
@@ -497,7 +482,7 @@ def create_gold_coin_3d(position: Vec3, rarity: str) -> Entity:
 
     # Edge ring - slightly larger cylinder for raised rim effect
     edge_color = rgb_to_ursina_color(*tuple(max(0, c - 20) for c in coin_color_rgb))
-    edge_shader = get_shader_for_scale(0.21, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    edge_shader = shader_mgr.get_shader_for_scale(0.21)
 
     edge_ring = Entity(
         model=edge_mesh,

@@ -6,7 +6,7 @@ Now supports loading enemy packs from the creature library!
 """
 
 from ursina import Vec3, color as ursina_color
-import constants as c
+from core import constants as c
 from pathlib import Path
 import sys
 

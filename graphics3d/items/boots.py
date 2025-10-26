@@ -5,24 +5,10 @@ Procedurally generated 3D model using Ursina primitives.
 """
 
 from ursina import Entity, Vec3, color as ursina_color
-import constants as c
+from core import constants as c
 from graphics3d.utils import rgb_to_ursina_color
 
-# Import toon shader system
-import sys
-from pathlib import Path
-
-# Add project root to path for imports
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-# Add dna_editor to path
-dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
-if dna_editor_path not in sys.path:
-    sys.path.insert(0, dna_editor_path)
-
-from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
+from graphics3d.shader_manager import get_shader_manager
 
 
 def create_boots_3d(position: Vec3, rarity: str) -> Entity:
@@ -36,9 +22,8 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     Returns:
         Entity: Boots 3D model
     """
-    # Create toon shader instances (shared across all boot components)
-    toon_shader = create_toon_shader()
-    toon_shader_lite = create_toon_shader_lite()
+    # Get shader manager instance
+    shader_mgr = get_shader_manager()
 
     # Container entity (invisible parent)
     boots = Entity(position=position)
@@ -83,7 +68,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     left_boot_container = Entity(parent=boots, position=(-0.1, -0.1, 0), rotation=(0, -5, 0))
 
     # Sole - dark rubber/leather bottom
-    sole_shader = get_shader_for_scale(0.22, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    sole_shader = shader_mgr.get_shader_for_scale(0.22)
     left_sole = Entity(
         model='cube',
         color=boot_color.tint(-0.3),
@@ -94,7 +79,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Heel - raised back section
-    heel_shader = get_shader_for_scale(0.11, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    heel_shader = shader_mgr.get_shader_for_scale(0.11)
     left_heel = Entity(
         model='cube',
         color=boot_color.tint(-0.3),
@@ -105,7 +90,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Main foot section - body of boot
-    foot_shader = get_shader_for_scale(0.2, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    foot_shader = shader_mgr.get_shader_for_scale(0.2)
     left_foot = Entity(
         model='cube',
         color=boot_color,
@@ -116,7 +101,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Toe cap - rounded front (sphere for smooth look)
-    toe_shader = get_shader_for_scale(0.11, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    toe_shader = shader_mgr.get_shader_for_scale(0.11)
     left_toe = Entity(
         model='sphere',
         color=boot_color.tint(-0.05),
@@ -127,7 +112,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Ankle section - slightly wider upper boot
-    ankle_shader = get_shader_for_scale(0.18, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    ankle_shader = shader_mgr.get_shader_for_scale(0.18)
     left_ankle = Entity(
         model='cube',
         color=boot_color,
@@ -138,7 +123,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Shaft - tall section going up the calf
-    shaft_shader = get_shader_for_scale(0.16, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    shaft_shader = shader_mgr.get_shader_for_scale(0.16)
     left_shaft = Entity(
         model='cube',
         color=boot_color,
@@ -150,7 +135,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Fold/Cuff at top - folded leather look
-    cuff_shader = get_shader_for_scale(0.17, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    cuff_shader = shader_mgr.get_shader_for_scale(0.17)
     left_cuff = Entity(
         model='sphere',
         color=boot_color.tint(0.1),
@@ -238,7 +223,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     # Laces/Straps for uncommon+
     if rarity != c.RARITY_COMMON:
         # Shader for small strap details
-        strap_shader = get_shader_for_scale(0.015, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+        strap_shader = shader_mgr.get_shader_for_scale(0.015)
 
         # Left boot laces (3 straps down the front)
         for i in range(3):
@@ -267,7 +252,7 @@ def create_boots_3d(position: Vec3, rarity: str) -> Entity:
     # Buckle accent for rare+
     if rarity in [c.RARITY_RARE, c.RARITY_EPIC, c.RARITY_LEGENDARY]:
         # Shader for small buckle details
-        buckle_shader = get_shader_for_scale(0.04, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+        buckle_shader = shader_mgr.get_shader_for_scale(0.04)
 
         # Left buckle
         left_buckle = Entity(

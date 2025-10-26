@@ -7,10 +7,10 @@ Player can rotate between classes and select one to start the game.
 
 from ursina import Entity, camera, color, Text, Button, Vec3, held_keys, mouse, time as ursina_time, AmbientLight, DirectionalLight, PointLight
 import math
-import constants as c
+from core import constants as c
 from audio import get_audio_manager
 from ui.widgets.dungeon_button_3d import DungeonButton
-from dna_editor.shaders import create_toon_shader
+from graphics3d.shader_manager import get_shader_manager
 
 
 class ClassSelection3D(Entity):
@@ -30,8 +30,9 @@ class ClassSelection3D(Entity):
         self.screen_manager = screen_manager
         self.audio = get_audio_manager()
 
-        # Create toon shader for stylized character rendering
-        self.toon_shader = create_toon_shader()
+        # Get shader manager for stylized character rendering
+        shader_mgr = get_shader_manager()
+        self.toon_shader = shader_mgr.toon_shader if shader_mgr else None
         if self.toon_shader is None:
             print("[ClassSelection] WARNING: Toon shader creation failed, using default rendering")
 

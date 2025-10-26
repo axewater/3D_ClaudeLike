@@ -3,7 +3,7 @@ Dungeon generation for Claude-Like
 """
 import random
 from typing import List, Tuple
-import constants as c
+from core import constants as c
 
 
 class Room:

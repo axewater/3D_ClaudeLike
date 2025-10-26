@@ -71,7 +71,7 @@ def show_3d_title_screen():
     from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import Qt
     from ui.screens.title_screen_3d import TitleScreen3D
-    from logger import get_logger
+    from core.logger import get_logger
 
     log = get_logger()
     log.info("Opening Title Screen")
@@ -127,7 +127,7 @@ def main():
 
     # Handle --reset-settings FIRST (before any settings are loaded)
     if args.reset_settings:
-        from settings import reset_settings
+        from core.settings import reset_settings
         reset_settings()
         print("[Settings] Settings have been reset to defaults")
 
@@ -152,8 +152,8 @@ def main():
             print("Voice cache deleted. Will regenerate on startup...")
 
     # Initialize logger FIRST (before any other imports that might log)
-    from logger import init_logger, parse_log_level, LogLevel
-    import constants as c
+    from core.logger import init_logger, parse_log_level, LogLevel
+    from core import constants as c
 
     # Determine log level
     if args.quiet:
@@ -172,7 +172,7 @@ def main():
     # Initialize global logger
     init_logger(log_level, module_filter)
 
-    from logger import get_logger
+    from core.logger import get_logger
     log = get_logger()
 
     log.info("=== Claude-Like (3D Mode) ===")

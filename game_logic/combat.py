@@ -3,9 +3,9 @@ Combat system for Claude-Like
 """
 import random
 from typing import Tuple
-import constants as c
-from constants import get_enemy_display_name
-from entities import Player, Enemy
+from core import constants as c
+from core.constants import get_enemy_display_name
+from game_logic.entities import Player, Enemy
 
 
 def calculate_damage(attacker_attack: int, defender_defense: int) -> int:

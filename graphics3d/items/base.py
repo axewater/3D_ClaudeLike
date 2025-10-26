@@ -6,7 +6,7 @@ Shared functions for all item models.
 
 from ursina import Entity, Vec3
 import math
-import constants as c
+from core import constants as c
 
 
 def create_item_model_3d(item_type: str, rarity: str, position: Vec3) -> Entity:

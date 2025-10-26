@@ -4,14 +4,15 @@
 Displays celebration effects and final stats when player completes all 25 levels.
 """
 
-from ursina import Entity, camera, color, Text, Button, Vec3, time as ursina_time
+from ursina import camera, color, Text, Button, Vec3, time as ursina_time
 import math
 import random
 from audio import get_audio_manager
-from animations3d import Particle3D
+from rendering.animations3d import Particle3D
+from ui.screens.base_screen import BaseScreen3D
 
 
-class VictoryScreen3D(Entity):
+class VictoryScreen3D(BaseScreen3D):
     """
     Victory screen with golden celebration particles and stats display.
 
@@ -22,10 +23,6 @@ class VictoryScreen3D(Entity):
     """
 
     def __init__(self, screen_manager):
-        super().__init__()
-        self.screen_manager = screen_manager
-        self.audio = get_audio_manager()
-
         # Stats
         self.stats = {
             'level': 25,
@@ -34,22 +31,15 @@ class VictoryScreen3D(Entity):
             'time_played': 0
         }
 
-        # UI elements
-        self.ui_elements = []
-
-        # Particles
-        self.particles = []
+        # Particle spawn control
         self.particle_spawn_timer = 0.0
 
         # Animation
         self.time_elapsed = 0.0
         self.title_pulse = 0.0
 
-        # Initialize
-        self._create_ui()
-
-        # Initially hidden
-        self.enabled = False
+        # Base class initializes screen_manager, audio, ui_elements, particles, and calls _create_ui()
+        super().__init__(screen_manager)
 
         # Play victory sound
         self.audio.play_ui_select()

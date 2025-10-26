@@ -6,7 +6,7 @@ Converts 2D tile grid into 3D meshes using Ursina Engine.
 
 from typing import Tuple
 from ursina import Entity, color as ursina_color
-import constants as c
+from core import constants as c
 from graphics3d.utils import world_to_3d_position, rgb_to_ursina_color
 from textures import get_moss_stone_texture, get_brick_texture
 from shaders import create_corner_shadow_shader, create_toon_normal_shader

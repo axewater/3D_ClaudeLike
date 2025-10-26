@@ -11,8 +11,8 @@ import random
 import math
 from typing import Optional, List
 from ursina import Entity, Text, color, Vec2
-from game import Game
-import constants as c
+from game_logic.game import Game
+from core import constants as c
 from ui3d.minimap_3d import MiniMap3D
 from shaders.glossy_bar_shader import create_hp_bar_shader, create_xp_bar_shader
 from shaders.bubble_shader import create_bubble_shader
@@ -1173,7 +1173,7 @@ class HelmetHUD3D:
             return 0
 
         count = 0
-        from fov import calculate_fov
+        from game_logic.fov import calculate_fov
 
         for enemy in self.game.enemies:
             enemy_fov = calculate_fov(

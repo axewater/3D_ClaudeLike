@@ -6,8 +6,8 @@ import pygame
 import numpy as np
 import random
 from typing import Dict, Optional
-from logger import get_logger
-import voice_cache
+from core.logger import get_logger
+from audio import voice_cache  # Same directory, this is fine
 
 log = get_logger()
 
@@ -935,7 +935,7 @@ def get_audio_manager() -> AudioManager:
         try:
             # Load saved audio settings
             try:
-                from settings import load_settings
+                from core.settings import get_setting
                 saved_settings = load_settings()
                 sfx_vol = saved_settings.get('sfx_volume', 0.8)
                 music_vol = saved_settings.get('music_volume', 0.7)

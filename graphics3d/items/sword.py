@@ -5,26 +5,20 @@ Procedurally generated 3D model using Ursina primitives.
 """
 
 from ursina import Entity, Vec3, color as ursina_color
-import constants as c
+from core import constants as c
 from graphics3d.utils import rgb_to_ursina_color
+from graphics3d.shader_manager import get_shader_manager
+from graphics3d.rarity_palette import RarityPalette
 
-# Import toon shader system
+# Import radial gradient shader for glow effects
 import sys
 from pathlib import Path
 
-# Add project root to path for imports
+# Add project root to path for radial gradient shader import
 project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Add dna_editor to path (after project root)
-dna_editor_path = str(Path(__file__).parent.parent.parent / 'dna_editor')
-if dna_editor_path not in sys.path:
-    sys.path.append(dna_editor_path)
-
-from dna_editor.shaders import create_toon_shader, create_toon_shader_lite, get_shader_for_scale
-
-# Import radial gradient shader for glow effects
 from shaders.radial_gradient_shader import create_energy_orb_shader
 
 
@@ -42,44 +36,19 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     # Container entity (invisible parent)
     sword = Entity(position=position)
 
-    # Create toon shader instances (shared across all sword components)
-    toon_shader = create_toon_shader()
-    toon_shader_lite = create_toon_shader_lite()
+    # Get shader manager instance
+    shader_mgr = get_shader_manager()
 
     # Create radial gradient shader for glow effects
     radial_glow_shader = create_energy_orb_shader()
 
-    # Rarity-based colors
-    if rarity == c.RARITY_COMMON:
-        blade_color = rgb_to_ursina_color(160, 160, 160)  # Iron gray
-        crossguard_color = rgb_to_ursina_color(100, 100, 100)  # Dark gray
-        handle_color = rgb_to_ursina_color(100, 60, 30)  # Brown leather
-        has_glow = False
-        glow_color = None
-    elif rarity == c.RARITY_UNCOMMON:
-        blade_color = rgb_to_ursina_color(180, 180, 180)  # Steel
-        crossguard_color = rgb_to_ursina_color(180, 140, 80)  # Brass
-        handle_color = rgb_to_ursina_color(80, 50, 30)  # Dark leather
-        has_glow = False
-        glow_color = None
-    elif rarity == c.RARITY_RARE:
-        blade_color = rgb_to_ursina_color(200, 200, 210)  # Silver steel
-        crossguard_color = rgb_to_ursina_color(192, 192, 192)  # Silver
-        handle_color = rgb_to_ursina_color(100, 50, 50)  # Red leather
-        has_glow = False
-        glow_color = None
-    elif rarity == c.RARITY_EPIC:
-        blade_color = rgb_to_ursina_color(210, 210, 220)  # Bright steel
-        crossguard_color = rgb_to_ursina_color(220, 180, 100)  # Gold
-        handle_color = rgb_to_ursina_color(80, 40, 80)  # Purple
-        has_glow = True
-        glow_color = rgb_to_ursina_color(150, 100, 255)  # Purple glow
-    else:  # LEGENDARY
-        blade_color = rgb_to_ursina_color(220, 220, 240)  # Radiant steel
-        crossguard_color = rgb_to_ursina_color(255, 215, 0)  # Bright gold
-        handle_color = rgb_to_ursina_color(50, 20, 20)  # Black leather
-        has_glow = True
-        glow_color = rgb_to_ursina_color(100, 200, 255)  # Cyan glow
+    # Get rarity-based colors from palette
+    colors = RarityPalette.get_ursina_colors('sword', rarity)
+    blade_color = colors.get('blade')
+    crossguard_color = colors.get('crossguard')
+    handle_color = colors.get('handle')
+    has_glow = colors.get('has_glow', False)
+    glow_color = colors.get('glow')
 
     # Blade glow for epic/legendary (outer sphere)
     if has_glow:
@@ -95,7 +64,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
         )
 
     # Blade (vertical stretched cube)
-    blade_shader = get_shader_for_scale(0.45, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    blade_shader = shader_mgr.get_shader_for_scale(0.45)
     blade = Entity(
         model='cube',
         color=blade_color,
@@ -106,7 +75,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Blade edge highlight (thin lighter cube on front)
-    blade_edge_shader = get_shader_for_scale(0.45, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    blade_edge_shader = shader_mgr.get_shader_for_scale(0.45)
     blade_edge = Entity(
         model='cube',
         color=blade_color.tint(0.3),
@@ -117,7 +86,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Crossguard (horizontal rectangle)
-    crossguard_shader = get_shader_for_scale(0.25, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    crossguard_shader = shader_mgr.get_shader_for_scale(0.25)
     crossguard = Entity(
         model='cube',
         color=crossguard_color,
@@ -128,7 +97,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Handle (vertical cylinder/cube)
-    handle_shader = get_shader_for_scale(0.15, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    handle_shader = shader_mgr.get_shader_for_scale(0.15)
     handle = Entity(
         model='cube',
         color=handle_color,
@@ -139,7 +108,7 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Pommel (sphere at bottom)
-    pommel_shader = get_shader_for_scale(0.06, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    pommel_shader = shader_mgr.get_shader_for_scale(0.06)
     pommel = Entity(
         model='sphere',
         color=crossguard_color,
@@ -150,16 +119,12 @@ def create_sword_3d(position: Vec3, rarity: str) -> Entity:
     )
 
     # Gem on pommel for rare+ (small colored sphere)
-    if rarity in [c.RARITY_RARE, c.RARITY_EPIC, c.RARITY_LEGENDARY]:
-        gem_colors = {
-            c.RARITY_RARE: rgb_to_ursina_color(100, 150, 255),  # Blue gem
-            c.RARITY_EPIC: rgb_to_ursina_color(200, 50, 255),   # Purple gem
-            c.RARITY_LEGENDARY: rgb_to_ursina_color(100, 255, 255),  # Cyan gem
-        }
-        gem_shader = get_shader_for_scale(0.04, toon_shader, toon_shader_lite) if toon_shader and toon_shader_lite else None
+    gem_color = colors.get('gem')
+    if gem_color:
+        gem_shader = shader_mgr.get_shader_for_scale(0.04)
         gem = Entity(
             model='sphere',
-            color=gem_colors.get(rarity, ursina_color.white),
+            color=gem_color,
             scale=0.04,
             parent=pommel,
             position=(0, 0, 0),

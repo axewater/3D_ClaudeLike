@@ -6,7 +6,7 @@ Uses Ursina for 3D rendering and UI.
 """
 
 from ursina import Entity, camera, color, Text, Button, Vec3
-import constants as c
+from core import constants as c
 from audio import get_audio_manager
 from ui.widgets.dungeon_button_3d import DungeonButton
 

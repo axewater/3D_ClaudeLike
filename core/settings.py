@@ -8,7 +8,7 @@ Settings persist between game sessions.
 import json
 import os
 from typing import Dict, Any
-import constants as c
+from core import constants as c
 
 
 # Settings file path (in the game directory)

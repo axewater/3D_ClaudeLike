@@ -6,14 +6,14 @@ All game logic remains in game.py - this only handles visualization and input.
 """
 
 from ursina import Ursina, Entity, camera, held_keys, time as ursina_time, color, window, Vec3, mouse
-import constants as c
-from game import Game
-from renderer3d import Renderer3D
-from animations3d import Particle3D
-from ui3d_manager import UI3DManager
-from animation_interface import AnimationManagerInterface
-from particle_types import Particle
-from logger import get_logger
+from core import constants as c
+from game_logic.game import Game
+from rendering.renderer3d import Renderer3D
+from rendering.animations3d import Particle3D
+from rendering.ui3d_manager import UI3DManager
+from rendering.animation_interface import AnimationManagerInterface
+from utils.particle_types import Particle
+from core.logger import get_logger
 
 log = get_logger()
 
@@ -113,7 +113,7 @@ class AnimationManager3DProxy(AnimationManagerInterface):
 
     def add_trail(self, x, y, color, trail_type="fade"):
         """Color is already RGB tuple (0-1 range)"""
-        from animations3d import TrailEffect3D
+        from rendering.animations3d import TrailEffect3D
         self.anim_3d.trails.append(TrailEffect3D(x, y, color, trail_type))
 
     def add_ability_trail(self, x, y, color, ability_type):
@@ -725,7 +725,7 @@ def main_3d(force_windowed=False):
     """
 
     # Load saved settings before creating the app
-    from settings import load_and_apply_settings
+    from core.settings import load_and_apply_settings
     saved_settings = load_and_apply_settings()
     log.debug(f"Loaded settings: {saved_settings}", "main")
 

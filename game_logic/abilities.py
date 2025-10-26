@@ -2,7 +2,7 @@
 Ability system for Claude-Like
 """
 from typing import Tuple, List
-import constants as c
+from core import constants as c
 from audio import get_audio_manager
 
 

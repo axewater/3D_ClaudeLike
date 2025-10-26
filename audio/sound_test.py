@@ -8,7 +8,7 @@ import time
 import argparse
 import shutil
 from pathlib import Path
-from audio import AudioManager, get_audio_manager
+from audio.manager import AudioManager, get_audio_manager
 
 def print_header():
     """Print tool header"""
