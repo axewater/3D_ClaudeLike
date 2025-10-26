@@ -430,14 +430,20 @@ class AudioManager:
             synth.generate_sine_wave(784, 0.15, 0.38),   # G
             synth.generate_sine_wave(1568, 0.15, 0.20)   # High G harmonic
         )
-        # Final triumphant chord with sparkle
+        # Final triumphant chord with sparkle (volumes reduced to prevent clipping)
         final_chord = synth.combine_waves(
-            synth.generate_sine_wave(1047, 0.45, 0.40),  # High C - victory!
-            synth.generate_sine_wave(1319, 0.45, 0.32),  # High E
-            synth.generate_sine_wave(1568, 0.45, 0.28),  # High G
-            synth.generate_sine_wave(2093, 0.35, 0.22),  # Super high C - sparkle
-            synth.generate_sine_wave(262, 0.40, 0.28)    # Bass C - power
+            synth.generate_sine_wave(1047, 0.45, 0.18),  # High C - victory!
+            synth.generate_sine_wave(1319, 0.45, 0.14),  # High E
+            synth.generate_sine_wave(1568, 0.45, 0.12),  # High G
+            synth.generate_sine_wave(2093, 0.35, 0.10),  # Super high C - sparkle
+            synth.generate_sine_wave(262, 0.40, 0.12)    # Bass C - power
         )
+        # Apply gentle fade-out to the final chord to prevent harsh ending
+        fade_out_length = int(len(final_chord) * 0.5)  # Fade out last 50% of chord
+        fade_envelope = np.ones(len(final_chord))
+        fade_envelope[-fade_out_length:] = np.linspace(1, 0, fade_out_length)
+        final_chord = final_chord * fade_envelope
+
         # Combine into ascending sequence
         silence_gap = np.zeros(int(SoundSynthesizer.SAMPLE_RATE * 0.05))
         levelup = np.concatenate([note1, silence_gap, note2, silence_gap, note3, silence_gap, final_chord])
