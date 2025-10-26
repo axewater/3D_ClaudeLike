@@ -72,18 +72,22 @@ class BubbleParticle:
             bar_color: (r, g, b) color tuple
             parent: Parent entity for the bubble
         """
-        self.lifetime = random.uniform(0.4, 0.8)  # Very short lifetime - bubbles pop quickly
+        self.lifetime = random.uniform(1.0, 2.0)  # Shorter lifetime - dissipate faster
         self.age = 0.0
-        # 25% speed (4x slower) with MORE horizontal wobble than upward
-        self.velocity_y = random.uniform(0.0001, 0.0003)  # Barely any upward movement
-        self.velocity_x = random.uniform(-0.006, 0.006)  # Strong horizontal wobble (2x lateral movement)
+        # ULTRA slow floating - 10% of previous speed, stays close to surface
+        self.velocity_y = random.uniform(0.0002, 0.0004)  # 10% of previous - barely rises
+        self.velocity_x = random.uniform(0.00008, 0.00018)  # 10% of previous - minimal outward drift
 
         # Smaller bubbles for surface effect
         self.base_size = random.uniform(0.004, 0.012)  # Smaller (was 0.005-0.020)
 
-        # Pulsation parameters (6x slower than original for very slow bubbling)
-        self.pulse_speed = random.uniform(1.0, 1.75)  # Very slow pulsation (was 2.0-3.5)
-        self.pulse_amplitude = random.uniform(0.15, 0.25)  # ±15-25% size variation (more dramatic)
+        # Pulsation parameters - gentle, slow breathing effect
+        self.pulse_speed = random.uniform(0.5, 1.0)  # Ultra slow pulsation for gentle effect
+        self.pulse_amplitude = random.uniform(0.10, 0.18)  # ±10-18% size variation (subtle)
+
+        # Wave oscillation parameters (for side-to-side sway while drifting outward)
+        self.wave_speed = random.uniform(1.0, 2.0)  # Oscillation frequency
+        self.wave_amplitude = random.uniform(0.0003, 0.0008)  # ±horizontal sway distance
 
         # Color variation (±10% jitter on spawn)
         color_jitter = 0.1
@@ -131,9 +135,12 @@ class BubbleParticle:
         if self.age >= self.lifetime:
             return False
 
-        # Update position (slower movement)
+        # Update position (slower movement with wave oscillation)
         self.entity.y += self.velocity_y * dt * 60  # Scale by 60 for frame-rate independence
-        self.entity.x += self.velocity_x * dt * 60
+
+        # Base rightward drift + wave oscillation for natural sway
+        wave_offset = math.sin(self.age * self.wave_speed) * self.wave_amplitude * dt * 60
+        self.entity.x += (self.velocity_x + wave_offset) * dt * 60
 
         # Calculate age factor (0.0 to 1.0) - clamp to prevent complex numbers
         age_factor = max(0.0, min(1.0, self.age / self.lifetime))
@@ -202,8 +209,8 @@ class BarBubbleSystem:
         self.bar_color = bar_color
         self.particles: List[BubbleParticle] = []
         self.spawn_timer = 0.0
-        self.spawn_rate = 0.15  # Spawn every 0.15 seconds (6.67 events per second)
-        self.bubbles_per_spawn = (3, 5)  # Spawn 3-5 bubbles per event (bubble surface effect)
+        self.spawn_rate = 0.3  # Spawn every 0.3 seconds (slower, gentler)
+        self.bubbles_per_spawn = (1, 2)  # Spawn 1-2 bubbles per event (gentle effect)
         self.enabled = True
         self.bar_end_pos = (0, 0)  # Will be updated each frame
 
@@ -231,17 +238,17 @@ class BarBubbleSystem:
         self.spawn_timer += dt
         if self.spawn_timer >= self.spawn_rate:
             self.spawn_timer = 0.0
-            # Spawn 3-5 bubbles per event for "boiling surface" effect
+            # Spawn 1-2 bubbles per event for gentle floating effect
             num_bubbles = random.randint(self.bubbles_per_spawn[0], self.bubbles_per_spawn[1])
             for _ in range(num_bubbles):
-                # Wider spawn area for surface bubbling
-                spawn_x = self.bar_end_pos[0] + random.uniform(-0.010, 0.010)
-                spawn_y = self.bar_end_pos[1] + random.uniform(-0.015, 0.015)
+                # Focused spawn area at bar end
+                spawn_x = self.bar_end_pos[0] + random.uniform(-0.003, 0.003)
+                spawn_y = self.bar_end_pos[1] + random.uniform(-0.006, 0.006)
                 particle = BubbleParticle((spawn_x, spawn_y), self.bar_color, self.parent)
                 self.particles.append(particle)
 
-        # Limit particle count (increased for more visible bubbles)
-        if len(self.particles) > 40:
+        # Limit particle count (reasonable limit for gentle effect)
+        if len(self.particles) > 25:
             oldest = self.particles.pop(0)
             oldest.cleanup()
 
