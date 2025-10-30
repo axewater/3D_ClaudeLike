@@ -398,6 +398,16 @@ class AudioManager:
         )
         self.sounds['equip'] = synth.array_to_sound(equip)
 
+        # Wall break - crumbling stone with deep rumble
+        wall_break = synth.combine_waves(
+            synth.generate_sine_wave(55, 0.4, 0.35),         # Deep bass rumble
+            synth.generate_sweep(280, 80, 0.25, 0.30),       # Rock cracking sweep
+            synth.generate_noise(0.25, 0.30),                # Stone breaking texture
+            synth.generate_sine_wave(120, 0.20, 0.25),       # Secondary impact
+            synth.generate_sweep(180, 60, 0.18, 0.22)        # Debris falling
+        )
+        self.sounds['wall_break'] = synth.array_to_sound(wall_break)
+
         # Stairs descend - sequential heavy footsteps with rhythm and structure
         # Create individual footstep sounds (descending in pitch as you go down)
 
@@ -800,6 +810,10 @@ class AudioManager:
     def play_stairs(self):
         """Play stairs descending sound"""
         self.play_sound('stairs', volume=0.8)
+
+    def play_wall_break(self):
+        """Play wall crumbling/breaking sound"""
+        self.play_sound('wall_break', volume=0.85)
 
     def play_levelup(self):
         """Play level up fanfare"""

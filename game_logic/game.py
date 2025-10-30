@@ -504,6 +504,88 @@ class Game:
                 if not self._is_position_occupied(new_x, new_y):
                     enemy.start_move(new_x, new_y)
 
+    def _discover_secret_wall(self, x: int, y: int):
+        """
+        Player discovered a secret wall! Break it and reveal the secret room.
+
+        Args:
+            x, y: Position of the secret wall
+        """
+        # Change tile to floor (passage opened!)
+        self.dungeon.tiles[y][x] = c.TILE_FLOOR
+
+        # Success message
+        self.add_message("The wall crumbles, revealing a secret passage!", "secret")
+
+        # Play crumble animation (rock particles falling)
+        self.anim_manager.add_crumble_effect(x, y)
+
+        # Play wall break sound
+        self.audio_manager.play_wall_break()
+
+        # Screen shake for impact
+        self.anim_manager.add_screen_shake(4.0, 0.2)
+
+        # Update FOV to reveal newly accessible area
+        self.update_fov()
+
+        # Spawn secret room contents (loot + elite enemy)
+        self._spawn_secret_room_contents()
+
+    def _spawn_secret_room_contents(self):
+        """Spawn elite enemy and treasure in secret room"""
+        if not self.dungeon.secret_room:
+            return
+
+        # Get secret room center
+        center_x, center_y = self.dungeon.secret_room.center()
+
+        # Determine "next biome" enemy type (preview of harder enemies)
+        if self.current_level <= 2:
+            elite_type = c.ENEMY_SKELETON  # Preview of level 3+
+        elif self.current_level <= 4:
+            elite_type = c.ENEMY_ORC  # Preview of level 5+
+        elif self.current_level <= 9:
+            elite_type = c.ENEMY_DEMON  # Preview of level 10+
+        else:
+            elite_type = c.ENEMY_DRAGON  # Max tier
+
+        # Spawn elite enemy with 2x HP at room center
+        level_modifier = 1.0 + (self.current_level - 1) * 0.15
+        elite_modifier = level_modifier * 2.0  # Double HP for elite
+        elite_enemy = Enemy(center_x, center_y, elite_type, elite_modifier, self.dungeon.secret_room)
+        self.enemies.append(elite_enemy)
+
+        # Spawn 1 rare/epic item at random position
+        item_pos = self.dungeon.secret_room.get_random_point()
+        # Force rare or better
+        if self.current_level <= 5:
+            rarity = c.RARITY_RARE
+        elif self.current_level <= 15:
+            rarity = random.choice([c.RARITY_RARE, c.RARITY_EPIC])
+        else:
+            rarity = random.choice([c.RARITY_EPIC, c.RARITY_LEGENDARY])
+
+        # Random equipment type
+        item_type = random.choice([c.ITEM_SWORD, c.ITEM_SHIELD, c.ITEM_BOOTS, c.ITEM_RING])
+        affixes = self._generate_item_affixes(rarity)
+        rare_item = Item(item_pos[0], item_pos[1], item_type, rarity, affixes)
+        self.items.append(rare_item)
+
+        # Spawn 2-3 gold coins / treasure for score
+        num_treasures = random.randint(2, 3)
+        for _ in range(num_treasures):
+            treasure_pos = self.dungeon.secret_room.get_random_point()
+            # Don't spawn on top of enemy or other items
+            while treasure_pos == (center_x, center_y) or treasure_pos == item_pos:
+                treasure_pos = self.dungeon.secret_room.get_random_point()
+
+            # 50/50 gold coin or treasure chest
+            treasure_type = random.choice([c.ITEM_GOLD_COIN, c.ITEM_TREASURE_CHEST])
+            treasure_rarity = random.choice([c.RARITY_UNCOMMON, c.RARITY_RARE])
+            treasure = Item(treasure_pos[0], treasure_pos[1], treasure_type, treasure_rarity)
+            self.items.append(treasure)
+
     def _check_item_pickup(self):
         """Check if player is on item and pick it up"""
         for item in self.items[:]:

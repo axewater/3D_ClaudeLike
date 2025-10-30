@@ -263,7 +263,8 @@ class Renderer3D:
                                                         has_wall_se, has_wall_sw)
                     tile_entities.append(ceiling_entity)
 
-                elif tile == c.TILE_WALL:
+                elif tile == c.TILE_WALL or tile == c.TILE_SECRET_WALL:
+                    # Secret walls look identical to normal walls
                     entity = create_wall_mesh(x, y, biome, wall_color)
                     tile_entities.append(entity)
 

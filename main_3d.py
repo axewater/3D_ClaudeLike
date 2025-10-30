@@ -103,6 +103,10 @@ class AnimationManager3DProxy(AnimationManagerInterface):
         """Green heal sparkles"""
         self.anim_3d.add_heal_sparkles(x, y)
 
+    def add_crumble_effect(self, x, y):
+        """Wall crumbling effect with falling debris"""
+        self.anim_3d.add_crumble_effect(x, y)
+
     def add_screen_shake(self, intensity=5.0, duration=0.2):
         """Screen shake effect"""
         self.anim_3d.add_screen_shake(intensity, duration)
@@ -511,6 +515,17 @@ class GameController(Entity):
             offset_x, offset_y = self._get_forward_offset()
             target_x = self.game.player.x + offset_x
             target_y = self.game.player.y + offset_y
+
+            # Check if target is a secret wall (priority check)
+            tile = self.game.dungeon.get_tile(target_x, target_y)
+            if tile == c.TILE_SECRET_WALL:
+                # Discovered secret wall!
+                log.info(f"Player discovered secret wall at ({target_x}, {target_y})", "game")
+                self.game._discover_secret_wall(target_x, target_y)
+                # Consume turn
+                self.game._enemy_turn()
+                self.game._reduce_ability_cooldowns()
+                return
 
             # Check if there's an enemy at the target position
             target_enemy = None

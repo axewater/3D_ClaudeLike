@@ -190,14 +190,16 @@ class MiniMap3D:
 
                 # Determine color based on visibility and tile type
                 if vis_state == c.VISIBILITY_VISIBLE:
-                    if tile == c.TILE_WALL:
+                    if tile == c.TILE_WALL or tile == c.TILE_SECRET_WALL:
+                        # Secret walls look like normal walls on minimap
                         tile_color = self.COLOR_VISIBLE_WALL
                     elif tile == c.TILE_STAIRS:
                         tile_color = self.COLOR_STAIRS
                     else:  # FLOOR
                         tile_color = self.COLOR_VISIBLE_FLOOR
                 else:  # EXPLORED
-                    if tile == c.TILE_WALL:
+                    if tile == c.TILE_WALL or tile == c.TILE_SECRET_WALL:
+                        # Secret walls look like normal walls on minimap
                         tile_color = self.COLOR_EXPLORED_WALL
                     else:  # FLOOR or STAIRS (both look like floor when explored)
                         tile_color = self.COLOR_EXPLORED_FLOOR

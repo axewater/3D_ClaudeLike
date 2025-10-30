@@ -1065,6 +1065,51 @@ class AnimationManager3D:
         heal_color = (0.4, 1.0, 0.4)
         self.add_particle_burst(grid_x, grid_y, heal_color, count=int(8 * c.PARTICLE_DENSITY), particle_type="star")
 
+    def add_crumble_effect(self, grid_x: int, grid_y: int):
+        """Create wall crumbling effect with falling debris"""
+        # Wall position at standard height
+        pos = Vec3(*world_to_3d_position(grid_x, grid_y, c.WALL_HEIGHT / 2))
+
+        # Gray/brown rock colors
+        rock_colors = [
+            (0.5, 0.5, 0.5),   # Gray
+            (0.4, 0.4, 0.4),   # Dark gray
+            (0.5, 0.45, 0.4),  # Brown-gray
+            (0.6, 0.55, 0.5),  # Light brown-gray
+        ]
+
+        # Spawn 12-15 falling debris particles
+        count = int(random.randint(12, 15) * c.PARTICLE_DENSITY)
+
+        for _ in range(count):
+            # Random position within wall area
+            offset_x = random.uniform(-0.4, 0.4)
+            offset_y = random.uniform(-c.WALL_HEIGHT/2, c.WALL_HEIGHT/2)
+            offset_z = random.uniform(-0.4, 0.4)
+
+            particle_pos = pos + Vec3(offset_x, offset_y, offset_z)
+
+            # Initial velocity: slight outward burst + downward
+            burst_x = random.uniform(-1.5, 1.5)
+            burst_z = random.uniform(-1.5, 1.5)
+            burst_y = random.uniform(-0.5, 1.5)  # Slight upward burst before falling
+
+            velocity = Vec3(burst_x, burst_y, burst_z)
+
+            # Random rock color
+            color = random.choice(rock_colors)
+
+            # Varying sizes (small debris)
+            size = random.uniform(0.08, 0.18)
+
+            # Medium lifetime (debris should fall and disappear)
+            lifetime = random.uniform(0.5, 1.0)
+
+            # Cube particles with gravity
+            particle = Particle3D(particle_pos, velocity, color, size, lifetime,
+                                particle_type="cube", apply_gravity=True)
+            self.particles.append(particle)
+
     def add_screen_shake(self, intensity: float = 5.0, duration: float = 0.2):
         """Add screen shake effect"""
         self.screen_shake = ScreenShake3D(intensity, duration)
